@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Zomet POS',
-    short_name: 'Zomet POS',
+    name: 'ZPos',
+    short_name: 'ZPos',
     description: 'Aplikasi kasir digital untuk UMKM Indonesia',
     start_url: '/app',
     display: 'standalone',

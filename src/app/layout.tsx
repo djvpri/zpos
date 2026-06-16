@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Zomet POS',
+  title: 'ZPos',
   description: 'Aplikasi kasir digital untuk UMKM Indonesia',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Zomet POS',
+    title: 'ZPos',
   },
 }
 

@@ -17,7 +17,7 @@ export function StrukModal({ transaksi, onTutup }: Props) {
       <div className="bg-white rounded-xl p-6 w-80 font-mono text-sm shadow-xl">
         {/* Header */}
         <div className="text-center mb-4">
-          <div className="text-lg font-bold tracking-widest">ZOMET POS</div>
+          <div className="text-lg font-bold tracking-widest">ZPOS</div>
           <div className="text-xs text-gray-400">Kasir Digital</div>
           <div className="border-b border-dashed border-gray-300 my-3" />
           <div className="text-xs text-gray-400">{fmtDateTime()}</div>

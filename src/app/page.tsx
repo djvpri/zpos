@@ -42,7 +42,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0">
               <span className="text-white text-sm font-bold">Z</span>
             </div>
-            <span className="font-bold text-gray-900">Zomet POS</span>
+            <span className="font-bold text-gray-900">ZPos</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors px-2 py-1">
@@ -137,7 +137,7 @@ export default function LandingPage() {
             <div className="bg-white rounded-[1.6rem] overflow-hidden">
               {/* Phone status bar */}
               <div className="bg-indigo-600 px-4 pt-3 pb-2 flex items-center justify-between">
-                <span className="text-white text-[10px] font-semibold">Zomet POS</span>
+                <span className="text-white text-[10px] font-semibold">ZPos</span>
                 <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
                   <span className="text-white text-[8px] font-bold">Z</span>
                 </div>
@@ -251,9 +251,9 @@ export default function LandingPage() {
             <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center">
               <span className="text-white text-xs font-bold">Z</span>
             </div>
-            <span className="text-sm font-semibold text-gray-700">Zomet POS</span>
+            <span className="text-sm font-semibold text-gray-700">ZPos</span>
           </div>
-          <p className="text-xs text-gray-400 text-center">© 2026 Zomet POS. Dibuat dengan ❤️ untuk UMKM Indonesia.</p>
+          <p className="text-xs text-gray-400 text-center">© 2026 ZPos. Dibuat dengan cinta untuk UMKM Indonesia.</p>
           <div className="flex gap-4 text-xs text-gray-400">
             <Link href="/login" className="hover:text-gray-600 transition-colors">Masuk</Link>
             <Link href="/register" className="hover:text-gray-600 transition-colors">Daftar</Link>

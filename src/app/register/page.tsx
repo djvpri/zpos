@@ -37,7 +37,7 @@ export default function RegisterPage() {
             <span className="text-white text-xl font-bold">Z</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Daftar Toko</h1>
-          <p className="text-gray-400 text-sm mt-1">Mulai kelola toko Anda dengan Zomet POS</p>
+          <p className="text-gray-400 text-sm mt-1">Mulai kelola toko Anda dengan ZPos</p>
         </div>
 
         <form onSubmit={submit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">

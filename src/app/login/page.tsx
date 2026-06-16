@@ -36,7 +36,7 @@ export default function LoginPage() {
           <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center mx-auto mb-3">
             <span className="text-white text-xl font-bold">Z</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Zomet POS</h1>
+          <h1 className="text-2xl font-bold text-gray-900">ZPos</h1>
           <p className="text-gray-400 text-sm mt-1">Masuk ke akun toko Anda</p>
         </div>
 
