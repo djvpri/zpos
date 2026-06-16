@@ -9,3 +9,22 @@ export async function GET(req: Request) {
   const rows = await sql`SELECT id, nama FROM kategori WHERE toko_id = ${toko.tokoId} ORDER BY id`
   return NextResponse.json(rows)
 }
+
+export async function POST(req: Request) {
+  const toko = await getTokoFromRequest(req)
+  if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (toko.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const { nama } = await req.json()
+  if (!nama?.trim()) return NextResponse.json({ error: 'Nama kategori wajib diisi' }, { status: 400 })
+
+  const existing = await sql`
+    SELECT id FROM kategori WHERE toko_id = ${toko.tokoId} AND lower(nama) = lower(${nama.trim()})
+  `
+  if (existing.length > 0) return NextResponse.json({ error: 'Kategori sudah ada' }, { status: 400 })
+
+  const [row] = await sql`
+    INSERT INTO kategori (nama, toko_id) VALUES (${nama.trim()}, ${toko.tokoId}) RETURNING id, nama
+  `
+  return NextResponse.json(row, { status: 201 })
+}
