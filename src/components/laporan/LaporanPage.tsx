@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi } from '@/types'
 import { TrendingUp, Receipt, ShoppingBag, Percent } from 'lucide-react'
@@ -14,14 +13,13 @@ export default function LaporanPage() {
 
   useEffect(() => {
     const load = async () => {
-      const [l, t, r] = await Promise.all([
-        supabase.from('v_laporan_harian').select('*').limit(7),
-        supabase.from('v_produk_terlaris').select('*').limit(5),
-        supabase.from('transaksi').select('*').order('created_at', { ascending: false }).limit(10),
-      ])
-      setLaporan(l.data || [])
-      setTerlaris(t.data || [])
-      setRiwayat(r.data || [])
+      const res = await fetch('/api/laporan')
+      if (res.ok) {
+        const { laporan, terlaris, riwayat } = await res.json()
+        setLaporan(laporan)
+        setTerlaris(terlaris)
+        setRiwayat(riwayat)
+      }
       setLoading(false)
     }
     load()
