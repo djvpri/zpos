@@ -1,11 +1,11 @@
 'use client'
 
-import { CashRegister, Package, ChartBar } from 'lucide-react'
+import { Receipt, Package, BarChart3 } from 'lucide-react'
 
 const NAV = [
-  { id: 'kasir', label: 'Kasir', icon: CashRegister },
+  { id: 'kasir', label: 'Kasir', icon: Receipt },
   { id: 'produk', label: 'Produk', icon: Package },
-  { id: 'laporan', label: 'Laporan', icon: ChartBar },
+  { id: 'laporan', label: 'Laporan', icon: BarChart3 },
 ] as const
 
 type Halaman = typeof NAV[number]['id']
