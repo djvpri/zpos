@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Search } from 'lucide-react'
+import { Search, ShoppingCart, X } from 'lucide-react'
 import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
 import { ProdukGrid } from '@/components/kasir/ProdukGrid'
@@ -24,6 +24,7 @@ export default function KasirPage() {
   const [metode, setMetode] = useState<'Tunai' | 'QRIS' | 'Transfer'>('Tunai')
   const [struk, setStruk] = useState<Transaksi | null>(null)
   const [saving, setSaving] = useState(false)
+  const [showCart, setShowCart] = useState(false)
 
   const produkFiltered = useMemo(() =>
     produk.filter(p =>
@@ -46,6 +47,7 @@ export default function KasirPage() {
   const total = hitungTotal(subtotal, disc, pajak)
   const kembali = Math.max((Number(bayar) || 0) - total, 0)
   const kurang = Math.max(total - (Number(bayar) || 0), 0)
+  const totalItem = items.reduce((s, i) => s + i.qty, 0)
 
   const tambahKeKeranjang = (p: Produk) => {
     if (p.stok <= 0) return
@@ -106,13 +108,49 @@ export default function KasirPage() {
     setBayar('')
     setDiskon(0)
     setMetode('Tunai')
+    setShowCart(false)
     setSaving(false)
   }
 
+  const keranjangProps = {
+    items, diskon: disc, bayar, metode,
+    subtotal, pajak, total, kembali, kurang,
+    onUbahQty: ubahQty, onDiskon: setDiskon, onBayar: setBayar,
+    onMetode: setMetode, onBayarSekarang: bayarSekarang,
+  }
+
   return (
-    <div className="grid grid-cols-[1fr_310px] gap-4 p-4 h-[calc(100vh-56px)]">
-      {/* Kiri */}
-      <div className="flex flex-col gap-3 overflow-hidden">
+    <>
+      {/* Desktop layout */}
+      <div className="hidden md:grid grid-cols-[1fr_310px] gap-4 p-4 h-[calc(100vh-56px)]">
+        <div className="flex flex-col gap-3 overflow-hidden">
+          <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-4 py-2.5">
+            <Search size={16} className="text-gray-400 shrink-0" />
+            <input
+              value={cari} onChange={e => setCari(e.target.value)}
+              placeholder="Cari produk..."
+              className="flex-1 bg-transparent outline-none text-sm"
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {KATEGORI.map(k => (
+              <button key={k} onClick={() => setKat(k)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  kat === k ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >{k}</button>
+            ))}
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <ProdukGrid produk={produkFiltered} loading={loading} onTambah={tambahKeKeranjang} />
+          </div>
+        </div>
+        <KeranjangPanel {...keranjangProps} />
+      </div>
+
+      {/* Mobile layout */}
+      <div className="md:hidden flex flex-col h-full p-3 gap-3">
+        {/* Search */}
         <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-4 py-2.5">
           <Search size={16} className="text-gray-400 shrink-0" />
           <input
@@ -121,29 +159,58 @@ export default function KasirPage() {
             className="flex-1 bg-transparent outline-none text-sm"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
+
+        {/* Kategori — horizontal scroll */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {KATEGORI.map(k => (
             <button key={k} onClick={() => setKat(k)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                kat === k ? 'bg-indigo-700 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                kat === k ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500'
               }`}
             >{k}</button>
           ))}
         </div>
+
+        {/* Produk */}
         <div className="flex-1 overflow-y-auto">
           <ProdukGrid produk={produkFiltered} loading={loading} onTambah={tambahKeKeranjang} />
         </div>
       </div>
 
-      {/* Kanan */}
-      <KeranjangPanel
-        items={items} diskon={disc} bayar={bayar} metode={metode}
-        subtotal={subtotal} pajak={pajak} total={total} kembali={kembali} kurang={kurang}
-        onUbahQty={ubahQty} onDiskon={setDiskon} onBayar={setBayar}
-        onMetode={setMetode} onBayarSekarang={bayarSekarang}
-      />
+      {/* Floating cart button — mobile only */}
+      {!showCart && (
+        <button
+          onClick={() => setShowCart(true)}
+          className="md:hidden fixed bottom-20 right-4 z-40 bg-indigo-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+        >
+          <ShoppingCart size={22} />
+          {totalItem > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+              {totalItem}
+            </span>
+          )}
+        </button>
+      )}
+
+      {/* Cart drawer — mobile only */}
+      {showCart && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowCart(false)} />
+          <div className="relative bg-white rounded-t-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <span className="font-semibold text-gray-800">Keranjang</span>
+              <button onClick={() => setShowCart(false)} className="p-1 rounded-lg hover:bg-gray-100">
+                <X size={18} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <KeranjangPanel {...keranjangProps} />
+            </div>
+          </div>
+        </div>
+      )}
 
       <StrukModal transaksi={struk} onTutup={() => setStruk(null)} />
-    </div>
+    </>
   )
 }

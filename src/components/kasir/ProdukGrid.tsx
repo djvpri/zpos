@@ -23,7 +23,7 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
           <span className="text-sm">Produk tidak ditemukan</span>
         </div>
       ) : (
-        <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {produk.map(p => (
             <button
               key={p.id}
