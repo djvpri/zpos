@@ -14,20 +14,28 @@ export async function middleware(request: NextRequest) {
 
   const isAuthPage = pathname === '/login' || pathname === '/register'
   const isApiAuth = pathname.startsWith('/api/auth')
+  const isAppRoute = pathname.startsWith('/app')
 
+  // API auth routes: always allow
   if (isApiAuth) return NextResponse.next()
 
+  // Login/register: redirect to /app if already logged in
   if (isAuthPage) {
     if (token && await isValid(token)) {
-      return NextResponse.redirect(new URL('/', request.url))
+      return NextResponse.redirect(new URL('/app', request.url))
     }
     return NextResponse.next()
   }
 
-  if (!token || !(await isValid(token))) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // /app routes: require auth
+  if (isAppRoute) {
+    if (!token || !(await isValid(token))) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    return NextResponse.next()
   }
 
+  // Landing page and other public routes: always allow
   return NextResponse.next()
 }
 

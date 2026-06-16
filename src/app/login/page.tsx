@@ -20,7 +20,7 @@ export default function LoginPage() {
       body: JSON.stringify(form),
     })
     if (res.ok) {
-      router.push('/')
+      router.push('/app')
       router.refresh()
     } else {
       const data = await res.json()
