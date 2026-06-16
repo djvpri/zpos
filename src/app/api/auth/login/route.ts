@@ -6,17 +6,32 @@ import { signToken } from '@/lib/auth'
 export async function POST(req: Request) {
   const { email, password } = await req.json()
 
-  const [toko] = await sql`SELECT * FROM toko WHERE email = ${email} AND aktif = true`
-  if (!toko) {
+  const [user] = await sql`
+    SELECT u.id, u.nama, u.email, u.password_hash, u.role, u.aktif,
+           t.id as toko_id, t.nama as toko_nama, t.plan
+    FROM "user" u
+    JOIN toko t ON t.id = u.toko_id
+    WHERE u.email = ${email} AND u.aktif = true AND t.aktif = true
+  `
+
+  if (!user) {
     return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 })
   }
 
-  const valid = await bcrypt.compare(password, toko.password_hash)
+  const valid = await bcrypt.compare(password, user.password_hash)
   if (!valid) {
     return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 })
   }
 
-  const token = await signToken({ tokoId: toko.id, nama: toko.nama, email: toko.email, plan: toko.plan })
+  const token = await signToken({
+    userId: user.id,
+    tokoId: user.toko_id,
+    nama: user.toko_nama,
+    userName: user.nama,
+    email: user.email,
+    plan: user.plan,
+    role: user.role,
+  })
   const res = NextResponse.json({ ok: true })
   res.cookies.set('zpos_token', token, {
     httpOnly: true,

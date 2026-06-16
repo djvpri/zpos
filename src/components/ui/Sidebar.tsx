@@ -1,21 +1,29 @@
 'use client'
 
-import { Receipt, Package, BarChart3 } from 'lucide-react'
+import { Receipt, Package, BarChart3, Users } from 'lucide-react'
 
-const NAV = [
+const NAV_OWNER = [
   { id: 'kasir', icon: Receipt, label: 'Kasir' },
   { id: 'produk', icon: Package, label: 'Produk' },
   { id: 'laporan', icon: BarChart3, label: 'Laporan' },
+  { id: 'staff', icon: Users, label: 'Staff' },
 ] as const
 
-type Halaman = typeof NAV[number]['id']
+const NAV_KASIR = [
+  { id: 'kasir', icon: Receipt, label: 'Kasir' },
+] as const
+
+type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff'
 
 interface Props {
   aktif: Halaman
   onNavigasi: (h: Halaman) => void
+  role: 'owner' | 'kasir'
 }
 
-export function Sidebar({ aktif, onNavigasi }: Props) {
+export function Sidebar({ aktif, onNavigasi, role }: Props) {
+  const nav = role === 'owner' ? NAV_OWNER : NAV_KASIR
+
   return (
     <aside className="w-16 bg-white border-r border-gray-100 flex flex-col items-center py-4 shrink-0">
       <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center mb-6">
@@ -23,10 +31,10 @@ export function Sidebar({ aktif, onNavigasi }: Props) {
       </div>
 
       <nav className="flex flex-col items-center gap-1 w-full px-2">
-        {NAV.map(n => (
+        {nav.map(n => (
           <button
             key={n.id}
-            onClick={() => onNavigasi(n.id)}
+            onClick={() => onNavigasi(n.id as Halaman)}
             className={`w-full flex flex-col items-center gap-1 py-2.5 rounded-xl transition-colors ${
               aktif === n.id
                 ? 'bg-indigo-50 text-indigo-600'

@@ -3,10 +3,13 @@ import { SignJWT, jwtVerify } from 'jose'
 const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
 
 export interface TokenPayload {
+  userId: number
   tokoId: number
-  nama: string
+  nama: string      // nama toko (untuk topbar)
+  userName: string  // nama user yang login
   email: string
   plan: string
+  role: 'owner' | 'kasir'
 }
 
 export async function signToken(payload: TokenPayload): Promise<string> {

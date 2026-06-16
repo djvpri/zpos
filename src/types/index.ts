@@ -46,6 +46,15 @@ export interface DetailTransaksi {
   subtotal: number
 }
 
+export interface Staff {
+  id: number
+  nama: string
+  email: string
+  role: 'kasir'
+  aktif: boolean
+  created_at: string
+}
+
 export interface LaporanHarian {
   tanggal: string
   jumlah_transaksi: number

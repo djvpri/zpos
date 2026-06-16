@@ -7,6 +7,7 @@ const LABEL: Record<string, string> = {
   kasir: 'Kasir',
   produk: 'Manajemen Produk',
   laporan: 'Laporan Penjualan',
+  staff: 'Kelola Staff',
 }
 
 interface Props {
@@ -22,10 +23,12 @@ export function Topbar({ halaman }: Props) {
       <div className="flex items-center gap-3">
         <div className="text-right hidden sm:block">
           <div className="text-sm font-medium text-gray-700 leading-tight">{toko?.nama || '...'}</div>
-          <div className="text-xs text-gray-400 capitalize">{toko?.plan || ''}</div>
+          <div className="text-xs text-gray-400 capitalize">
+            {toko?.userName && toko.role === 'kasir' ? `${toko.userName} · Kasir` : toko?.plan || ''}
+          </div>
         </div>
         <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white">
-          {toko?.nama?.[0]?.toUpperCase() || 'Z'}
+          {toko?.userName?.[0]?.toUpperCase() || toko?.nama?.[0]?.toUpperCase() || 'Z'}
         </div>
         <button
           onClick={logout}

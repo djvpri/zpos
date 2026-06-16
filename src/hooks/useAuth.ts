@@ -3,10 +3,13 @@
 import { useState, useEffect, useCallback } from 'react'
 
 export interface TokoInfo {
+  userId: number
   tokoId: number
-  nama: string
+  nama: string      // nama toko
+  userName: string  // nama user yang login
   email: string
   plan: string
+  role: 'owner' | 'kasir'
 }
 
 export function useAuth() {
