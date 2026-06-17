@@ -2,9 +2,16 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
 import { signToken } from '@/lib/auth'
+import { bolehLogin, catatGagal, resetPercobaan, ipDari } from '@/lib/ratelimit'
 
 export async function POST(req: Request) {
   const { email, password } = await req.json()
+
+  const kunci = `login:${String(email ?? '').toLowerCase().trim()}`
+  const ip = ipDari(req)
+  if (!(await bolehLogin(kunci))) {
+    return NextResponse.json({ error: 'Terlalu banyak percobaan login. Coba lagi beberapa menit lagi.' }, { status: 429 })
+  }
 
   const [user] = await sql`
     SELECT u.id, u.nama, u.email, u.password_hash, u.role, u.aktif,
@@ -15,13 +22,17 @@ export async function POST(req: Request) {
   `
 
   if (!user) {
+    await catatGagal(kunci, ip)
     return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 })
   }
 
   const valid = await bcrypt.compare(password, user.password_hash)
   if (!valid) {
+    await catatGagal(kunci, ip)
     return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 })
   }
+
+  await resetPercobaan(kunci)
 
   const token = await signToken({
     userId: user.id,
