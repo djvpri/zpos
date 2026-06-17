@@ -61,3 +61,28 @@ export async function getAdminFromRequest(request: Request): Promise<AdminPayloa
     return null
   }
 }
+
+// ===== Token reset password (token bertanda tangan, kedaluwarsa 1 jam) =====
+
+export interface ResetPayload {
+  purpose: 'reset'
+  userId: number
+  email: string
+}
+
+export async function signResetToken(userId: number, email: string): Promise<string> {
+  return new SignJWT({ purpose: 'reset', userId, email })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('1h')
+    .sign(secret)
+}
+
+export async function verifyResetToken(token: string): Promise<ResetPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret)
+    if (payload.purpose === 'reset') return payload as unknown as ResetPayload
+    return null
+  } catch {
+    return null
+  }
+}

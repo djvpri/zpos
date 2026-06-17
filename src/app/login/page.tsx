@@ -68,6 +68,9 @@ export default function LoginPage() {
           >
             {loading ? 'Masuk...' : 'Masuk'}
           </button>
+          <p className="text-center">
+            <Link href="/forgot" className="text-sm text-gray-400 hover:text-indigo-600 transition-colors">Lupa password?</Link>
+          </p>
         </form>
 
         <p className="text-center text-sm text-gray-400 mt-4">
