@@ -4,19 +4,30 @@ import { Transaksi } from '@/types'
 import { fmt, fmtDateTime } from '@/lib/utils'
 import { Printer, Share2 } from 'lucide-react'
 
+interface TokoInfo {
+  nama: string
+  alamat?: string
+  telepon?: string
+  catatan_struk?: string
+}
+
 interface Props {
   transaksi: Transaksi | null
+  toko?: TokoInfo
   onTutup: () => void
 }
 
-export function StrukModal({ transaksi, onTutup }: Props) {
+export function StrukModal({ transaksi, toko, onTutup }: Props) {
   if (!transaksi) return null
   const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir } = transaksi
   const waktu = fmtDateTime()
 
   const teksStruk = () => {
     const baris: string[] = []
-    baris.push('ZPOS - Kasir Digital')
+    if (toko?.nama) baris.push(toko.nama)
+    if (toko?.alamat) baris.push(toko.alamat)
+    if (toko?.telepon) baris.push(`Tel: ${toko.telepon}`)
+    baris.push('--------------------------------')
     baris.push(waktu)
     baris.push(`No: ${no_transaksi}`)
     if (kasir) baris.push(`Kasir: ${kasir}`)
@@ -29,7 +40,8 @@ export function StrukModal({ transaksi, onTutup }: Props) {
     baris.push(`TOTAL: ${fmt(total)}`)
     baris.push(`Bayar (${metode_bayar}): ${fmt(bayar)}`)
     baris.push(`Kembali: ${fmt(kembali)}`)
-    baris.push('Terima kasih sudah berbelanja!')
+    if (toko?.catatan_struk) baris.push(toko.catatan_struk)
+    baris.push('Powered by ZPOS')
     return baris.join('\n')
   }
 
@@ -40,9 +52,7 @@ export function StrukModal({ transaksi, onTutup }: Props) {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({ title: `Struk ${no_transaksi}`, text })
-      } catch {
-        /* dibatalkan user */
-      }
+      } catch { /* dibatalkan user */ }
     } else {
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
     }
@@ -53,10 +63,12 @@ export function StrukModal({ transaksi, onTutup }: Props) {
       <div className="bg-white rounded-xl w-80 shadow-xl overflow-hidden">
         {/* Area struk (yang dicetak) */}
         <div className="struk-area p-6 font-mono text-sm bg-white">
-          {/* Header */}
+
+          {/* Header — info toko */}
           <div className="text-center mb-4">
-            <div className="text-lg font-bold tracking-widest">ZPOS</div>
-            <div className="text-xs text-gray-400">Kasir Digital</div>
+            <div className="text-base font-bold">{toko?.nama || 'Toko'}</div>
+            {toko?.alamat && <div className="text-xs text-gray-500 mt-0.5 leading-snug">{toko.alamat}</div>}
+            {toko?.telepon && <div className="text-xs text-gray-500">Tel: {toko.telepon}</div>}
             <div className="border-b border-dashed border-gray-300 my-3" />
             <div className="text-xs text-gray-400">{waktu}</div>
             <div className="text-xs text-gray-400">No: {no_transaksi}</div>
@@ -100,31 +112,25 @@ export function StrukModal({ transaksi, onTutup }: Props) {
             </div>
           </div>
 
-          <div className="text-center text-xs text-gray-400">
-            ★ Terima kasih sudah berbelanja ★
+          {/* Footer */}
+          <div className="text-center text-xs text-gray-400 space-y-1">
+            {toko?.catatan_struk && <div>{toko.catatan_struk}</div>}
+            <div>★ Terima kasih sudah berbelanja ★</div>
+            <div className="text-gray-300 mt-1">Powered by ZPOS</div>
           </div>
         </div>
 
-        {/* Aksi (tidak ikut tercetak) */}
+        {/* Aksi */}
         <div className="no-print px-6 pb-6 pt-2 space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={cetak}
-              className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-            >
+            <button onClick={cetak} className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
               <Printer size={15} /> Cetak
             </button>
-            <button
-              onClick={bagikan}
-              className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-            >
+            <button onClick={bagikan} className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
               <Share2 size={15} /> Bagikan
             </button>
           </div>
-          <button
-            onClick={onTutup}
-            className="w-full py-2.5 bg-indigo-700 text-white rounded-lg text-sm font-medium hover:bg-indigo-800 transition-colors"
-          >
+          <button onClick={onTutup} className="w-full py-2.5 bg-indigo-700 text-white rounded-lg text-sm font-medium hover:bg-indigo-800 transition-colors">
             Tutup
           </button>
         </div>

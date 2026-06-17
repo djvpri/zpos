@@ -24,7 +24,7 @@ export default function KasirPage() {
   const { simpan } = useTransaksi()
   const { kategori } = useKategori()
   const { toko } = useAuth()
-  const { pajakPersen } = usePengaturan()
+  const { pajakPersen, alamat, telepon, catatan_struk } = usePengaturan()
 
   const [katId, setKatId] = useState<number | null>(null)
   const [cari, setCari] = useState('')
@@ -225,7 +225,11 @@ export default function KasirPage() {
       {showCamera && (
         <BarcodeCameraModal onScan={onBarcodeScan} onTutup={() => setShowCamera(false)} />
       )}
-      <StrukModal transaksi={struk} onTutup={() => setStruk(null)} />
+      <StrukModal
+        transaksi={struk}
+        toko={{ nama: toko?.nama ?? '', alamat, telepon, catatan_struk }}
+        onTutup={() => setStruk(null)}
+      />
     </>
   )
 }
