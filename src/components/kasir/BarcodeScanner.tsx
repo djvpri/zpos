@@ -13,7 +13,7 @@ export function BarcodeCameraModal({ onScan, onTutup }: { onScan: (b: string) =>
 
   const { ref } = useZxing({
     onDecodeResult(result) {
-      const text = result.getText()
+      const text = result.rawValue
       if (text && text !== last) {
         setLast(text)
         onScan(text)
