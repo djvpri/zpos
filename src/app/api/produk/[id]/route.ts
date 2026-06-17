@@ -11,7 +11,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const [row] = await sql`
     UPDATE produk
     SET nama = ${body.nama}, harga = ${body.harga}, stok = ${body.stok},
-        emoji = ${body.emoji}, deskripsi = ${body.deskripsi || null}, kategori_id = ${body.kategori_id}
+        emoji = ${body.emoji}, deskripsi = ${body.deskripsi || null}, foto_url = ${body.foto_url || null}, kategori_id = ${body.kategori_id}
     WHERE id = ${Number(id)} AND toko_id = ${toko.tokoId}
     RETURNING *
   `

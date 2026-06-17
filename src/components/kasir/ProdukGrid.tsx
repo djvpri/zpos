@@ -35,7 +35,11 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
                   : 'bg-white border-gray-100 hover:border-indigo-300 hover:shadow-md cursor-pointer active:scale-95'
               }`}
             >
-              <div className="text-4xl mb-3">{p.emoji}</div>
+              {p.foto_url ? (
+                <img src={p.foto_url} alt={p.nama} className="w-16 h-16 object-cover rounded-xl mb-3" />
+              ) : (
+                <div className="text-4xl mb-3">{p.emoji}</div>
+              )}
               <div className="text-sm font-semibold text-gray-800 leading-tight mb-1">{p.nama}</div>
               <div className="text-xs font-bold text-indigo-600">{fmt(p.harga)}</div>
               {p.stok < 5 && p.stok > 0 && (

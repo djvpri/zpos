@@ -116,7 +116,11 @@ export default function ProdukPage() {
                   <tr key={p.id} className={`border-t border-gray-50 ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <span className="text-xl">{p.emoji}</span>
+                        {p.foto_url ? (
+                          <img src={p.foto_url} alt={p.nama} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                        ) : (
+                          <span className="text-xl w-9 text-center shrink-0">{p.emoji}</span>
+                        )}
                         <div>
                           <div className="text-sm font-medium text-gray-800">{p.nama}</div>
                           {p.deskripsi && (

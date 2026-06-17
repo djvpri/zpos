@@ -5,6 +5,7 @@ export interface Produk {
   stok: number
   emoji: string
   deskripsi?: string
+  foto_url?: string
   kategori_id: number | null
   aktif: boolean
   created_at?: string
