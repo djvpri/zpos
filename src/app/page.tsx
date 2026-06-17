@@ -15,6 +15,7 @@ const plans = [
     name: 'Trial',
     price: 'Gratis',
     period: '30 hari',
+    yearly: null,
     border: 'border-gray-200',
     badge: null,
     pro: false,
@@ -22,8 +23,9 @@ const plans = [
   },
   {
     name: 'Pro',
-    price: 'Rp 99.000',
+    price: 'Rp 50.000',
     period: '/bulan',
+    yearly: 'atau Rp 500.000 / tahun · hemat 2 bulan',
     border: 'border-indigo-500',
     badge: 'Populer',
     pro: true,
@@ -208,6 +210,9 @@ export default function LandingPage() {
                     <span className="text-3xl font-extrabold text-gray-900">{plan.price}</span>
                     <span className="text-gray-400 text-sm mb-1">{plan.period}</span>
                   </div>
+                  {plan.yearly && (
+                    <div className="text-xs text-indigo-600 font-medium mt-1.5">{plan.yearly}</div>
+                  )}
                 </div>
                 <ul className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-7">
                   {plan.items.map((item, j) => (
