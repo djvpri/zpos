@@ -17,9 +17,12 @@ export async function POST(req: Request) {
 
   const password_hash = await bcrypt.hash(password, 10)
 
+  const trialSampai = new Date()
+  trialSampai.setDate(trialSampai.getDate() + 30)
+
   const [toko] = await sql`
-    INSERT INTO toko (nama, email, password_hash)
-    VALUES (${nama}, ${email}, ${password_hash})
+    INSERT INTO toko (nama, email, password_hash, langganan_sampai)
+    VALUES (${nama}, ${email}, ${password_hash}, ${trialSampai})
     RETURNING id, nama, plan
   `
 

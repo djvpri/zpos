@@ -8,8 +8,9 @@ import ProdukPage from '@/components/produk/ProdukPage'
 import LaporanPage from '@/components/laporan/LaporanPage'
 import StaffPage from '@/components/staff/StaffPage'
 import PengaturanPage from '@/components/pengaturan/PengaturanPage'
-import { Receipt, Package, BarChart3, Users, Settings } from 'lucide-react'
+import { Receipt, Package, BarChart3, Users, Settings, Lock, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { fmtDate } from '@/lib/utils'
 
 type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan'
 
@@ -26,7 +27,7 @@ const NAV_KASIR = [
 ]
 
 export default function AppPage() {
-  const { toko, loading } = useAuth()
+  const { toko, loading, logout } = useAuth()
   const [halaman, setHalaman] = useState<Halaman>('kasir')
 
   // Redirect kasir yang coba akses halaman owner
@@ -40,6 +41,38 @@ export default function AppPage() {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-gray-400 text-sm">Memuat...</div>
+      </div>
+    )
+  }
+
+  // Langganan habis atau toko dinonaktifkan → kunci akses
+  if (toko && (toko.expired || toko.aktif === false)) {
+    const nonaktif = toko.aktif === false
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-gray-50 px-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-5">
+          <Lock size={28} className="text-red-500" />
+        </div>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">
+          {nonaktif ? 'Toko Dinonaktifkan' : 'Langganan Berakhir'}
+        </h1>
+        <p className="text-sm text-gray-500 max-w-sm mb-1">
+          {nonaktif
+            ? 'Akses toko Anda dinonaktifkan oleh admin.'
+            : 'Masa langganan toko Anda telah habis sehingga akses kasir dikunci.'}
+        </p>
+        {!nonaktif && toko.langganan_sampai && (
+          <p className="text-xs text-gray-400 mb-5">Berakhir pada {fmtDate(toko.langganan_sampai)}</p>
+        )}
+        <p className="text-sm text-gray-500 max-w-sm mb-6">
+          Hubungi admin untuk {nonaktif ? 'mengaktifkan kembali' : 'memperpanjang langganan'}.
+        </p>
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors"
+        >
+          <LogOut size={15} /> Keluar
+        </button>
       </div>
     )
   }

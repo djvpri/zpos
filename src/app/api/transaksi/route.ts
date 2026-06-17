@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
+import { statusToko } from '@/lib/guard'
 import type { Transaksi, DetailTransaksi } from '@/types'
 
 export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const status = await statusToko(toko.tokoId)
+  if (!status.aktif) return NextResponse.json({ error: 'Toko dinonaktifkan. Hubungi admin.' }, { status: 403 })
+  if (status.expired) return NextResponse.json({ error: 'Langganan sudah habis. Hubungi admin untuk memperpanjang.' }, { status: 403 })
 
   const { trx, items }: { trx: Transaksi; items: DetailTransaksi[] } = await req.json()
 

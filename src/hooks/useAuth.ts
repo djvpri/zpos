@@ -10,6 +10,9 @@ export interface TokoInfo {
   email: string
   plan: string
   role: 'owner' | 'kasir'
+  langganan_sampai?: string | null
+  aktif?: boolean
+  expired?: boolean
 }
 
 export function useAuth() {
