@@ -27,6 +27,7 @@ export interface Transaksi {
   subtotal: number
   diskon: number
   pajak: number
+  pajak_persen?: number // hanya untuk tampilan struk, tidak disimpan
   total: number
   bayar: number
   kembali: number

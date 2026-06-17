@@ -11,6 +11,7 @@ interface Props {
   metode: 'Tunai' | 'QRIS' | 'Transfer'
   subtotal: number
   pajak: number
+  pajakPersen: number
   total: number
   kembali: number
   kurang: number
@@ -22,7 +23,7 @@ interface Props {
 }
 
 export function KeranjangPanel({
-  items, diskon, bayar, metode, subtotal, pajak, total, kembali, kurang,
+  items, diskon, bayar, metode, subtotal, pajak, pajakPersen, total, kembali, kurang,
   onUbahQty, onDiskon, onBayar, onMetode, onBayarSekarang
 }: Props) {
   const totalItem = items.reduce((s, i) => s + i.qty, 0)
@@ -89,7 +90,7 @@ export function KeranjangPanel({
         <div className="space-y-1 text-sm">
           <div className="flex justify-between text-gray-400"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
           {diskon > 0 && <div className="flex justify-between text-green-500"><span>Diskon</span><span>−{fmt(diskon)}</span></div>}
-          <div className="flex justify-between text-gray-400"><span>Pajak 10%</span><span>{fmt(pajak)}</span></div>
+          {pajakPersen > 0 && <div className="flex justify-between text-gray-400"><span>Pajak {pajakPersen}%</span><span>{fmt(pajak)}</span></div>}
           <div className="flex justify-between font-bold text-base text-gray-900 pt-1 border-t border-gray-100 mt-1">
             <span>Total</span>
             <span className="text-indigo-600">{fmt(total)}</span>

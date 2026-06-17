@@ -6,6 +6,7 @@ import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
 import { useKategori } from '@/hooks/useKategori'
 import { useAuth } from '@/hooks/useAuth'
+import { usePengaturan } from '@/hooks/usePengaturan'
 import { ProdukGrid } from '@/components/kasir/ProdukGrid'
 import { KeranjangPanel } from '@/components/kasir/KeranjangPanel'
 import { StrukModal } from '@/components/kasir/StrukModal'
@@ -17,6 +18,7 @@ export default function KasirPage() {
   const { simpan } = useTransaksi()
   const { kategori } = useKategori()
   const { toko } = useAuth()
+  const { pajakPersen } = usePengaturan()
 
   const [katId, setKatId] = useState<number | null>(null)
   const [cari, setCari] = useState('')
@@ -45,7 +47,7 @@ export default function KasirPage() {
 
   const subtotal = items.reduce((s, i) => s + i.harga * i.qty, 0)
   const disc = Math.min(diskon, subtotal)
-  const pajak = hitungPajak(subtotal, disc)
+  const pajak = hitungPajak(subtotal, disc, pajakPersen)
   const total = hitungTotal(subtotal, disc, pajak)
   const kembali = Math.max((Number(bayar) || 0) - total, 0)
   const kurang = Math.max(total - (Number(bayar) || 0), 0)
@@ -82,7 +84,7 @@ export default function KasirPage() {
 
     const trxData: Transaksi = {
       no_transaksi: noTrx(),
-      subtotal, diskon: disc, pajak, total,
+      subtotal, diskon: disc, pajak, pajak_persen: pajakPersen, total,
       bayar: metode === 'Tunai' ? Number(bayar) : total,
       kembali: metode === 'Tunai' ? kembali : 0,
       metode_bayar: metode,
@@ -131,7 +133,7 @@ export default function KasirPage() {
 
   const keranjangProps = {
     items, diskon: disc, bayar, metode,
-    subtotal, pajak, total, kembali, kurang,
+    subtotal, pajak, pajakPersen, total, kembali, kurang,
     onUbahQty: ubahQty, onDiskon: setDiskon, onBayar: setBayar,
     onMetode: setMetode, onBayarSekarang: bayarSekarang,
   }

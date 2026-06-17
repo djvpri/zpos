@@ -7,16 +7,18 @@ import KasirPage from '@/components/kasir/KasirPage'
 import ProdukPage from '@/components/produk/ProdukPage'
 import LaporanPage from '@/components/laporan/LaporanPage'
 import StaffPage from '@/components/staff/StaffPage'
-import { Receipt, Package, BarChart3, Users } from 'lucide-react'
+import PengaturanPage from '@/components/pengaturan/PengaturanPage'
+import { Receipt, Package, BarChart3, Users, Settings } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
-type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff'
+type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan'
 
 const NAV_OWNER = [
   { id: 'kasir' as Halaman, icon: Receipt, label: 'Kasir' },
   { id: 'produk' as Halaman, icon: Package, label: 'Produk' },
   { id: 'laporan' as Halaman, icon: BarChart3, label: 'Laporan' },
   { id: 'staff' as Halaman, icon: Users, label: 'Staff' },
+  { id: 'pengaturan' as Halaman, icon: Settings, label: 'Atur' },
 ]
 
 const NAV_KASIR = [
@@ -58,6 +60,7 @@ export default function AppPage() {
           {halaman === 'produk' && isOwner && <ProdukPage />}
           {halaman === 'laporan' && isOwner && <LaporanPage />}
           {halaman === 'staff' && isOwner && <StaffPage />}
+          {halaman === 'pengaturan' && isOwner && <PengaturanPage />}
         </main>
       </div>
 

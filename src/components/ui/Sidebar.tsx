@@ -1,19 +1,20 @@
 'use client'
 
-import { Receipt, Package, BarChart3, Users } from 'lucide-react'
+import { Receipt, Package, BarChart3, Users, Settings } from 'lucide-react'
 
 const NAV_OWNER = [
   { id: 'kasir', icon: Receipt, label: 'Kasir' },
   { id: 'produk', icon: Package, label: 'Produk' },
   { id: 'laporan', icon: BarChart3, label: 'Laporan' },
   { id: 'staff', icon: Users, label: 'Staff' },
+  { id: 'pengaturan', icon: Settings, label: 'Atur' },
 ] as const
 
 const NAV_KASIR = [
   { id: 'kasir', icon: Receipt, label: 'Kasir' },
 ] as const
 
-type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff'
+type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan'
 
 interface Props {
   aktif: Halaman

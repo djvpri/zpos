@@ -10,7 +10,7 @@ interface Props {
 
 export function StrukModal({ transaksi, onTutup }: Props) {
   if (!transaksi) return null
-  const { items, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, no_transaksi, kasir } = transaksi
+  const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir } = transaksi
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -41,7 +41,9 @@ export function StrukModal({ transaksi, onTutup }: Props) {
           {diskon > 0 && (
             <div className="flex justify-between text-green-600"><span>Diskon</span><span>-{fmt(diskon)}</span></div>
           )}
-          <div className="flex justify-between"><span>Pajak 10%</span><span>{fmt(pajak)}</span></div>
+          {pajak > 0 && (
+            <div className="flex justify-between"><span>Pajak{pajak_persen ? ` ${pajak_persen}%` : ''}</span><span>{fmt(pajak)}</span></div>
+          )}
         </div>
 
         <div className="border-t border-dashed border-gray-300 pt-3 mb-3">
