@@ -23,8 +23,17 @@ export async function POST(req: Request) {
   `
   if (existing.length > 0) return NextResponse.json({ error: 'Kategori sudah ada' }, { status: 400 })
 
-  const [row] = await sql`
-    INSERT INTO kategori (nama, toko_id) VALUES (${nama.trim()}, ${toko.tokoId}) RETURNING id, nama
-  `
-  return NextResponse.json(row, { status: 201 })
+  try {
+    const [row] = await sql`
+      INSERT INTO kategori (nama, toko_id) VALUES (${nama.trim()}, ${toko.tokoId}) RETURNING id, nama
+    `
+    return NextResponse.json(row, { status: 201 })
+  } catch (e: unknown) {
+    // 23505 = unique_violation (mis. constraint unik global lama pada nama)
+    if ((e as { code?: string })?.code === '23505') {
+      return NextResponse.json({ error: 'Nama kategori sudah dipakai' }, { status: 400 })
+    }
+    console.error('kategori POST error', e)
+    return NextResponse.json({ error: 'Gagal menambah kategori' }, { status: 500 })
+  }
 }

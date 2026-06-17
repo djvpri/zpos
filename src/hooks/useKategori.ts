@@ -26,8 +26,8 @@ export function useKategori() {
       setKategori(k => [...k, row])
       return true
     }
-    const data = await res.json()
-    throw new Error(data.error || 'Gagal menambah kategori')
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error || `Gagal menambah kategori (${res.status})`)
   }, [])
 
   const hapus = useCallback(async (id: number) => {
