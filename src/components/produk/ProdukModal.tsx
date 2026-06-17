@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { Produk } from '@/types'
 import { useKategori } from '@/hooks/useKategori'
-import { X, Camera, Trash2 } from 'lucide-react'
+import { X, Camera, Trash2, Barcode } from 'lucide-react'
 
 interface Props {
   produk?: Produk | null
@@ -42,6 +42,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     stok: produk?.stok ?? '',
     deskripsi: produk?.deskripsi || '',
     foto_url: produk?.foto_url || '',
+    barcode: produk?.barcode || '',
     kategori_id: produk?.kategori_id || '',
   })
   const [uploading, setUploading] = useState(false)
@@ -72,6 +73,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       emoji: produk?.emoji || '📦',
       deskripsi: form.deskripsi.trim() || undefined,
       foto_url: form.foto_url || undefined,
+      barcode: form.barcode.trim() || undefined,
       kategori_id: Number(form.kategori_id),
       aktif: true,
     })
@@ -130,6 +132,18 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
           <div>
             <label className="text-xs text-gray-500">Nama Produk</label>
             <input className={inputCls} value={form.nama} onChange={e => set('nama', e.target.value)} placeholder="Nama produk" />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 flex items-center gap-1">
+              <Barcode size={12} /> Barcode <span className="text-gray-300">(opsional)</span>
+            </label>
+            <input
+              className={inputCls}
+              value={form.barcode}
+              onChange={e => set('barcode', e.target.value)}
+              placeholder="Scan atau ketik barcode..."
+              onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+            />
           </div>
           <div>
             <label className="text-xs text-gray-500">Deskripsi <span className="text-gray-300">(opsional)</span></label>

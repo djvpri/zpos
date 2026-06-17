@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Search, ShoppingCart, X } from 'lucide-react'
+import { useState, useMemo, useCallback } from 'react'
+import { Search, ShoppingCart, X, ScanLine } from 'lucide-react'
 import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
 import { useKategori } from '@/hooks/useKategori'
@@ -10,6 +10,12 @@ import { usePengaturan } from '@/hooks/usePengaturan'
 import { ProdukGrid } from '@/components/kasir/ProdukGrid'
 import { KeranjangPanel } from '@/components/kasir/KeranjangPanel'
 import { StrukModal } from '@/components/kasir/StrukModal'
+import dynamic from 'next/dynamic'
+import { useBarcodeUsbListener } from '@/components/kasir/BarcodeScanner'
+const BarcodeCameraModal = dynamic(
+  () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
+  { ssr: false }
+)
 import { Produk, ItemKeranjang, Transaksi, DetailTransaksi } from '@/types'
 import { hitungPajak, hitungTotal, noTrx } from '@/lib/utils'
 
@@ -29,6 +35,7 @@ export default function KasirPage() {
   const [struk, setStruk] = useState<Transaksi | null>(null)
   const [saving, setSaving] = useState(false)
   const [showCart, setShowCart] = useState(false)
+  const [showCamera, setShowCamera] = useState(false)
 
   const produkFiltered = useMemo(() =>
     produk.filter(p =>
@@ -58,6 +65,15 @@ export default function KasirPage() {
     setKeranjang(k => ({ ...k, [p.id]: (k[p.id] || 0) + 1 }))
     kurangiStok(p.id, 1)
   }
+
+  const onBarcodeScan = useCallback(async (code: string) => {
+    const res = await fetch(`/api/produk/barcode/${encodeURIComponent(code)}`)
+    if (!res.ok) return
+    const p = await res.json()
+    tambahKeKeranjang(p)
+  }, [produk])
+
+  useBarcodeUsbListener(onBarcodeScan)
 
   const ubahQty = (id: number, delta: number) => {
     const cur = keranjang[id] || 0
@@ -146,7 +162,10 @@ export default function KasirPage() {
           <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-4 py-2.5">
             <Search size={16} className="text-gray-400 shrink-0" />
             <input value={cari} onChange={e => setCari(e.target.value)}
-              placeholder="Cari produk..." className="flex-1 bg-transparent outline-none text-sm" />
+              placeholder="Cari produk atau barcode..." className="flex-1 bg-transparent outline-none text-sm" />
+            <button onClick={() => setShowCamera(true)} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors" title="Scan barcode kamera">
+              <ScanLine size={18} />
+            </button>
           </div>
           {filterChips}
           <div className="flex-1 overflow-y-auto">
@@ -162,6 +181,9 @@ export default function KasirPage() {
           <Search size={16} className="text-gray-400 shrink-0" />
           <input value={cari} onChange={e => setCari(e.target.value)}
             placeholder="Cari produk..." className="flex-1 bg-transparent outline-none text-sm" />
+          <button onClick={() => setShowCamera(true)} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors">
+            <ScanLine size={18} />
+          </button>
         </div>
         {filterChips}
         <div className="flex-1 overflow-y-auto">
@@ -200,6 +222,9 @@ export default function KasirPage() {
         </div>
       )}
 
+      {showCamera && (
+        <BarcodeCameraModal onScan={onBarcodeScan} onTutup={() => setShowCamera(false)} />
+      )}
       <StrukModal transaksi={struk} onTutup={() => setStruk(null)} />
     </>
   )

@@ -36,8 +36,8 @@ export async function POST(req: Request) {
 
   const body = await req.json()
   const [row] = await sql`
-    INSERT INTO produk (nama, harga, stok, emoji, deskripsi, foto_url, kategori_id, toko_id)
-    VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.kategori_id}, ${toko.tokoId})
+    INSERT INTO produk (nama, harga, stok, emoji, deskripsi, foto_url, barcode, kategori_id, toko_id)
+    VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId})
     RETURNING *
   `
   return NextResponse.json(row)
