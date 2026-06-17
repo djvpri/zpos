@@ -3,7 +3,12 @@
 import { useState, useRef } from 'react'
 import { Produk } from '@/types'
 import { useKategori } from '@/hooks/useKategori'
-import { X, Camera, Trash2, Barcode } from 'lucide-react'
+import { X, Camera, Trash2, Barcode, ScanLine } from 'lucide-react'
+import dynamic from 'next/dynamic'
+const BarcodeCameraModal = dynamic(
+  () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
+  { ssr: false }
+)
 
 interface Props {
   produk?: Produk | null
@@ -46,6 +51,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     kategori_id: produk?.kategori_id || '',
   })
   const [uploading, setUploading] = useState(false)
+  const [scanBarcode, setScanBarcode] = useState(false)
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
@@ -82,6 +88,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
   const inputCls = "w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400 mt-1"
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-6 w-96 shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
@@ -137,13 +144,23 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
             <label className="text-xs text-gray-500 flex items-center gap-1">
               <Barcode size={12} /> Barcode <span className="text-gray-300">(opsional)</span>
             </label>
-            <input
-              className={inputCls}
-              value={form.barcode}
-              onChange={e => set('barcode', e.target.value)}
-              placeholder="Scan atau ketik barcode..."
-              onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
-            />
+            <div className="flex gap-2 mt-1">
+              <input
+                className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400"
+                value={form.barcode}
+                onChange={e => set('barcode', e.target.value)}
+                placeholder="Scan atau ketik barcode..."
+                onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+              />
+              <button
+                type="button"
+                onClick={() => setScanBarcode(true)}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-gray-400 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
+                title="Scan dengan kamera"
+              >
+                <ScanLine size={16} />
+              </button>
+            </div>
           </div>
           <div>
             <label className="text-xs text-gray-500">Deskripsi <span className="text-gray-300">(opsional)</span></label>
@@ -187,5 +204,13 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
         </div>
       </div>
     </div>
+
+      {scanBarcode && (
+        <BarcodeCameraModal
+          onScan={code => { set('barcode', code); setScanBarcode(false) }}
+          onTutup={() => setScanBarcode(false)}
+        />
+      )}
+    </>
   )
 }
