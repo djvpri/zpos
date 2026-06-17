@@ -14,10 +14,15 @@ export async function POST(req: Request) {
 
   const { trx, items }: { trx: Transaksi; items: DetailTransaksi[] } = await req.json()
 
+  const [activeShift] = await sql`
+    SELECT id FROM shift WHERE toko_id = ${toko.tokoId} AND user_id = ${toko.userId} AND aktif = true LIMIT 1
+  `
+  const shiftId = activeShift?.id ?? null
+
   const [saved] = await sql`
-    INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id)
+    INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id, shift_id)
     VALUES (${trx.no_transaksi}, ${trx.subtotal}, ${trx.diskon}, ${trx.pajak}, ${trx.total},
-            ${trx.bayar}, ${trx.kembali}, ${trx.metode_bayar}, ${toko.userName}, ${toko.tokoId})
+            ${trx.bayar}, ${trx.kembali}, ${trx.metode_bayar}, ${toko.userName}, ${toko.tokoId}, ${shiftId})
     RETURNING *
   `
 

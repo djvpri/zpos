@@ -10,6 +10,7 @@ import { usePengaturan } from '@/hooks/usePengaturan'
 import { ProdukGrid } from '@/components/kasir/ProdukGrid'
 import { KeranjangPanel } from '@/components/kasir/KeranjangPanel'
 import { StrukModal } from '@/components/kasir/StrukModal'
+import { ShiftBanner } from '@/components/kasir/ShiftBanner'
 import dynamic from 'next/dynamic'
 import { useBarcodeUsbListener } from '@/components/kasir/BarcodeScanner'
 const BarcodeCameraModal = dynamic(
@@ -156,6 +157,8 @@ export default function KasirPage() {
 
   return (
     <>
+      <ShiftBanner />
+
       {/* Desktop */}
       <div className="hidden md:grid grid-cols-[1fr_310px] gap-4 p-4 h-[calc(100vh-56px)]">
         <div className="flex flex-col gap-3 overflow-hidden">

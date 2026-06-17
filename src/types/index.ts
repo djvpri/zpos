@@ -60,6 +60,20 @@ export interface Staff {
   created_at: string
 }
 
+export interface Shift {
+  id: number
+  kasir_nama: string
+  modal_awal: number
+  buka_at: string
+  tutup_at?: string | null
+  aktif: boolean
+  jumlah_transaksi?: number
+  total_penjualan?: number
+  total_tunai?: number
+  total_qris?: number
+  total_transfer?: number
+}
+
 export interface LaporanHarian {
   tanggal: string
   jumlah_transaksi: number
