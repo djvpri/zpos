@@ -34,3 +34,30 @@ export async function getTokoFromRequest(request: Request): Promise<TokenPayload
   if (!match) return null
   return verifyToken(decodeURIComponent(match[1]))
 }
+
+// ===== Super-admin (kredensial via env, terpisah dari sesi toko/user) =====
+
+export interface AdminPayload {
+  admin: true
+  email: string
+}
+
+export async function signAdminToken(email: string): Promise<string> {
+  return new SignJWT({ admin: true, email })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('7d')
+    .sign(secret)
+}
+
+export async function getAdminFromRequest(request: Request): Promise<AdminPayload | null> {
+  const cookieHeader = request.headers.get('cookie') ?? ''
+  const match = cookieHeader.match(/zpos_admin=([^;]+)/)
+  if (!match) return null
+  try {
+    const { payload } = await jwtVerify(decodeURIComponent(match[1]), secret)
+    if (payload.admin === true) return payload as unknown as AdminPayload
+    return null
+  } catch {
+    return null
+  }
+}
