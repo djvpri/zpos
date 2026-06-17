@@ -94,7 +94,7 @@ export default function LaporanPage() {
                 <div key={t.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                   <div>
                     <div className="text-xs font-mono text-gray-500">{t.no_transaksi}</div>
-                    <div className="text-xs text-gray-400">{t.created_at ? fmtDate(t.created_at) : ''} · {t.metode_bayar}</div>
+                    <div className="text-xs text-gray-400">{t.created_at ? fmtDate(t.created_at) : ''} · {t.metode_bayar}{t.kasir ? ` · ${t.kasir}` : ''}</div>
                   </div>
                   <div className="text-sm font-semibold text-gray-800">{fmt(t.total)}</div>
                 </div>

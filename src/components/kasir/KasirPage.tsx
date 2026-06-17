@@ -5,6 +5,7 @@ import { Search, ShoppingCart, X } from 'lucide-react'
 import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
 import { useKategori } from '@/hooks/useKategori'
+import { useAuth } from '@/hooks/useAuth'
 import { ProdukGrid } from '@/components/kasir/ProdukGrid'
 import { KeranjangPanel } from '@/components/kasir/KeranjangPanel'
 import { StrukModal } from '@/components/kasir/StrukModal'
@@ -15,6 +16,7 @@ export default function KasirPage() {
   const { produk, loading, kurangiStok, tambahStok } = useProduk()
   const { simpan } = useTransaksi()
   const { kategori } = useKategori()
+  const { toko } = useAuth()
 
   const [katId, setKatId] = useState<number | null>(null)
   const [cari, setCari] = useState('')
@@ -84,7 +86,7 @@ export default function KasirPage() {
       bayar: metode === 'Tunai' ? Number(bayar) : total,
       kembali: metode === 'Tunai' ? kembali : 0,
       metode_bayar: metode,
-      kasir: 'Kasir 1',
+      kasir: toko?.userName ?? '',
       items: items.map(it => ({
         produk_id: it.id,
         nama_produk: it.nama,

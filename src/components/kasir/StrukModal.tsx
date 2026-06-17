@@ -10,7 +10,7 @@ interface Props {
 
 export function StrukModal({ transaksi, onTutup }: Props) {
   if (!transaksi) return null
-  const { items, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, no_transaksi } = transaksi
+  const { items, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, no_transaksi, kasir } = transaksi
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -22,6 +22,7 @@ export function StrukModal({ transaksi, onTutup }: Props) {
           <div className="border-b border-dashed border-gray-300 my-3" />
           <div className="text-xs text-gray-400">{fmtDateTime()}</div>
           <div className="text-xs text-gray-400">No: {no_transaksi}</div>
+          {kasir && <div className="text-xs text-gray-400">Kasir: {kasir}</div>}
         </div>
 
         {/* Items */}
