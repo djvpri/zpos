@@ -21,3 +21,24 @@ html, body {
   background: #e0e0e0;
   border-radius: 4px;
 }
+
+/* Cetak struk: hanya area struk yang tampil */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .struk-area,
+  .struk-area * {
+    visibility: visible;
+  }
+  .struk-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
