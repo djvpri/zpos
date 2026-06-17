@@ -117,7 +117,12 @@ export default function ProdukPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <span className="text-xl">{p.emoji}</span>
-                        <span className="text-sm font-medium text-gray-800">{p.nama}</span>
+                        <div>
+                          <div className="text-sm font-medium text-gray-800">{p.nama}</div>
+                          {p.deskripsi && (
+                            <div className="text-xs text-gray-400 truncate max-w-[180px]">{p.deskripsi}</div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">

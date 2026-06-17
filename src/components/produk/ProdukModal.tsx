@@ -18,6 +18,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     harga: produk?.harga || '',
     stok: produk?.stok ?? '',
     emoji: produk?.emoji || '📦',
+    deskripsi: produk?.deskripsi || '',
     kategori_id: produk?.kategori_id || '',
   })
 
@@ -31,6 +32,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       harga: Number(form.harga),
       stok: Number(form.stok) || 0,
       emoji: form.emoji,
+      deskripsi: form.deskripsi.trim() || undefined,
       kategori_id: Number(form.kategori_id),
       aktif: true,
     })
@@ -40,7 +42,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-96 shadow-xl">
+      <div className="bg-white rounded-2xl p-6 w-96 shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-semibold text-base">{produk ? 'Edit Produk' : 'Tambah Produk'}</h3>
           <button onClick={onTutup} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
@@ -54,6 +56,20 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
           <div>
             <label className="text-xs text-gray-500">Nama Produk</label>
             <input className={inputCls} value={form.nama} onChange={e => set('nama', e.target.value)} placeholder="Nama produk" />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500">Deskripsi <span className="text-gray-300">(opsional)</span></label>
+            <textarea
+              className={`${inputCls} resize-none`}
+              rows={3}
+              value={form.deskripsi}
+              onChange={e => set('deskripsi', e.target.value)}
+              placeholder="Deskripsi singkat produk..."
+              maxLength={300}
+            />
+            {form.deskripsi && (
+              <div className="text-right text-[10px] text-gray-300 mt-0.5">{form.deskripsi.length}/300</div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
