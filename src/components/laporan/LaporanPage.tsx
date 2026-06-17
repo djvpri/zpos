@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi } from '@/types'
-import { TrendingUp, Receipt, ShoppingBag, Percent } from 'lucide-react'
+import { TrendingUp, Receipt, ShoppingBag, Percent, Ban } from 'lucide-react'
 
 export default function LaporanPage() {
   const [laporan, setLaporan] = useState<LaporanHarian[]>([])
@@ -11,19 +11,28 @@ export default function LaporanPage() {
   const [riwayat, setRiwayat] = useState<Transaksi[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const load = async () => {
-      const res = await fetch('/api/laporan')
-      if (res.ok) {
-        const { laporan, terlaris, riwayat } = await res.json()
-        setLaporan(laporan)
-        setTerlaris(terlaris)
-        setRiwayat(riwayat)
-      }
-      setLoading(false)
+  const load = useCallback(async () => {
+    const res = await fetch('/api/laporan')
+    if (res.ok) {
+      const { laporan, terlaris, riwayat } = await res.json()
+      setLaporan(laporan)
+      setTerlaris(terlaris)
+      setRiwayat(riwayat)
     }
-    load()
+    setLoading(false)
   }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const batalkan = async (id?: number) => {
+    if (!id || !confirm('Batalkan transaksi ini? Stok akan dikembalikan.')) return
+    const res = await fetch(`/api/transaksi/${id}`, { method: 'PATCH' })
+    if (res.ok) load()
+    else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error || 'Gagal membatalkan transaksi')
+    }
+  }
 
   const hari = laporan[0] || { total_penjualan: 0, jumlah_transaksi: 0, rata_rata: 0, total_diskon: 0 }
 
@@ -92,11 +101,27 @@ export default function LaporanPage() {
             <div className="space-y-3">
               {riwayat.map(t => (
                 <div key={t.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                  <div>
-                    <div className="text-xs font-mono text-gray-500">{t.no_transaksi}</div>
-                    <div className="text-xs text-gray-400">{t.created_at ? fmtDate(t.created_at) : ''} · {t.metode_bayar}{t.kasir ? ` · ${t.kasir}` : ''}</div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-mono text-gray-500 flex items-center gap-1.5">
+                      {t.no_transaksi}
+                      {t.dibatalkan && (
+                        <span className="text-[10px] bg-red-50 text-red-500 font-semibold px-1.5 py-0.5 rounded-full">Dibatalkan</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400 truncate">{t.created_at ? fmtDate(t.created_at) : ''} · {t.metode_bayar}{t.kasir ? ` · ${t.kasir}` : ''}</div>
                   </div>
-                  <div className="text-sm font-semibold text-gray-800">{fmt(t.total)}</div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className={`text-sm font-semibold ${t.dibatalkan ? 'text-gray-300 line-through' : 'text-gray-800'}`}>{fmt(t.total)}</div>
+                    {!t.dibatalkan && (
+                      <button
+                        onClick={() => batalkan(t.id)}
+                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Batalkan transaksi"
+                      >
+                        <Ban size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

@@ -16,7 +16,7 @@ export async function GET(req: Request) {
         round(avg(total)) AS rata_rata,
         sum(diskon) AS total_diskon
       FROM transaksi
-      WHERE toko_id = ${id}
+      WHERE toko_id = ${id} AND dibatalkan = false
       GROUP BY date_trunc('day', created_at)
       ORDER BY tanggal DESC
       LIMIT 7
@@ -27,6 +27,7 @@ export async function GET(req: Request) {
         coalesce(sum(dt.subtotal), 0) AS total_penjualan
       FROM produk p
       LEFT JOIN detail_transaksi dt ON dt.produk_id = p.id AND dt.toko_id = ${id}
+        AND dt.transaksi_id IN (SELECT id FROM transaksi WHERE toko_id = ${id} AND dibatalkan = false)
       WHERE p.toko_id = ${id}
       GROUP BY p.id, p.nama, p.emoji
       ORDER BY total_qty DESC

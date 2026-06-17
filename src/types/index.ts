@@ -33,6 +33,7 @@ export interface Transaksi {
   kembali: number
   metode_bayar: 'Tunai' | 'QRIS' | 'Transfer'
   kasir?: string
+  dibatalkan?: boolean
   created_at?: string
   items?: DetailTransaksi[]
 }
