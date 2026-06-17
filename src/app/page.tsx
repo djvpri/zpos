@@ -260,6 +260,8 @@ export default function LandingPage() {
           </div>
           <p className="text-xs text-gray-400 text-center">© 2026 ZPos. Dibuat dengan cinta untuk UMKM Indonesia.</p>
           <div className="flex gap-4 text-xs text-gray-400">
+            <Link href="/syarat" className="hover:text-gray-600 transition-colors">Syarat</Link>
+            <Link href="/privasi" className="hover:text-gray-600 transition-colors">Privasi</Link>
             <Link href="/login" className="hover:text-gray-600 transition-colors">Masuk</Link>
             <Link href="/register" className="hover:text-gray-600 transition-colors">Daftar</Link>
           </div>

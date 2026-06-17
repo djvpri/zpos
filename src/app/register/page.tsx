@@ -77,6 +77,11 @@ export default function RegisterPage() {
           >
             {loading ? 'Mendaftar...' : 'Daftar Gratis'}
           </button>
+          <p className="text-center text-xs text-gray-400 leading-relaxed">
+            Dengan mendaftar, Anda menyetujui{' '}
+            <Link href="/syarat" className="text-indigo-600 hover:underline">Syarat &amp; Ketentuan</Link>{' '}
+            dan <Link href="/privasi" className="text-indigo-600 hover:underline">Kebijakan Privasi</Link>.
+          </p>
         </form>
 
         <p className="text-center text-sm text-gray-400 mt-4">
