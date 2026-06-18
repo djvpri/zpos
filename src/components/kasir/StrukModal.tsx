@@ -32,7 +32,10 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
     baris.push(`No: ${no_transaksi}`)
     if (kasir) baris.push(`Kasir: ${kasir}`)
     baris.push('--------------------------------')
-    items?.forEach(it => baris.push(`${it.nama_produk} x${it.qty}\n  ${fmt(it.harga * it.qty)}`))
+    items?.forEach(it => {
+      baris.push(`${it.nama_produk} x${it.qty}`)
+      baris.push(`  ${fmt(it.harga * it.qty)}`)
+    })
     baris.push('--------------------------------')
     baris.push(`Subtotal: ${fmt(subtotal)}`)
     if (diskon > 0) baris.push(`Diskon: -${fmt(diskon)}`)
@@ -78,9 +81,9 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
           {/* Items */}
           <div className="border-b border-dashed border-gray-300 mb-3">
             {items?.map((it, i) => (
-              <div key={i} className="flex justify-between mb-1">
-                <span className="flex-1 truncate">{it.nama_produk} x{it.qty}</span>
-                <span className="ml-2 whitespace-nowrap">{fmt(it.harga * it.qty)}</span>
+              <div key={i} className="mb-1">
+                <div className="truncate">{it.nama_produk} x{it.qty}</div>
+                <div className="text-right whitespace-nowrap">{fmt(it.harga * it.qty)}</div>
               </div>
             ))}
           </div>
