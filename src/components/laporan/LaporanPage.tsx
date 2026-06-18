@@ -92,7 +92,7 @@ export default function LaporanPage() {
         loadingRingkasan
           ? <div className="flex items-center justify-center h-64 text-gray-400">Memuat laporan...</div>
           : <>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {cards.map(c => (
                   <div key={c.label} className="bg-white border border-gray-100 rounded-xl p-4">
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${colorMap[c.color]}`}>
@@ -104,7 +104,7 @@ export default function LaporanPage() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Produk terlaris */}
                 <div className="bg-white border border-gray-100 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-gray-700 mb-4">Produk Terlaris</h3>
@@ -194,46 +194,86 @@ export default function LaporanPage() {
           ? <div className="flex items-center justify-center h-64 text-gray-400">Memuat data shift...</div>
           : shifts.length === 0
             ? <div className="flex items-center justify-center h-64 text-gray-400">Belum ada shift tercatat</div>
-            : <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr className="text-xs text-gray-400">
-                      <th className="text-left px-4 py-3">Kasir</th>
-                      <th className="text-left px-4 py-3">Buka</th>
-                      <th className="text-left px-4 py-3">Tutup</th>
-                      <th className="text-right px-4 py-3">Trx</th>
-                      <th className="text-right px-4 py-3">Tunai</th>
-                      <th className="text-right px-4 py-3">Non-Tunai</th>
-                      <th className="text-right px-4 py-3">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {shifts.map(s => {
-                      const nonTunai = (s.total_qris || 0) + (s.total_transfer || 0)
-                      return (
-                        <tr key={s.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
-                          <td className="px-4 py-3 text-gray-700 font-medium">
-                            <div className="flex items-center gap-2">
-                              {s.aktif && (
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" title="Shift aktif" />
-                              )}
-                              {s.kasir_nama}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-gray-500 text-xs">{fmtDT(s.buka_at)}</td>
-                          <td className="px-4 py-3 text-gray-500 text-xs">
-                            {s.tutup_at ? fmtDT(s.tutup_at) : <span className="text-emerald-500">Aktif</span>}
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-500">{s.jumlah_transaksi ?? 0}x</td>
-                          <td className="px-4 py-3 text-right text-gray-700">{fmt(s.total_tunai || 0)}</td>
-                          <td className="px-4 py-3 text-right text-gray-700">{fmt(nonTunai)}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-gray-900">{fmt(s.total_penjualan || 0)}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            : <>
+                {/* Mobile: card list */}
+                <div className="md:hidden space-y-3">
+                  {shifts.map(s => {
+                    const nonTunai = (s.total_qris || 0) + (s.total_transfer || 0)
+                    return (
+                      <div key={s.id} className="bg-white border border-gray-100 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {s.aktif && <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />}
+                            <span className="font-medium text-gray-800">{s.kasir_nama}</span>
+                          </div>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.aktif ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
+                            {s.aktif ? 'Aktif' : 'Selesai'}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-400 space-y-0.5">
+                          <div>Buka: {fmtDT(s.buka_at)}</div>
+                          {s.tutup_at && <div>Tutup: {fmtDT(s.tutup_at)}</div>}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 pt-1 border-t border-gray-50 text-center">
+                          <div>
+                            <div className="text-xs text-gray-400">Tunai</div>
+                            <div className="text-sm font-medium text-gray-700">{fmt(s.total_tunai || 0)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-400">Non-Tunai</div>
+                            <div className="text-sm font-medium text-gray-700">{fmt(nonTunai)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-400">Total</div>
+                            <div className="text-sm font-semibold text-indigo-700">{fmt(s.total_penjualan || 0)}</div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400 text-center">{s.jumlah_transaksi ?? 0} transaksi</div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden md:block bg-white border border-gray-100 rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr className="text-xs text-gray-400">
+                        <th className="text-left px-4 py-3">Kasir</th>
+                        <th className="text-left px-4 py-3">Buka</th>
+                        <th className="text-left px-4 py-3">Tutup</th>
+                        <th className="text-right px-4 py-3">Trx</th>
+                        <th className="text-right px-4 py-3">Tunai</th>
+                        <th className="text-right px-4 py-3">Non-Tunai</th>
+                        <th className="text-right px-4 py-3">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shifts.map(s => {
+                        const nonTunai = (s.total_qris || 0) + (s.total_transfer || 0)
+                        return (
+                          <tr key={s.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
+                            <td className="px-4 py-3 text-gray-700 font-medium">
+                              <div className="flex items-center gap-2">
+                                {s.aktif && <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />}
+                                {s.kasir_nama}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 text-xs">{fmtDT(s.buka_at)}</td>
+                            <td className="px-4 py-3 text-gray-500 text-xs">
+                              {s.tutup_at ? fmtDT(s.tutup_at) : <span className="text-emerald-500">Aktif</span>}
+                            </td>
+                            <td className="px-4 py-3 text-right text-gray-500">{s.jumlah_transaksi ?? 0}x</td>
+                            <td className="px-4 py-3 text-right text-gray-700">{fmt(s.total_tunai || 0)}</td>
+                            <td className="px-4 py-3 text-right text-gray-700">{fmt(nonTunai)}</td>
+                            <td className="px-4 py-3 text-right font-semibold text-gray-900">{fmt(s.total_penjualan || 0)}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
       )}
     </div>
   )
