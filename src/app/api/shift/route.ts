@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   const rows = await withTotals(toko.tokoId)
   const filtered = toko.role === 'owner'
     ? rows
-    : rows.filter((s: { kasir_nama: string }) => s.kasir_nama === toko.userName)
+    : rows.filter((s: any) => s.kasir_nama === toko.userName)
 
   return NextResponse.json(filtered)
 }
