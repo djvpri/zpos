@@ -67,9 +67,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'updatePlan') {
-      const tenantId = data?.tenantId
+      const tenantId = Number(data?.tenantId)
       const plan = String(data?.plan || 'starter')
-      if (!tenantId) return Response.json({ error: 'tenantId wajib diisi' }, { status: 400 })
+      if (!tenantId || Number.isNaN(tenantId)) return Response.json({ error: 'tenantId wajib diisi' }, { status: 400 })
       const expiresAt = data?.planExpires ? new Date(data.planExpires) : null
       if (expiresAt) {
         await sql`UPDATE toko SET plan = ${plan}, langganan_sampai = ${expiresAt} WHERE id = ${tenantId}`
@@ -80,8 +80,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'deleteTenant') {
-      const tenantId = data?.tenantId
-      if (!tenantId) return Response.json({ error: 'tenantId wajib diisi' }, { status: 400 })
+      const tenantId = Number(data?.tenantId)
+      if (!tenantId || Number.isNaN(tenantId)) return Response.json({ error: 'tenantId wajib diisi' }, { status: 400 })
       await sql`DELETE FROM toko WHERE id = ${tenantId}`
       return Response.json({ success: true })
     }
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       const name = String(data?.name || '').trim()
       const userEmail = String(data?.email || '').trim()
       const password = String(data?.password || '')
-      let tenantId = data?.tenantId
+      let tenantId = data?.tenantId ? Number(data.tenantId) : null
       if (!name || !userEmail || !password) {
         return Response.json({ error: 'name, email, password wajib diisi' }, { status: 400 })
       }
