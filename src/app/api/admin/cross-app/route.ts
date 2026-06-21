@@ -124,6 +124,13 @@ export async function POST(req: NextRequest) {
       return Response.json({ success: true, deactivated: true })
     }
 
+    if (action === 'reactivate') {
+      if (!email) return Response.json({ error: 'email wajib diisi' }, { status: 400 })
+      const result = await sql`UPDATE "user" SET aktif = true WHERE email = ${email} RETURNING id`
+      if (!result.length) return Response.json({ error: 'User tidak ditemukan' }, { status: 404 })
+      return Response.json({ success: true, reactivated: true })
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 })
   } catch (err) {
     console.error('cross-app POST error:', err)
