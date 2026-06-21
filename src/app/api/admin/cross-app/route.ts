@@ -112,10 +112,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'delete') {
+      // Soft-delete: nonaktifkan akun, BUKAN hapus baris dari database.
+      // User yang pernah buka shift kasir punya relasi FK ke tabel shift
+      // (TANPA ON DELETE CASCADE, demi keutuhan riwayat transaksi/shift),
+      // jadi hapus permanen akan selalu gagal untuk user yang pernah login kasir.
+      // Nonaktifkan: user tidak bisa login lagi (lib/auth login cek aktif=true),
+      // tapi histori transaksi & shift tetap aman.
       if (!email) return Response.json({ error: 'email wajib diisi' }, { status: 400 })
-      const result = await sql`DELETE FROM "user" WHERE email = ${email} RETURNING id`
+      const result = await sql`UPDATE "user" SET aktif = false WHERE email = ${email} RETURNING id`
       if (!result.length) return Response.json({ error: 'User tidak ditemukan' }, { status: 404 })
-      return Response.json({ success: true })
+      return Response.json({ success: true, deactivated: true })
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 })
