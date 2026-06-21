@@ -80,10 +80,23 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'deleteTenant') {
+      // Soft-delete: nonaktifkan toko, BUKAN hapus baris. Hapus permanen akan
+      // gagal (FK violation) kalau ada user di toko ini yang pernah buka shift,
+      // karena shift.user_id tidak cascade. Nonaktifkan toko = semua user di
+      // dalamnya otomatis tidak bisa login (login route cek t.aktif = true).
       const tenantId = Number(data?.tenantId)
       if (!tenantId || Number.isNaN(tenantId)) return Response.json({ error: 'tenantId wajib diisi' }, { status: 400 })
-      await sql`DELETE FROM toko WHERE id = ${tenantId}`
-      return Response.json({ success: true })
+      const result = await sql`UPDATE toko SET aktif = false WHERE id = ${tenantId} RETURNING id`
+      if (!result.length) return Response.json({ error: 'Tenant tidak ditemukan' }, { status: 404 })
+      return Response.json({ success: true, deactivated: true })
+    }
+
+    if (action === 'reactivateTenant') {
+      const tenantId = Number(data?.tenantId)
+      if (!tenantId || Number.isNaN(tenantId)) return Response.json({ error: 'tenantId wajib diisi' }, { status: 400 })
+      const result = await sql`UPDATE toko SET aktif = true WHERE id = ${tenantId} RETURNING id`
+      if (!result.length) return Response.json({ error: 'Tenant tidak ditemukan' }, { status: 404 })
+      return Response.json({ success: true, reactivated: true })
     }
 
     if (action === 'create') {
