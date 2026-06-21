@@ -80,14 +80,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'deleteTenant') {
-      // Soft-delete: nonaktifkan toko, BUKAN hapus baris. Hapus permanen akan
-      // gagal (FK violation) kalau ada user di toko ini yang pernah buka shift,
-      // karena shift.user_id tidak cascade. Nonaktifkan toko = semua user di
-      // dalamnya otomatis tidak bisa login (login route cek t.aktif = true).
+      // Soft-delete: nonaktifkan toko + semua usernya, BUKAN hapus baris. Hapus
+      // permanen akan gagal (FK violation) kalau ada user di toko ini yang
+      // pernah buka shift, karena shift.user_id tidak cascade. Login ZPOS
+      // sudah cek t.aktif = true juga, tapi user-nya ikut ditandai nonaktif
+      // di sini biar tampilan di /manage konsisten (bukan cuma keblokir login).
       const tenantId = Number(data?.tenantId)
       if (!tenantId || Number.isNaN(tenantId)) return Response.json({ error: 'tenantId wajib diisi' }, { status: 400 })
       const result = await sql`UPDATE toko SET aktif = false WHERE id = ${tenantId} RETURNING id`
       if (!result.length) return Response.json({ error: 'Tenant tidak ditemukan' }, { status: 404 })
+      await sql`UPDATE "user" SET aktif = false WHERE toko_id = ${tenantId}`
       return Response.json({ success: true, deactivated: true })
     }
 
@@ -96,6 +98,7 @@ export async function POST(req: NextRequest) {
       if (!tenantId || Number.isNaN(tenantId)) return Response.json({ error: 'tenantId wajib diisi' }, { status: 400 })
       const result = await sql`UPDATE toko SET aktif = true WHERE id = ${tenantId} RETURNING id`
       if (!result.length) return Response.json({ error: 'Tenant tidak ditemukan' }, { status: 404 })
+      await sql`UPDATE "user" SET aktif = true WHERE toko_id = ${tenantId}`
       return Response.json({ success: true, reactivated: true })
     }
 
