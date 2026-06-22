@@ -30,8 +30,6 @@ jobs:
       run: |
         echo "TEST_USER_EMAIL=${{ secrets.TEST_USER_EMAIL }}" >> .env.test.local
         echo "TEST_USER_PASSWORD=${{ secrets.TEST_USER_PASSWORD }}" >> .env.test.local
-        echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> .env.test.local
-        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> .env.test.local
     
     - name: Run Playwright tests
       run: npx playwright test
