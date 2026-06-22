@@ -42,11 +42,12 @@ export default function LoginPage() {
 
         <form onSubmit={submit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm px-3 py-2.5 rounded-xl">{error}</div>
+            <div data-testid="login-error" className="bg-red-50 text-red-600 text-sm px-3 py-2.5 rounded-xl">{error}</div>
           )}
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1.5">Email</label>
             <input
+              data-testid="email-input"
               type="email" required
               value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition-colors"
@@ -56,6 +57,7 @@ export default function LoginPage() {
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1.5">Password</label>
             <input
+              data-testid="password-input"
               type="password" required
               value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition-colors"
@@ -63,6 +65,7 @@ export default function LoginPage() {
             />
           </div>
           <button
+            data-testid="login-submit"
             type="submit" disabled={loading}
             className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-colors disabled:opacity-60"
           >

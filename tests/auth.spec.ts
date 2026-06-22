@@ -5,34 +5,33 @@ test.describe('Authentication', () => {
     await page.goto('/');
     
     // Check login form elements
-    await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('input[type="password"]')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toBeVisible();
+    await expect(page.getByTestId('email-input')).toBeVisible();
+    await expect(page.getByTestId('password-input')).toBeVisible();
+    await expect(page.getByTestId('login-submit')).toBeVisible();
   });
 
   test('should show error on invalid credentials', async ({ page }) => {
     await page.goto('/');
     
-    await page.fill('input[type="email"]', 'invalid@example.com');
-    await page.fill('input[type="password"]', 'wrongpassword');
-    await page.click('button[type="submit"]');
+    await page.getByTestId('email-input').fill('invalid@example.com');
+    await page.getByTestId('password-input').fill('wrongpassword');
+    await page.getByTestId('login-submit').click();
     
     // Wait for error message
-    await expect(page.locator('text=/error|gagal|salah/i')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('login-error')).toBeVisible({ timeout: 5000 });
   });
 
   test('should login with valid credentials', async ({ page }) => {
     await page.goto('/');
     
-    // TODO: Replace with actual test credentials
     const email = process.env.TEST_USER_EMAIL || 'admin@test.com';
     const password = process.env.TEST_USER_PASSWORD || 'admin123';
     
-    await page.fill('input[type="email"]', email);
-    await page.fill('input[type="password"]', password);
-    await page.click('button[type="submit"]');
+    await page.getByTestId('email-input').fill(email);
+    await page.getByTestId('password-input').fill(password);
+    await page.getByTestId('login-submit').click();
     
-    // Should redirect to dashboard/kasir
-    await expect(page).toHaveURL(/\/(dashboard|kasir)/);
+    // Should redirect to app (dashboard/kasir)
+    await expect(page).toHaveURL(/\/app/);
   });
 });

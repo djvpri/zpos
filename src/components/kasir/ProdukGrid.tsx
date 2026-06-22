@@ -27,6 +27,7 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
           {produk.map(p => (
             <button
               key={p.id}
+              data-testid="product-item"
               onClick={() => onTambah(p)}
               disabled={p.stok === 0}
               className={`flex flex-col items-center text-center p-4 rounded-2xl border transition-all ${

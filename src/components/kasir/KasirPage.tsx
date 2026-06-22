@@ -200,7 +200,7 @@ export default function KasirPage() {
           className="md:hidden fixed bottom-20 right-4 z-40 bg-indigo-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg active:scale-95 transition-transform">
           <ShoppingCart size={22} />
           {totalItem > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+            <span data-testid="cart-count" className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
               {totalItem}
             </span>
           )}

@@ -17,22 +17,23 @@ test.describe('Kasir/POS', () => {
   });
 
   test('should navigate to kasir page', async ({ page }) => {
-    await page.goto('/kasir');
+    await page.goto('/app');
     
-    // Check kasir elements
-    await expect(page.locator('text=/keranjang|cart/i')).toBeVisible();
-    await expect(page.locator('text=/produk|product/i')).toBeVisible();
+    // Check kasir elements (default page after login)
+    await expect(page.getByTestId('product-item').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('should add product to cart', async ({ page }) => {
-    await page.goto('/kasir');
+    await page.goto('/app');
     
-    // Click first product (adjust selector based on actual HTML)
-    const firstProduct = page.locator('[data-testid="product-item"]').first();
+    // Wait for products to load then click first product
+    const firstProduct = page.getByTestId('product-item').first();
+    await expect(firstProduct).toBeVisible({ timeout: 10000 });
     await firstProduct.click();
     
-    // Check if cart has items
-    const cartCount = page.locator('[data-testid="cart-count"]');
+    // Check if cart has items (mobile floating cart badge)
+    const cartCount = page.getByTestId('cart-count');
+    await expect(cartCount).toBeVisible();
     await expect(cartCount).toHaveText('1');
   });
 

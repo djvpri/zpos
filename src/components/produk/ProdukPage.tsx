@@ -75,6 +75,7 @@ export default function ProdukPage() {
 
         {tab === 'produk' && (
           <button
+            data-testid="add-product-btn"
             onClick={() => setModal('tambah')}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-700 text-white rounded-lg text-sm font-medium hover:bg-indigo-800 transition-colors"
           >
@@ -144,11 +145,15 @@ export default function ProdukPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        <button onClick={() => setModal(p)}
+                        <button
+                          data-testid="edit-product"
+                          onClick={() => setModal(p)}
                           className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors">
                           <Edit2 size={12} /> Edit
                         </button>
-                        <button onClick={() => onHapusProduk(p.id)}
+                        <button
+                          data-testid="delete-product"
+                          onClick={() => onHapusProduk(p.id)}
                           className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition-colors">
                           <Trash2 size={12} /> Hapus
                         </button>

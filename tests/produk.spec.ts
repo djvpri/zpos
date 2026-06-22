@@ -16,10 +16,13 @@ test.describe('Produk Management', () => {
   });
 
   test('should navigate to produk page', async ({ page }) => {
-    await page.goto('/produk');
+    await page.goto('/app');
     
-    await expect(page.locator('text=/produk|product/i')).toBeVisible();
-    await expect(page.locator('text=/tambah|add/i')).toBeVisible();
+    // Click Produk tab in sidebar
+    await page.getByRole('button', { name: /produk/i }).click();
+    
+    // Check add product button exists
+    await expect(page.getByTestId('add-product-btn')).toBeVisible();
   });
 
   test('should create new product', async ({ page }) => {
