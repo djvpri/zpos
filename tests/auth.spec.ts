@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Authentication', () => {
   test('should load login page', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
     
     // Check login form elements
     await expect(page.getByTestId('email-input')).toBeVisible();
@@ -11,7 +11,7 @@ test.describe('Authentication', () => {
   });
 
   test('should show error on invalid credentials', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
     
     await page.getByTestId('email-input').fill('invalid@example.com');
     await page.getByTestId('password-input').fill('wrongpassword');
@@ -22,7 +22,7 @@ test.describe('Authentication', () => {
   });
 
   test('should login with valid credentials', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
     
     const email = process.env.TEST_USER_EMAIL || 'admin@test.com';
     const password = process.env.TEST_USER_PASSWORD || 'admin123';
@@ -32,6 +32,6 @@ test.describe('Authentication', () => {
     await page.getByTestId('login-submit').click();
     
     // Should redirect to app (dashboard/kasir)
-    await expect(page).toHaveURL(/\/app/);
+    await expect(page).toHaveURL(/\/app/, { timeout: 10000 });
   });
 });

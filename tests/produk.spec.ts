@@ -3,16 +3,16 @@ import { test, expect } from '@playwright/test';
 test.describe('Produk Management', () => {
   test.beforeEach(async ({ page }) => {
     // Login
-    await page.goto('/');
+    await page.goto('/login');
     
     const email = process.env.TEST_USER_EMAIL || 'admin@test.com';
     const password = process.env.TEST_USER_PASSWORD || 'admin123';
     
-    await page.fill('input[type="email"]', email);
-    await page.fill('input[type="password"]', password);
-    await page.click('button[type="submit"]');
+    await page.getByTestId('email-input').fill(email);
+    await page.getByTestId('password-input').fill(password);
+    await page.getByTestId('login-submit').click();
     
-    await page.waitForURL(/\/(dashboard|kasir)/);
+    await page.waitForURL(/\/app/, { timeout: 10000 });
   });
 
   test('should navigate to produk page', async ({ page }) => {
