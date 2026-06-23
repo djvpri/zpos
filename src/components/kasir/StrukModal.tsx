@@ -1,9 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { Transaksi } from '@/types'
 import { fmt, fmtDateTime } from '@/lib/utils'
 import { Printer, Share2, Bluetooth } from 'lucide-react'
-import { buildEscPos, printViaRawBT, isAndroid, StrukData } from '@/lib/thermal-print'
+import { buildEscPos, printViaBluetooth, isBluetoothSupported, PrintStatus, StrukData } from '@/lib/thermal-print'
 
 interface TokoInfo {
   nama: string
@@ -22,6 +23,8 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
   if (!transaksi) return null
   const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir } = transaksi
   const waktu = fmtDateTime()
+  const [btStatus, setBtStatus] = useState<PrintStatus>('idle')
+  const [btMsg, setBtMsg] = useState('')
 
   const teksStruk = () => {
     const baris: string[] = []
@@ -51,7 +54,7 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
 
   const cetak = () => window.print()
 
-  const cetakThermal = () => {
+  const cetakBluetooth = async () => {
     const data: StrukData = {
       namaToko: toko?.nama || 'Toko',
       alamat: toko?.alamat,
@@ -75,16 +78,17 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
       catatan: toko?.catatan_struk,
     }
     const escPos = buildEscPos(data)
-    const ok = printViaRawBT(escPos)
-    if (!ok) alert('Gagal membuka RawBT. Pastikan RawBT sudah terinstall di HP.')
+    await printViaBluetooth(escPos, (status, msg) => {
+      setBtStatus(status)
+      setBtMsg(msg || '')
+    })
   }
 
   const bagikan = async () => {
     const text = teksStruk()
     if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({ title: `Struk ${no_transaksi}`, text })
-      } catch { /* dibatalkan user */ }
+      try { await navigator.share({ title: `Struk ${no_transaksi}`, text }) }
+      catch { /* dibatalkan user */ }
     } else {
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
     }
@@ -154,11 +158,24 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
 
         {/* Aksi */}
         <div className="no-print px-6 pb-6 pt-2 space-y-2">
-          {/* Tombol thermal printer (hanya tampil di Android) */}
-          {isAndroid() && (
-            <button onClick={cetakThermal} className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-              <Bluetooth size={15} /> Cetak Thermal (RawBT)
+          {/* Tombol Bluetooth — tampil kalau browser support Web Bluetooth */}
+          {isBluetoothSupported() && (
+            <button
+              onClick={cetakBluetooth}
+              disabled={btStatus === 'connecting' || btStatus === 'printing'}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-60">
+              <Bluetooth size={15} />
+              {btStatus === 'connecting' ? 'Menghubungkan...' :
+               btStatus === 'printing' ? 'Mencetak...' :
+               btStatus === 'done' ? '✓ Berhasil Dicetak!' :
+               '🖨️ Cetak Bluetooth'}
             </button>
+          )}
+          {/* Pesan status Bluetooth */}
+          {btMsg && (
+            <p className={`text-xs text-center ${btStatus === 'error' ? 'text-red-500' : btStatus === 'done' ? 'text-green-600' : 'text-gray-500'}`}>
+              {btMsg}
+            </p>
           )}
           <div className="grid grid-cols-2 gap-2">
             <button onClick={cetak} className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">

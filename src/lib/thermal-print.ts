@@ -129,37 +129,114 @@ export function buildEscPos(s: StrukData): string {
 }
 
 /**
- * Print via RawBT menggunakan Android Intent URL.
- * RawBT harus sudah terinstall dan printer sudah di-pair via Bluetooth.
+ * Print langsung via Web Bluetooth API — tidak butuh app tambahan.
+ * RPP02N support BLE, jadi bisa connect langsung dari Chrome Android.
  * 
- * Cara setup:
- * 1. Install RawBT dari Play Store
- * 2. Buka RawBT → Settings → pilih printer RPP02N
- * 3. Print dari ZPOS → otomatis terbuka RawBT → print ke printer
+ * UUID service printer thermal BLE umumnya pakai Nordic UART Service (NUS):
+ * Service:  6E400001-B5A3-F393-E0A9-E50E24DCCA9E
+ * TX Char:  6E400002-B5A3-F393-E0A9-E50E24DCCA9E (write)
+ * RX Char:  6E400003-B5A3-F393-E0A9-E50E24DCCA9E (notify)
  */
-export function printViaRawBT(escPosData: string): boolean {
-  try {
-    // Encode ESC/POS ke base64 menggunakan cara yang aman untuk binary
-    const bytes = new Uint8Array(escPosData.length)
-    for (let i = 0; i < escPosData.length; i++) {
-      bytes[i] = escPosData.charCodeAt(i) & 0xFF
-    }
-    const b64 = btoa(String.fromCharCode(...bytes))
 
-    // RawBT Intent URL — buka RawBT dengan data print
-    const intentUrl = `intent://rawbt?base64=${b64}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end`
-    window.location.href = intentUrl
+const BLE_SERVICE     = '6e400001-b5a3-f393-e0a9-e50e24dcca9e' // Nordic UART
+const BLE_TX_CHAR     = '6e400002-b5a3-f393-e0a9-e50e24dcca9e' // Write to printer
+
+// Chunk size — BLE max MTU biasanya 20 bytes, kirim per chunk
+const CHUNK_SIZE = 20
+
+async function sleep(ms: number) {
+  return new Promise(r => setTimeout(r, ms))
+}
+
+export type PrintStatus = 'idle' | 'connecting' | 'printing' | 'done' | 'error'
+
+export async function printViaBluetooth(
+  escPosData: string,
+  onStatus?: (s: PrintStatus, msg?: string) => void
+): Promise<boolean> {
+  const set = (s: PrintStatus, msg?: string) => onStatus?.(s, msg)
+
+  if (!navigator.bluetooth) {
+    set('error', 'Web Bluetooth tidak didukung browser ini. Gunakan Chrome.')
+    return false
+  }
+
+  try {
+    set('connecting', 'Memilih printer...')
+
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [
+        { name: 'RPP02N' },
+        { namePrefix: 'RPP' },
+        { namePrefix: 'MTP' },
+        { namePrefix: 'Thermal' },
+        { namePrefix: 'Printer' },
+      ],
+      optionalServices: [
+        BLE_SERVICE,
+        '000018f0-0000-1000-8000-00805f9b34fb', // beberapa printer pakai UUID ini
+        '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Microchip BM70
+      ],
+    })
+
+    set('connecting', `Menghubungkan ke ${device.name}...`)
+    const server = await device.gatt!.connect()
+
+    // Coba Nordic UART dulu
+    let characteristic: BluetoothRemoteGATTCharacteristic | null = null
+    try {
+      const service = await server.getPrimaryService(BLE_SERVICE)
+      characteristic = await service.getCharacteristic(BLE_TX_CHAR)
+    } catch {
+      // Coba UUID alternatif
+      try {
+        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb')
+        const chars = await service.getCharacteristics()
+        characteristic = chars.find(c => c.properties.write || c.properties.writeWithoutResponse) || null
+      } catch {
+        set('error', 'Printer tidak mendukung BLE print. Coba RawBT.')
+        server.disconnect()
+        return false
+      }
+    }
+
+    if (!characteristic) {
+      set('error', 'Characteristic write tidak ditemukan di printer.')
+      server.disconnect()
+      return false
+    }
+
+    set('printing', 'Mengirim data ke printer...')
+
+    // Konversi string ESC/POS ke bytes
+    const encoder = new TextEncoder()
+    const data = encoder.encode(escPosData)
+
+    // Kirim per chunk
+    for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+      const chunk = data.slice(i, i + CHUNK_SIZE)
+      if (characteristic.properties.writeWithoutResponse) {
+        await characteristic.writeValueWithoutResponse(chunk)
+      } else {
+        await characteristic.writeValue(chunk)
+      }
+      await sleep(20) // jeda kecil antar chunk
+    }
+
+    set('done', 'Struk berhasil dicetak!')
+    await sleep(500)
+    server.disconnect()
     return true
-  } catch (err) {
-    console.error('RawBT print error:', err)
+  } catch (err: any) {
+    if (err.name === 'NotFoundError' || err.message?.includes('cancelled')) {
+      set('idle') // user cancel pilih printer
+    } else {
+      set('error', `Gagal print: ${err.message || err}`)
+    }
     return false
   }
 }
 
-/**
- * Cek apakah device kemungkinan Android (untuk tampilkan tombol RawBT)
- */
-export function isAndroid(): boolean {
-  if (typeof navigator === 'undefined') return false
-  return /android/i.test(navigator.userAgent)
+export function isBluetoothSupported(): boolean {
+  return typeof navigator !== 'undefined' && !!navigator.bluetooth
 }
