@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Transaksi } from '@/types'
 import { fmt, fmtDateTime } from '@/lib/utils'
 import { Printer, Share2, Bluetooth } from 'lucide-react'
-import { buildEscPos, printViaBluetooth, isBluetoothSupported, PrintStatus, StrukData } from '@/lib/thermal-print'
+import { buildEscPos, printViaBluetooth, isBluetoothSupported, selectPrinter, getSavedPrinterName, PrintStatus, StrukData } from '@/lib/thermal-print'
 
 interface TokoInfo {
   nama: string
@@ -25,6 +25,12 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
   const waktu = fmtDateTime()
   const [btStatus, setBtStatus] = useState<PrintStatus>('idle')
   const [btMsg, setBtMsg] = useState('')
+  const [savedPrinter, setSavedPrinter] = useState<string | null>(null)
+
+  // Cek printer tersimpan saat modal dibuka
+  useState(() => {
+    getSavedPrinterName().then(name => setSavedPrinter(name))
+  })
 
   const teksStruk = () => {
     const baris: string[] = []
@@ -160,16 +166,32 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
         <div className="no-print px-6 pb-6 pt-2 space-y-2">
           {/* Tombol Bluetooth — tampil kalau browser support Web Bluetooth */}
           {isBluetoothSupported() && (
-            <button
-              onClick={cetakBluetooth}
-              disabled={btStatus === 'connecting' || btStatus === 'printing'}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-60">
-              <Bluetooth size={15} />
-              {btStatus === 'connecting' ? 'Menghubungkan...' :
-               btStatus === 'printing' ? 'Mencetak...' :
-               btStatus === 'done' ? '✓ Berhasil Dicetak!' :
-               '🖨️ Cetak Bluetooth'}
-            </button>
+            <div className="space-y-1">
+              <button
+                onClick={cetakBluetooth}
+                disabled={btStatus === 'connecting' || btStatus === 'printing'}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-60">
+                <Bluetooth size={15} />
+                {btStatus === 'connecting' ? 'Menghubungkan...' :
+                 btStatus === 'printing' ? 'Mencetak...' :
+                 btStatus === 'done' ? '✓ Berhasil Dicetak!' :
+                 savedPrinter ? `Cetak ke ${savedPrinter}` : '🖨️ Cetak Bluetooth'}
+              </button>
+              <div className="flex items-center justify-between px-1">
+                {savedPrinter
+                  ? <span className="text-[10px] text-slate-400">🔵 Printer: {savedPrinter}</span>
+                  : <span className="text-[10px] text-slate-400">Belum ada printer tersimpan</span>
+                }
+                <button
+                  onClick={async () => {
+                    const name = await selectPrinter()
+                    if (name) setSavedPrinter(name)
+                  }}
+                  className="text-[10px] text-blue-500 underline">
+                  Ganti Printer
+                </button>
+              </div>
+            </div>
           )}
           {/* Pesan status Bluetooth */}
           {btMsg && (

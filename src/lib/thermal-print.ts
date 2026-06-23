@@ -162,22 +162,41 @@ export async function printViaBluetooth(
   }
 
   try {
-    set('connecting', 'Memilih printer...')
+    let device: BluetoothDevice | null = null
 
-    const device = await navigator.bluetooth.requestDevice({
-      filters: [
-        { name: 'RPP02N' },
-        { namePrefix: 'RPP' },
-        { namePrefix: 'MTP' },
-        { namePrefix: 'Thermal' },
-        { namePrefix: 'Printer' },
-      ],
-      optionalServices: [
-        BLE_SERVICE,
-        '000018f0-0000-1000-8000-00805f9b34fb', // beberapa printer pakai UUID ini
-        '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Microchip BM70
-      ],
-    })
+    // Coba pakai printer yang sudah pernah dipilih sebelumnya (tanpa popup)
+    try {
+      const permitted = await navigator.bluetooth.getDevices()
+      const saved = permitted.find(d =>
+        d.name?.startsWith('RPP') || d.name?.startsWith('MTP') ||
+        d.name?.startsWith('Thermal') || d.name?.startsWith('Printer')
+      )
+      if (saved) {
+        set('connecting', `Menghubungkan ke ${saved.name}...`)
+        device = saved
+      }
+    } catch {
+      // getDevices() tidak didukung semua versi Chrome — fallback ke requestDevice
+    }
+
+    // Kalau belum ada printer tersimpan, tampilkan popup pilih printer
+    if (!device) {
+      set('connecting', 'Pilih printer Bluetooth...')
+      device = await navigator.bluetooth.requestDevice({
+        filters: [
+          { name: 'RPP02N' },
+          { namePrefix: 'RPP' },
+          { namePrefix: 'MTP' },
+          { namePrefix: 'Thermal' },
+          { namePrefix: 'Printer' },
+        ],
+        optionalServices: [
+          BLE_SERVICE,
+          '000018f0-0000-1000-8000-00805f9b34fb',
+          '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+        ],
+      })
+    }
 
     set('connecting', `Menghubungkan ke ${device.name}...`)
     const server = await device.gatt!.connect()
@@ -188,13 +207,12 @@ export async function printViaBluetooth(
       const service = await server.getPrimaryService(BLE_SERVICE)
       characteristic = await service.getCharacteristic(BLE_TX_CHAR)
     } catch {
-      // Coba UUID alternatif
       try {
         const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb')
         const chars = await service.getCharacteristics()
-        characteristic = chars.find(c => c.properties.write || c.properties.writeWithoutResponse) || null
+        characteristic = chars.find((c: BluetoothRemoteGATTCharacteristic) => c.properties.write || c.properties.writeWithoutResponse) || null
       } catch {
-        set('error', 'Printer tidak mendukung BLE print. Coba RawBT.')
+        set('error', 'Printer tidak mendukung BLE print.')
         server.disconnect()
         return false
       }
@@ -208,11 +226,9 @@ export async function printViaBluetooth(
 
     set('printing', 'Mengirim data ke printer...')
 
-    // Konversi string ESC/POS ke bytes
     const encoder = new TextEncoder()
     const data = encoder.encode(escPosData)
 
-    // Kirim per chunk
     for (let i = 0; i < data.length; i += CHUNK_SIZE) {
       const chunk = data.slice(i, i + CHUNK_SIZE)
       if (characteristic.properties.writeWithoutResponse) {
@@ -220,7 +236,7 @@ export async function printViaBluetooth(
       } else {
         await characteristic.writeValue(chunk)
       }
-      await sleep(20) // jeda kecil antar chunk
+      await sleep(20)
     }
 
     set('done', 'Struk berhasil dicetak!')
@@ -229,11 +245,51 @@ export async function printViaBluetooth(
     return true
   } catch (err: any) {
     if (err.name === 'NotFoundError' || err.message?.includes('cancelled')) {
-      set('idle') // user cancel pilih printer
+      set('idle')
     } else {
       set('error', `Gagal print: ${err.message || err}`)
     }
     return false
+  }
+}
+
+/**
+ * Tampilkan popup pilih printer — untuk ganti printer atau pertama kali setup.
+ * Setelah dipilih, browser akan ingat printer itu untuk sesi berikutnya.
+ */
+export async function selectPrinter(): Promise<string | null> {
+  if (!navigator.bluetooth) return null
+  try {
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [
+        { name: 'RPP02N' },
+        { namePrefix: 'RPP' },
+        { namePrefix: 'MTP' },
+        { namePrefix: 'Thermal' },
+        { namePrefix: 'Printer' },
+      ],
+      optionalServices: [BLE_SERVICE, '000018f0-0000-1000-8000-00805f9b34fb'],
+    })
+    return device.name || 'Printer'
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Cek apakah sudah ada printer yang disimpan sebelumnya
+ */
+export async function getSavedPrinterName(): Promise<string | null> {
+  if (!navigator.bluetooth) return null
+  try {
+    const devices = await navigator.bluetooth.getDevices()
+    const saved = devices.find(d =>
+      d.name?.startsWith('RPP') || d.name?.startsWith('MTP') ||
+      d.name?.startsWith('Thermal') || d.name?.startsWith('Printer')
+    )
+    return saved?.name || null
+  } catch {
+    return null
   }
 }
 
