@@ -119,7 +119,7 @@ export function buildEscPos(s: StrukData): string {
   cmd += line()
   cmd += ALIGN_CENTER
   if (s.catatan) cmd += s.catatan + LF
-  cmd += '★ Terima kasih ★' + LF
+  cmd += '* Terima kasih *' + LF
   cmd += 'Powered by ZPOS' + LF
   cmd += LF + LF + LF
 
