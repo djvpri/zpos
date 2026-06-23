@@ -140,6 +140,17 @@ export async function POST(req: NextRequest) {
       return Response.json({ success: true, deactivated: true })
     }
 
+    if (action === 'moveTenant') {
+      const userId = data?.userId
+      const tenantId = Number(data?.tenantId)
+      if (!userId || !tenantId || Number.isNaN(tenantId)) {
+        return Response.json({ error: 'userId dan tenantId wajib diisi' }, { status: 400 })
+      }
+      const result = await sql`UPDATE "user" SET toko_id = ${tenantId} WHERE id = ${Number(userId)} RETURNING id`
+      if (!result.length) return Response.json({ error: 'User tidak ditemukan' }, { status: 404 })
+      return Response.json({ success: true })
+    }
+
     if (action === 'reactivate') {
       if (!email) return Response.json({ error: 'email wajib diisi' }, { status: 400 })
       const result = await sql`UPDATE "user" SET aktif = true WHERE email = ${email} RETURNING id`
