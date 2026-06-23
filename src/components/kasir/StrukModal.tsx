@@ -2,7 +2,8 @@
 
 import { Transaksi } from '@/types'
 import { fmt, fmtDateTime } from '@/lib/utils'
-import { Printer, Share2 } from 'lucide-react'
+import { Printer, Share2, Bluetooth } from 'lucide-react'
+import { buildEscPos, printViaRawBT, isAndroid, StrukData } from '@/lib/thermal-print'
 
 interface TokoInfo {
   nama: string
@@ -49,6 +50,34 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
   }
 
   const cetak = () => window.print()
+
+  const cetakThermal = () => {
+    const data: StrukData = {
+      namaToko: toko?.nama || 'Toko',
+      alamat: toko?.alamat,
+      telepon: toko?.telepon,
+      waktu,
+      noTransaksi: no_transaksi,
+      kasir,
+      items: (items || []).map(it => ({
+        nama: it.nama_produk,
+        qty: it.qty,
+        harga: it.harga,
+      })),
+      subtotal,
+      diskon,
+      pajak,
+      pajakPersen: pajak_persen,
+      total,
+      bayar,
+      kembali,
+      metodeBayar: metode_bayar,
+      catatan: toko?.catatan_struk,
+    }
+    const escPos = buildEscPos(data)
+    const ok = printViaRawBT(escPos)
+    if (!ok) alert('Gagal membuka RawBT. Pastikan RawBT sudah terinstall di HP.')
+  }
 
   const bagikan = async () => {
     const text = teksStruk()
@@ -125,6 +154,12 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
 
         {/* Aksi */}
         <div className="no-print px-6 pb-6 pt-2 space-y-2">
+          {/* Tombol thermal printer (hanya tampil di Android) */}
+          {isAndroid() && (
+            <button onClick={cetakThermal} className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+              <Bluetooth size={15} /> Cetak Thermal (RawBT)
+            </button>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <button onClick={cetak} className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
               <Printer size={15} /> Cetak
