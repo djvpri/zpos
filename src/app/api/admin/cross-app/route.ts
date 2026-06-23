@@ -140,6 +140,17 @@ export async function POST(req: NextRequest) {
       return Response.json({ success: true, deactivated: true })
     }
 
+    if (action === 'updateRole') {
+      const userEmail = data?.email || email
+      const role = String(data?.role || '').toLowerCase()
+      const validRoles = ['kasir', 'owner', 'admin']
+      if (!userEmail || !role) return Response.json({ error: 'email dan role wajib diisi' }, { status: 400 })
+      if (!validRoles.includes(role)) return Response.json({ error: `Role tidak valid. Pilih: ${validRoles.join(', ')}` }, { status: 400 })
+      const result = await sql`UPDATE "user" SET role = ${role} WHERE email = ${userEmail} RETURNING id`
+      if (!result.length) return Response.json({ error: 'User tidak ditemukan' }, { status: 404 })
+      return Response.json({ success: true })
+    }
+
     if (action === 'moveTenant') {
       const userId = data?.userId
       const tenantId = Number(data?.tenantId)
