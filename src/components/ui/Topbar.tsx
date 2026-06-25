@@ -2,6 +2,7 @@
 
 import { LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import NotifikasiPanel from './NotifikasiPanel'
 
 const LABEL: Record<string, string> = {
   kasir: 'Kasir',
@@ -21,7 +22,8 @@ export function Topbar({ halaman }: Props) {
   return (
     <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-5 shrink-0">
       <span className="font-semibold text-gray-800">{LABEL[halaman] || halaman}</span>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        <NotifikasiPanel />
         <div className="text-right hidden sm:block">
           <div className="text-sm font-medium text-gray-700 leading-tight">{toko?.nama || '...'}</div>
           <div className="text-xs text-gray-400 capitalize">
