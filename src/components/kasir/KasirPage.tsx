@@ -3,8 +3,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Search, ShoppingCart, X, ScanLine, MoreHorizontal, Camera } from 'lucide-react'
 import PenjualanLain from '@/components/kasir/PenjualanLain'
-import dynamic from 'next/dynamic'
-const ScanProdukVisual = dynamic(() => import('@/components/kasir/ScanProdukVisual'), { ssr: false })
 import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
 import { useKategori } from '@/hooks/useKategori'
@@ -16,6 +14,7 @@ import { StrukModal } from '@/components/kasir/StrukModal'
 import { ShiftBanner } from '@/components/kasir/ShiftBanner'
 import dynamic from 'next/dynamic'
 import { useBarcodeUsbListener } from '@/components/kasir/BarcodeScanner'
+const ScanProdukVisual = dynamic(() => import('@/components/kasir/ScanProdukVisual'), { ssr: false })
 const BarcodeCameraModal = dynamic(
   () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
   { ssr: false }
