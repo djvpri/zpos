@@ -7,7 +7,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Plus, Search, Edit2, Trash2, Package, Tag, X } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Package, Tag, X, FileSpreadsheet } from 'lucide-react'
+import dynamic from 'next/dynamic'
+const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
 import { embedProduk, hapusEmbedding } from '@/lib/zface-visual'
 
 type Tab = 'produk' | 'kategori'
@@ -245,6 +247,7 @@ export default function ProdukPage() {
         </div>
       )}
 
+      {showImport && <ImportProduk onSelesai={fetchProduk} onTutup={() => setShowImport(false)} />}
       {modal && (
         <ProdukModal
           produk={modal === 'tambah' ? null : modal}
