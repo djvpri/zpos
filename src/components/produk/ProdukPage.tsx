@@ -24,6 +24,8 @@ export default function ProdukPage() {
   const [namaKat, setNamaKat] = useState('')
   const [katError, setKatError] = useState('')
   const [katLoading, setKatLoading] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [showScanMassal, setShowScanMassal] = useState(false)
 
   const filtered = produk.filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
 
