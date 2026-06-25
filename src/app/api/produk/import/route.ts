@@ -35,10 +35,10 @@ export async function POST(req: Request) {
       }
 
       await sql`
-        INSERT INTO produk (nama, harga, stok, emoji, deskripsi, barcode, kategori_id, toko_id, expired_at, stok_minimum, aktif)
+        INSERT INTO produk (nama, harga, stok, emoji, deskripsi, barcode, foto_url, kategori_id, toko_id, expired_at, stok_minimum, aktif)
         VALUES (
           ${p.nama}, ${p.harga}, ${p.stok || 0}, ${'📦'},
-          ${p.deskripsi || null}, ${p.barcode || null},
+          ${p.deskripsi || null}, ${p.barcode || null}, ${(p as any).foto_url || null},
           ${kategoriId}, ${toko.tokoId},
           ${p.expired_at || null}, ${p.stok_minimum || 5}, true
         )
