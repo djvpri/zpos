@@ -25,7 +25,11 @@ export function Topbar({ halaman }: Props) {
         <div className="text-right hidden sm:block">
           <div className="text-sm font-medium text-gray-700 leading-tight">{toko?.nama || '...'}</div>
           <div className="text-xs text-gray-400 capitalize">
-            {toko?.userName && toko.role === 'kasir' ? `${toko.userName} · Kasir` : toko?.plan || ''}
+            {toko?.userName && toko.role === 'kasir' 
+              ? `${toko.userName} · Kasir` 
+              : toko?.userName 
+                ? `${toko.userName} · Owner`
+                : toko?.plan || ''}
           </div>
         </div>
         <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white">
