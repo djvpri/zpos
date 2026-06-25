@@ -217,6 +217,22 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
           </div>
         </div>
 
+        {/* Kadaluarsa & Stok Minimum */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Kadaluarsa <span className="text-gray-300">(opsional)</span></label>
+            <input type="date" value={form.expired_at || ''}
+              onChange={e => set('expired_at', e.target.value)}
+              className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Min. Stok</label>
+            <input type="number" value={form.stok_minimum ?? 5} min={0}
+              onChange={e => set('stok_minimum', +e.target.value)}
+              className={inputCls} />
+          </div>
+        </div>
+
         <div className="flex gap-3 mt-6">
           <button onClick={onTutup} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
             Batal
