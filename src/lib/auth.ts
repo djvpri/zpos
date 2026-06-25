@@ -6,11 +6,12 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
 export interface TokenPayload {
   userId: number
   tokoId: number
-  nama: string      // nama toko (untuk topbar)
-  userName: string  // nama user yang login
+  nama: string
+  userName: string
   email: string
   plan: string
   role: 'owner' | 'kasir'
+  _roleUpdated?: boolean
 }
 
 export async function signToken(payload: TokenPayload): Promise<string> {
@@ -40,7 +41,10 @@ export async function getTokoFromRequest(request: Request): Promise<TokenPayload
   try {
     const rows = await sql`SELECT role, aktif FROM "user" WHERE id = ${payload.userId} LIMIT 1`
     if (!rows.length || !rows[0].aktif) return null
-    payload.role = rows[0].role as 'owner' | 'kasir'
+    if (rows[0].role !== payload.role) {
+      payload.role = rows[0].role as 'owner' | 'kasir'
+      payload._roleUpdated = true
+    }
   } catch {
     // Fallback ke token jika DB tidak bisa diakses
   }
