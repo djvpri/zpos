@@ -41,6 +41,7 @@ function compressImage(file: File, maxSize = 400, quality = 0.75): Promise<strin
 export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
   const { kategori } = useKategori()
   const fileRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState({
     nama: produk?.nama || '',
     harga: produk?.harga || '',
@@ -122,17 +123,29 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
                   </div>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                  className="w-full h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-indigo-300 hover:text-indigo-400 transition-colors disabled:opacity-60"
-                >
-                  <Camera size={22} />
-                  <span className="text-xs">{uploading ? 'Memproses...' : 'Pilih foto produk'}</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    className="flex-1 h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-indigo-300 hover:text-indigo-400 transition-colors disabled:opacity-60"
+                  >
+                    <ImageIcon size={22} />
+                    <span className="text-xs">{uploading ? 'Memproses...' : 'Galeri'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cameraRef.current?.click()}
+                    disabled={uploading}
+                    className="flex-1 h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-purple-300 hover:text-purple-400 transition-colors disabled:opacity-60"
+                  >
+                    <Camera size={22} />
+                    <span className="text-xs">Kamera</span>
+                  </button>
+                </div>
               )}
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFoto} />
+              <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFoto} />
             </div>
           </div>
 
