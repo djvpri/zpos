@@ -9,6 +9,8 @@ export interface Produk {
   barcode?: string
   kategori_id: number | null
   aktif: boolean
+  expired_at?: string | null
+  stok_minimum?: number
   created_at?: string
   updated_at?: string
   // join

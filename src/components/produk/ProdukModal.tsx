@@ -51,8 +51,8 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     foto_url: produk?.foto_url || '',
     barcode: produk?.barcode || '',
     kategori_id: produk?.kategori_id || '',
-    expired_at: (produk as any)?.expired_at?.slice(0,10) || '',
-    stok_minimum: (produk as any)?.stok_minimum ?? 5,
+    expired_at: produk?.expired_at?.slice(0,10) || '',
+    stok_minimum: produk?.stok_minimum ?? 5,
   })
   const [uploading, setUploading] = useState(false)
   const [scanBarcode, setScanBarcode] = useState(false)
@@ -90,8 +90,8 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       foto_url: form.foto_url || undefined,
       barcode: form.barcode.trim() || undefined,
       kategori_id: Number(form.kategori_id),
-      expired_at: (form as any).expired_at || undefined,
-      stok_minimum: Number((form as any).stok_minimum) || 5,
+      expired_at: form.expired_at || undefined,
+      stok_minimum: Number(form.stok_minimum) || 5,
       aktif: true,
     })
   }
