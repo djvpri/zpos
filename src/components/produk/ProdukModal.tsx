@@ -5,6 +5,7 @@ import { Produk } from '@/types'
 import { useKategori } from '@/hooks/useKategori'
 import { X, Camera, Trash2, Barcode, ScanLine, Image as ImageIcon } from 'lucide-react'
 import dynamic from 'next/dynamic'
+const KameraModal = dynamic(() => import('./KameraModal'), { ssr: false })
 const BarcodeCameraModal = dynamic(
   () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
   { ssr: false }
@@ -53,8 +54,13 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
   })
   const [uploading, setUploading] = useState(false)
   const [scanBarcode, setScanBarcode] = useState(false)
+  const [showKamera, setShowKamera] = useState(false)
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+
+  const onFotoKamera = (base64: string) => {
+    set('foto_url', base64)
+  }
 
   const onFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -135,7 +141,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => cameraRef.current?.click()}
+                    onClick={() => setShowKamera(true)}
                     disabled={uploading}
                     className="flex-1 h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-purple-300 hover:text-purple-400 transition-colors disabled:opacity-60"
                   >
