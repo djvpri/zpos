@@ -15,7 +15,9 @@ export async function GET(req: Request) {
     expired: status.expired,
   }
 
-  const res = NextResponse.json(responseData)
+  const res = NextResponse.json(responseData, {
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+  })
 
   // Re-issue token jika role sudah berubah di DB (agar cookie ter-update)
   if (toko._roleUpdated) {
