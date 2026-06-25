@@ -39,6 +39,7 @@ export default function KasirPage() {
   const [showCart, setShowCart] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const [tab, setTab] = useState<'produk' | 'lain'>('produk')
+  const [virtualProduk, setVirtualProduk] = useState<Record<number, {id:number;nama:string;harga:number;stok:number;kategori_id:null;barcode:null;foto_url:null}>>({}) 
 
   const produkFiltered = useMemo(() =>
     produk.filter(p =>
@@ -51,12 +52,12 @@ export default function KasirPage() {
       .map(([id, qty]) => {
         const numId = Number(id)
         const p = numId < 0
-          ? ((window as any).__virtualProduk?.[numId])
+          ? virtualProduk[numId]
           : produk.find(x => x.id === numId)
         return p ? { ...p, qty } : null
       })
       .filter(Boolean) as ItemKeranjang[]
-  , [keranjang, produk])
+  , [keranjang, produk, virtualProduk])
 
   const subtotal = items.reduce((s, i) => s + i.harga * i.qty, 0)
   const disc = Math.min(diskon, subtotal)
@@ -66,18 +67,16 @@ export default function KasirPage() {
   const kurang = Math.max(total - (Number(bayar) || 0), 0)
   const totalItem = items.reduce((s, i) => s + i.qty, 0)
 
-  function tambahItemLain(items: {id: string; nama: string; harga: number; qty: number}[]) {
-    items.forEach(item => {
-      // Tambah sebagai produk virtual dengan id negatif unik
-      const virtualId = -(Date.now() + Math.random() * 1000 | 0)
-      setKeranjang(k => ({ ...k, [virtualId]: item.qty }))
-      // Simpan produk virtual ke cache lokal
-      ;(window as any).__virtualProduk = (window as any).__virtualProduk || {}
-      ;(window as any).__virtualProduk[virtualId] = {
-        id: virtualId, nama: item.nama, harga: item.harga,
-        stok: 9999, kategori_id: null, barcode: null, foto_url: null,
-      }
+  function tambahItemLain(itemsLain: {id: string; nama: string; harga: number; qty: number}[]) {
+    const newVirtual: Record<number, any> = {}
+    const newKeranjang: Record<number, number> = {}
+    itemsLain.forEach(item => {
+      const virtualId = -(Date.now() + Math.floor(Math.random() * 10000))
+      newVirtual[virtualId] = { id: virtualId, nama: item.nama, harga: item.harga, stok: 9999, kategori_id: null, barcode: null, foto_url: null }
+      newKeranjang[virtualId] = item.qty
     })
+    setVirtualProduk(v => ({ ...v, ...newVirtual }))
+    setKeranjang(k => ({ ...k, ...newKeranjang }))
   }
 
   const tambahKeKeranjang = (p: Produk) => {
@@ -145,6 +144,7 @@ export default function KasirPage() {
     await simpan(trxData, details)
     setStruk(trxData)
     setKeranjang({})
+    setVirtualProduk({})
     setBayar('')
     setDiskon(0)
     setMetode('Tunai')
