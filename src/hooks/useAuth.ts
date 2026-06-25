@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, createContext, useContext } from 'react'
 
 export interface TokoInfo {
   userId: number
   tokoId: number
-  nama: string      // nama toko
-  userName: string  // nama user yang login
+  nama: string
+  userName: string
   email: string
   plan: string
   role: 'owner' | 'kasir'
@@ -15,20 +15,44 @@ export interface TokoInfo {
   expired?: boolean
 }
 
+interface AuthContextValue {
+  toko: TokoInfo | null
+  loading: boolean
+  logout: () => Promise<void>
+  refresh: () => void
+}
+
+export const AuthContext = createContext<AuthContextValue>({
+  toko: null, loading: true,
+  logout: async () => {}, refresh: () => {}
+})
+
 export function useAuth() {
+  return useContext(AuthContext)
+}
+
+export function useAuthProvider() {
   const [toko, setToko] = useState<TokoInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchMe = useCallback(() => {
-    fetch('/api/auth/me', { cache: 'no-store' })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { setToko(data); setLoading(false) })
-      .catch(() => setLoading(false))
+  const fetchMe = useCallback(async () => {
+    try {
+      const r = await fetch('/api/auth/me', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+      const data = r.ok ? await r.json() : null
+      console.log('[useAuth] fetchMe role:', data?.role)
+      setToko(data)
+    } catch {
+      setToko(null)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
     fetchMe()
-    // Re-fetch saat tab difokuskan kembali (setelah dari Z One)
     window.addEventListener('focus', fetchMe)
     return () => window.removeEventListener('focus', fetchMe)
   }, [fetchMe])
@@ -38,5 +62,5 @@ export function useAuth() {
     window.location.href = '/login'
   }, [])
 
-  return { toko, loading, logout }
+  return { toko, loading, logout, refresh: fetchMe }
 }
