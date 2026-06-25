@@ -230,6 +230,9 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
           onTutup={() => setScanBarcode(false)}
         />
       )}
+      {showKamera && (
+        <KameraModal onFoto={onFotoKamera} onClose={() => setShowKamera(false)} />
+      )}
     </>
   )
 }
