@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { Search, ShoppingCart, X, ScanLine, MoreHorizontal } from 'lucide-react'
+import { Search, ShoppingCart, X, ScanLine, MoreHorizontal, Camera } from 'lucide-react'
 import PenjualanLain from '@/components/kasir/PenjualanLain'
+import dynamic from 'next/dynamic'
+const ScanProdukVisual = dynamic(() => import('@/components/kasir/ScanProdukVisual'), { ssr: false })
 import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
 import { useKategori } from '@/hooks/useKategori'
@@ -39,6 +41,7 @@ export default function KasirPage() {
   const [showCart, setShowCart] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const [tab, setTab] = useState<'produk' | 'lain'>('produk')
+  const [showScanVisual, setShowScanVisual] = useState(false)
   const [virtualProduk, setVirtualProduk] = useState<Record<number, {id:number;nama:string;harga:number;stok:number;kategori_id:null;barcode:null;foto_url:null}>>({}) 
 
   const produkFiltered = useMemo(() =>
@@ -66,6 +69,18 @@ export default function KasirPage() {
   const kembali = Math.max((Number(bayar) || 0) - total, 0)
   const kurang = Math.max(total - (Number(bayar) || 0), 0)
   const totalItem = items.reduce((s, i) => s + i.qty, 0)
+
+  function pilihDariVisualScan(produkId: number, nama: string, harga: number) {
+    const p = produk.find(x => x.id === produkId)
+    if (p) {
+      tambahKeKeranjang(p)
+    } else {
+      // Produk tidak ada di cache lokal, tambah sebagai virtual
+      const virtualId = -produkId
+      setVirtualProduk(v => ({ ...v, [virtualId]: { id: virtualId, nama, harga, stok: 9999, kategori_id: null, barcode: null, foto_url: null } }))
+      setKeranjang(k => ({ ...k, [virtualId]: (k[virtualId] || 0) + 1 }))
+    }
+  }
 
   function tambahItemLain(itemsLain: {id: string; nama: string; harga: number; qty: number}[]) {
     const newVirtual: Record<number, any> = {}

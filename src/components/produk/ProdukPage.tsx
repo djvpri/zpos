@@ -22,14 +22,33 @@ export default function ProdukPage() {
 
   const filtered = produk.filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
 
+  const { toko } = useAuth()
+
   const onSimpan = async (p: Partial<Produk>) => {
-    if (p.id) await update(p.id, p)
-    else await tambah(p as any)
+    let saved: any
+    if (p.id) saved = await update(p.id, p)
+    else saved = await tambah(p as any)
     setModal(null)
+
+    // Auto-embed ke ZFace jika ada foto
+    if (toko && p.foto_url && (saved?.id || p.id)) {
+      const produkId = saved?.id || p.id
+      embedProduk({
+        produkId,
+        nama: p.nama || '',
+        harga: p.harga || 0,
+        fotoBase64: p.foto_url,
+        tokoId: toko.tokoId,
+        fotoUrl: p.foto_url,
+      }).catch(() => {}) // silent fail
+    }
   }
 
   const onHapusProduk = async (id: number) => {
-    if (confirm('Hapus produk ini?')) await hapus(id)
+    if (confirm('Hapus produk ini?')) {
+      await hapus(id)
+      if (toko) hapusEmbedding({ produkId: id, tokoId: toko.tokoId }).catch(() => {})
+    }
   }
 
   const onTambahKat = async (e: React.FormEvent) => {
