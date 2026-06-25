@@ -16,7 +16,7 @@ import { embedProduk, hapusEmbedding } from '@/lib/zface-visual'
 type Tab = 'produk' | 'kategori'
 
 export default function ProdukPage() {
-  const { produk, tambah, update, hapus } = useProduk()
+  const { produk, tambah, update, hapus, fetch: fetchProduk } = useProduk()
   const { kategori, tambah: tambahKat, hapus: hapusKat } = useKategori()
   const [tab, setTab] = useState<Tab>('produk')
   const [modal, setModal] = useState<'tambah' | Produk | null>(null)
