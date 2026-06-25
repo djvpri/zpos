@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose'
+import sql from './db'
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
 
@@ -37,13 +38,9 @@ export async function getTokoFromRequest(request: Request): Promise<TokenPayload
 
   // Cek role terbaru dari DB (hindari stale role setelah diubah dari Z One)
   try {
-    const { default: sql } = await import('./db')
     const rows = await sql`SELECT role, aktif FROM "user" WHERE id = ${payload.userId} LIMIT 1`
     if (!rows.length || !rows[0].aktif) return null
-    // Update role dari DB jika berbeda
-    if (rows[0].role !== payload.role) {
-      payload.role = rows[0].role as 'owner' | 'kasir'
-    }
+    payload.role = rows[0].role as 'owner' | 'kasir'
   } catch {
     // Fallback ke token jika DB tidak bisa diakses
   }
