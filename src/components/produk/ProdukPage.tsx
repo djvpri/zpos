@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import { useProduk } from '@/hooks/useProduk'
 import { useKategori } from '@/hooks/useKategori'
+import { useAuth } from '@/hooks/useAuth'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
 import { Plus, Search, Edit2, Trash2, Package, Tag, X } from 'lucide-react'
+import { embedProduk, hapusEmbedding } from '@/lib/zface-visual'
 
 type Tab = 'produk' | 'kategori'
 
