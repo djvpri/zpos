@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { Search, ShoppingCart, X, ScanLine } from 'lucide-react'
+import { Search, ShoppingCart, X, ScanLine, MoreHorizontal } from 'lucide-react'
+import PenjualanLain from '@/components/kasir/PenjualanLain'
 import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
 import { useKategori } from '@/hooks/useKategori'
@@ -37,6 +38,7 @@ export default function KasirPage() {
   const [saving, setSaving] = useState(false)
   const [showCart, setShowCart] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
+  const [tab, setTab] = useState<'produk' | 'lain'>('produk')
 
   const produkFiltered = useMemo(() =>
     produk.filter(p =>
@@ -47,7 +49,10 @@ export default function KasirPage() {
   const items: ItemKeranjang[] = useMemo(() =>
     Object.entries(keranjang)
       .map(([id, qty]) => {
-        const p = produk.find(x => x.id === Number(id))
+        const numId = Number(id)
+        const p = numId < 0
+          ? ((window as any).__virtualProduk?.[numId])
+          : produk.find(x => x.id === numId)
         return p ? { ...p, qty } : null
       })
       .filter(Boolean) as ItemKeranjang[]
@@ -60,6 +65,20 @@ export default function KasirPage() {
   const kembali = Math.max((Number(bayar) || 0) - total, 0)
   const kurang = Math.max(total - (Number(bayar) || 0), 0)
   const totalItem = items.reduce((s, i) => s + i.qty, 0)
+
+  function tambahItemLain(items: {id: string; nama: string; harga: number; qty: number}[]) {
+    items.forEach(item => {
+      // Tambah sebagai produk virtual dengan id negatif unik
+      const virtualId = -(Date.now() + Math.random() * 1000 | 0)
+      setKeranjang(k => ({ ...k, [virtualId]: item.qty }))
+      // Simpan produk virtual ke cache lokal
+      ;(window as any).__virtualProduk = (window as any).__virtualProduk || {}
+      ;(window as any).__virtualProduk[virtualId] = {
+        id: virtualId, nama: item.nama, harga: item.harga,
+        stok: 9999, kategori_id: null, barcode: null, foto_url: null,
+      }
+    })
+  }
 
   const tambahKeKeranjang = (p: Produk) => {
     if (p.stok <= 0) return
@@ -162,18 +181,38 @@ export default function KasirPage() {
       {/* Desktop */}
       <div className="hidden md:grid grid-cols-[1fr_310px] gap-4 p-4 h-[calc(100vh-56px)]">
         <div className="flex flex-col gap-3 overflow-hidden">
-          <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-4 py-2.5">
-            <Search size={16} className="text-gray-400 shrink-0" />
-            <input value={cari} onChange={e => setCari(e.target.value)}
-              placeholder="Cari produk atau barcode..." className="flex-1 bg-transparent outline-none text-sm" />
-            <button onClick={() => setShowCamera(true)} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors" title="Scan barcode kamera">
-              <ScanLine size={18} />
+          {/* Tab Produk / Lainnya */}
+          <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
+            <button onClick={() => setTab('produk')}
+              className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors ${tab === 'produk' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>
+              Produk
+            </button>
+            <button onClick={() => setTab('lain')}
+              className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors ${tab === 'lain' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>
+              <MoreHorizontal size={14} className="inline mr-1" />Lainnya
             </button>
           </div>
-          {filterChips}
-          <div className="flex-1 overflow-y-auto">
-            <ProdukGrid produk={produkFiltered} loading={loading} onTambah={tambahKeKeranjang} />
-          </div>
+
+          {tab === 'produk' ? (
+            <>
+              <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-4 py-2.5">
+                <Search size={16} className="text-gray-400 shrink-0" />
+                <input value={cari} onChange={e => setCari(e.target.value)}
+                  placeholder="Cari produk atau barcode..." className="flex-1 bg-transparent outline-none text-sm" />
+                <button onClick={() => setShowCamera(true)} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors" title="Scan barcode kamera">
+                  <ScanLine size={18} />
+                </button>
+              </div>
+              {filterChips}
+              <div className="flex-1 overflow-y-auto">
+                <ProdukGrid produk={produkFiltered} loading={loading} onTambah={tambahKeKeranjang} />
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <PenjualanLain onTambahKeKeranjang={tambahItemLain} />
+            </div>
+          )}
         </div>
         <KeranjangPanel {...keranjangProps} />
       </div>
@@ -188,10 +227,28 @@ export default function KasirPage() {
             <ScanLine size={18} />
           </button>
         </div>
-        {filterChips}
-        <div className="flex-1 overflow-y-auto">
-          <ProdukGrid produk={produkFiltered} loading={loading} onTambah={tambahKeKeranjang} />
+        <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
+          <button onClick={() => setTab('produk')}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors ${tab === 'produk' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>
+            Produk
+          </button>
+          <button onClick={() => setTab('lain')}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors ${tab === 'lain' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>
+            Lainnya
+          </button>
         </div>
+        {tab === 'produk' ? (
+          <>
+            {filterChips}
+            <div className="flex-1 overflow-y-auto">
+              <ProdukGrid produk={produkFiltered} loading={loading} onTambah={tambahKeKeranjang} />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <PenjualanLain onTambahKeKeranjang={tambahItemLain} />
+          </div>
+        )}
       </div>
 
       {/* Floating cart — mobile */}
