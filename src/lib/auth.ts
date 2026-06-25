@@ -32,7 +32,23 @@ export async function getTokoFromRequest(request: Request): Promise<TokenPayload
   const cookieHeader = request.headers.get('cookie') ?? ''
   const match = cookieHeader.match(/zpos_token=([^;]+)/)
   if (!match) return null
-  return verifyToken(decodeURIComponent(match[1]))
+  const payload = await verifyToken(decodeURIComponent(match[1]))
+  if (!payload) return null
+
+  // Cek role terbaru dari DB (hindari stale role setelah diubah dari Z One)
+  try {
+    const { default: sql } = await import('./db')
+    const rows = await sql`SELECT role, aktif FROM "user" WHERE id = ${payload.userId} LIMIT 1`
+    if (!rows.length || !rows[0].aktif) return null
+    // Update role dari DB jika berbeda
+    if (rows[0].role !== payload.role) {
+      payload.role = rows[0].role as 'owner' | 'kasir'
+    }
+  } catch {
+    // Fallback ke token jika DB tidak bisa diakses
+  }
+
+  return payload
 }
 
 // ===== Super-admin (kredensial via env, terpisah dari sesi toko/user) =====

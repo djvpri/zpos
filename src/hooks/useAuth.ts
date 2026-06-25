@@ -19,12 +19,19 @@ export function useAuth() {
   const [toko, setToko] = useState<TokoInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchMe = useCallback(() => {
     fetch('/api/auth/me')
       .then(r => r.ok ? r.json() : null)
       .then(data => { setToko(data); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    fetchMe()
+    // Re-fetch saat tab difokuskan kembali (setelah dari Z One)
+    window.addEventListener('focus', fetchMe)
+    return () => window.removeEventListener('focus', fetchMe)
+  }, [fetchMe])
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
