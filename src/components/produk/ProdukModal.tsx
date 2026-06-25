@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { Produk } from '@/types'
 import { useKategori } from '@/hooks/useKategori'
-import { X, Camera, Trash2, Barcode, ScanLine } from 'lucide-react'
+import { X, Camera, Trash2, Barcode, ScanLine, Image as ImageIcon } from 'lucide-react'
 import dynamic from 'next/dynamic'
 const BarcodeCameraModal = dynamic(
   () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
