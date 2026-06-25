@@ -23,9 +23,9 @@ const plans = [
   },
   {
     name: 'Pro',
-    price: 'Rp 50.000',
+    price: 'Rp 100.000',
     period: '/bulan',
-    yearly: 'atau Rp 500.000 / tahun · hemat 2 bulan',
+    yearly: 'atau Rp 1.000.000 / tahun · hemat 2 bulan',
     border: 'border-indigo-500',
     badge: 'Populer',
     pro: true,
