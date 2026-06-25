@@ -216,6 +216,9 @@ export default function KasirPage() {
                 <button onClick={() => setShowCamera(true)} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors" title="Scan barcode kamera">
                   <ScanLine size={18} />
                 </button>
+                <button onClick={() => setShowScanVisual(true)} className="p-1 text-gray-400 hover:text-purple-600 transition-colors" title="Scan produk visual (AI)">
+                  <Camera size={18} />
+                </button>
               </div>
               {filterChips}
               <div className="flex-1 overflow-y-auto">
@@ -239,6 +242,9 @@ export default function KasirPage() {
             placeholder="Cari produk..." className="flex-1 bg-transparent outline-none text-sm" />
           <button onClick={() => setShowCamera(true)} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors">
             <ScanLine size={18} />
+          </button>
+          <button onClick={() => setShowScanVisual(true)} className="p-1 text-gray-400 hover:text-purple-600 transition-colors" title="Scan visual AI">
+            <Camera size={18} />
           </button>
         </div>
         <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
@@ -298,6 +304,9 @@ export default function KasirPage() {
 
       {showCamera && (
         <BarcodeCameraModal onScan={onBarcodeScan} onTutup={() => setShowCamera(false)} />
+      )}
+      {showScanVisual && (
+        <ScanProdukVisual onPilih={pilihDariVisualScan} onClose={() => setShowScanVisual(false)} />
       )}
       <StrukModal
         transaksi={struk}
