@@ -169,6 +169,17 @@ export async function POST(req: NextRequest) {
       return Response.json({ success: true, reactivated: true })
     }
 
+    if (action === 'updateRole') {
+      if (!email) return Response.json({ error: 'email wajib diisi' }, { status: 400 })
+      const role = String(data?.role || 'kasir').toLowerCase()
+      if (!['kasir', 'admin', 'owner'].includes(role)) {
+        return Response.json({ error: 'Role tidak valid (kasir, admin, owner)' }, { status: 400 })
+      }
+      const result = await sql`UPDATE "user" SET role = ${role} WHERE email = ${email} RETURNING id, email, role`
+      if (!result.length) return Response.json({ error: 'User tidak ditemukan' }, { status: 404 })
+      return Response.json({ success: true, user: { email: result[0].email, role: result[0].role } })
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 })
   } catch (err) {
     console.error('cross-app POST error:', err)
