@@ -18,13 +18,13 @@ const withTotals = (tokoId: number, extraWhere: string = '') => sql`
   LIMIT 50
 `
 
-// GET: list shift (owner: semua, kasir: hanya milik sendiri)
+// GET: list shift (admin: semua, kasir: hanya milik sendiri)
 export async function GET(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const rows = await withTotals(toko.tokoId)
-  const filtered = toko.role === 'owner'
+  const filtered = toko.role === 'admin'
     ? rows
     : rows.filter((s: any) => s.kasir_nama === toko.userName)
 

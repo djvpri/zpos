@@ -19,11 +19,11 @@ type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan'
 interface Props {
   aktif: Halaman
   onNavigasi: (h: Halaman) => void
-  role: 'owner' | 'kasir'
+  role: 'admin' | 'kasir'
 }
 
 export function Sidebar({ aktif, onNavigasi, role }: Props) {
-  const nav = role === 'owner' ? NAV_OWNER : NAV_KASIR
+  const nav = role === 'admin' ? NAV_OWNER : NAV_KASIR
 
   return (
     <aside className="w-16 bg-white border-r border-gray-100 flex flex-col items-center py-4 shrink-0">

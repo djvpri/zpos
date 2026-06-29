@@ -21,7 +21,7 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (toko.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (toko.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { pajak_persen, alamat, telepon, catatan_struk } = await req.json()
   const persen = Math.round(Number(pajak_persen))

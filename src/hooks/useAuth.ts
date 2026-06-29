@@ -9,7 +9,7 @@ export interface TokoInfo {
   userName: string
   email: string
   plan: string
-  role: 'owner' | 'kasir'
+  role: 'admin' | 'kasir'
   langganan_sampai?: string | null
   aktif?: boolean
   expired?: boolean

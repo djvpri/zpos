@@ -30,7 +30,7 @@ export default function AppPage() {
   const { toko, loading, logout } = useAuth()
   const [halaman, setHalaman] = useState<Halaman>('kasir')
 
-  // Redirect kasir yang coba akses halaman owner
+  // Redirect kasir yang coba akses halaman admin
   useEffect(() => {
     if (!loading && toko?.role === 'kasir' && halaman !== 'kasir') {
       setHalaman('kasir')
@@ -77,7 +77,7 @@ export default function AppPage() {
     )
   }
 
-  const isOwner = toko?.role === 'owner'
+  const isOwner = toko?.role === 'admin'
   const nav = isOwner ? NAV_OWNER : NAV_KASIR
 
   return (

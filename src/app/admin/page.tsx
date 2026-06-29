@@ -186,13 +186,13 @@ export default function AdminPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">Email Owner</label>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">Email Admin</label>
                 <input
                   type="email" required
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition-colors"
-                  placeholder="owner@email.com"
+                  placeholder="admin@email.com"
                 />
               </div>
               <div>

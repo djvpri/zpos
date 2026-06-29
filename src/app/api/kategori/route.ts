@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (toko.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (toko.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { nama } = await req.json()
   if (!nama?.trim()) return NextResponse.json({ error: 'Nama kategori wajib diisi' }, { status: 400 })

@@ -6,7 +6,7 @@ import { getTokoFromRequest } from '@/lib/auth'
 export async function GET(req: Request) {
   const auth = await getTokoFromRequest(req)
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (auth.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (auth.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const staff = await sql`
     SELECT id, nama, email, role, aktif, created_at
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const auth = await getTokoFromRequest(req)
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (auth.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (auth.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { nama, email, password } = await req.json()
   if (!nama || !email || !password) {

@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
   const [user] = await sql`
     INSERT INTO "user" (toko_id, nama, email, password_hash, role)
-    VALUES (${toko.id}, ${nama}, ${email}, ${password_hash}, 'owner')
+    VALUES (${toko.id}, ${nama}, ${email}, ${password_hash}, 'admin')
     RETURNING id
   `
 
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     userName: nama,
     email,
     plan: toko.plan,
-    role: 'owner',
+    role: 'admin',
   })
   const res = NextResponse.json({ ok: true })
   res.cookies.set('zpos_token', token, {

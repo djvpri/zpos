@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
     if (action === 'updateRole') {
       const userEmail = data?.email || email
       const role = String(data?.role || '').toLowerCase()
-      const validRoles = ['kasir', 'owner', 'admin']
+      const validRoles = ['kasir', 'admin']
       if (!userEmail || !role) return Response.json({ error: 'email dan role wajib diisi' }, { status: 400 })
       if (!validRoles.includes(role)) return Response.json({ error: `Role tidak valid. Pilih: ${validRoles.join(', ')}` }, { status: 400 })
       const result = await sql`UPDATE "user" SET role = ${role} WHERE email = ${userEmail} RETURNING id`
@@ -167,17 +167,6 @@ export async function POST(req: NextRequest) {
       const result = await sql`UPDATE "user" SET aktif = true WHERE email = ${email} RETURNING id`
       if (!result.length) return Response.json({ error: 'User tidak ditemukan' }, { status: 404 })
       return Response.json({ success: true, reactivated: true })
-    }
-
-    if (action === 'updateRole') {
-      if (!email) return Response.json({ error: 'email wajib diisi' }, { status: 400 })
-      const role = String(data?.role || 'kasir').toLowerCase()
-      if (!['kasir', 'admin'].includes(role)) {
-        return Response.json({ error: 'Role tidak valid (kasir, admin)' }, { status: 400 })
-      }
-      const result = await sql`UPDATE "user" SET role = ${role} WHERE email = ${email} RETURNING id, email, role`
-      if (!result.length) return Response.json({ error: 'User tidak ditemukan' }, { status: 404 })
-      return Response.json({ success: true, user: { email: result[0].email, role: result[0].role } })
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 })

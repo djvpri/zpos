@@ -37,8 +37,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   `
   if (!shift) return NextResponse.json({ error: 'Shift tidak ditemukan' }, { status: 404 })
   if (!shift.aktif) return NextResponse.json({ error: 'Shift sudah ditutup' }, { status: 400 })
-  // owner boleh tutup shift siapapun; kasir hanya bisa tutup miliknya
-  if (toko.role !== 'owner' && shift.user_id !== toko.userId) {
+  // admin boleh tutup shift siapapun; kasir hanya bisa tutup miliknya
+  if (toko.role !== 'admin' && shift.user_id !== toko.userId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

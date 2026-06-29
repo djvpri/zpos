@@ -30,7 +30,7 @@ export function Topbar({ halaman }: Props) {
             {toko?.userName && toko.role === 'kasir' 
               ? `${toko.userName} · Kasir` 
               : toko?.userName 
-                ? `${toko.userName} · Owner`
+                ? `${toko.userName} · Admin`
                 : toko?.plan || ''}
           </div>
         </div>

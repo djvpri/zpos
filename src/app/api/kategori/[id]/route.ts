@@ -5,7 +5,7 @@ import { getTokoFromRequest } from '@/lib/auth'
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (toko.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (toko.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
   const katId = parseInt(id)

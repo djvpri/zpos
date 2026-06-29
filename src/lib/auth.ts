@@ -10,7 +10,7 @@ export interface TokenPayload {
   userName: string
   email: string
   plan: string
-  role: 'owner' | 'kasir'
+  role: 'admin' | 'kasir'
   _roleUpdated?: boolean
 }
 
@@ -42,7 +42,7 @@ export async function getTokoFromRequest(request: Request): Promise<TokenPayload
     const rows = await sql`SELECT role, aktif FROM "user" WHERE id = ${payload.userId} LIMIT 1`
     if (!rows.length || !rows[0].aktif) return null
     if (rows[0].role !== payload.role) {
-      payload.role = rows[0].role as 'owner' | 'kasir'
+      payload.role = rows[0].role as 'admin' | 'kasir'
       payload._roleUpdated = true
     }
   } catch {

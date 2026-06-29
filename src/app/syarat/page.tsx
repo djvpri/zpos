@@ -22,7 +22,7 @@ export default function SyaratPage() {
 
           <section>
             <h2 className="font-semibold text-gray-900">2. Akun</h2>
-            <p>Anda bertanggung jawab menjaga kerahasiaan kredensial akun dan seluruh aktivitas yang terjadi di dalamnya. Satu akun owner mewakili satu toko; owner dapat membuat akun kasir untuk stafnya.</p>
+            <p>Anda bertanggung jawab menjaga kerahasiaan kredensial akun dan seluruh aktivitas yang terjadi di dalamnya. Satu akun admin mewakili satu toko; admin dapat membuat akun kasir untuk stafnya.</p>
           </section>
 
           <section>
