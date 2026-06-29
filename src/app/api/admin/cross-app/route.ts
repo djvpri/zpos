@@ -182,7 +182,8 @@ export async function POST(req: NextRequest) {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 })
   } catch (err) {
-    console.error('cross-app POST error:', err)
-    return Response.json({ error: 'Gagal memproses aksi' }, { status: 500 })
+    console.error('cross-app POST error:', err instanceof Error ? err.message : String(err))
+    console.error('Full error:', err)
+    return Response.json({ error: 'Gagal memproses aksi', detail: err instanceof Error ? err.message : undefined }, { status: 500 })
   }
 }
