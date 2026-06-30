@@ -25,15 +25,38 @@ function daysAgo(n) {
   return d
 }
 
-const KATEGORI = ['Makanan', 'Minuman', 'Snack', 'Lainnya']
+const KATEGORI = ['Makanan Ringan', 'Minuman', 'Sembako', 'Kebersihan', 'Rumah Tangga']
 const PRODUK = [
-  ['Nasi Goreng', 25000, '🍳', 'Makanan'], ['Mie Ayam', 18000, '🍜', 'Makanan'],
-  ['Ayam Goreng', 22000, '🍗', 'Makanan'], ['Bakso Spesial', 20000, '🍲', 'Makanan'],
-  ['Nasi Ayam Geprek', 23000, '🍗', 'Makanan'],
-  ['Es Teh Manis', 5000, '🧊', 'Minuman'], ['Jus Jeruk', 12000, '🍊', 'Minuman'],
-  ['Kopi Hitam', 8000, '☕', 'Minuman'], ['Es Campur', 15000, '🥤', 'Minuman'],
-  ['Keripik Singkong', 8000, '🥔', 'Snack'], ['Cokelat Batang', 12000, '🍫', 'Snack'],
-  ['Permen', 3000, '🍬', 'Snack'], ['Tisu Basah', 5000, '🧻', 'Lainnya'],
+  // Makanan Ringan
+  ['Chitato Sapi Panggang 68g', 11000, '🥔', 'Makanan Ringan'],
+  ['Oreo Original 133g', 9500, '🍪', 'Makanan Ringan'],
+  ['Beng-Beng', 2500, '🍫', 'Makanan Ringan'],
+  ['Taro Net Seaweed', 8000, '🥨', 'Makanan Ringan'],
+  ['SilverQueen 65g', 18000, '🍫', 'Makanan Ringan'],
+  // Minuman
+  ['Aqua 600ml', 4000, '💧', 'Minuman'],
+  ['Teh Botol Sosro 350ml', 5000, '🍵', 'Minuman'],
+  ['Coca-Cola 390ml', 7000, '🥤', 'Minuman'],
+  ['Pocari Sweat 500ml', 9000, '🧴', 'Minuman'],
+  ['Ultra Milk Cokelat 250ml', 6500, '🥛', 'Minuman'],
+  ['Kopi Good Day Sachet', 2000, '☕', 'Minuman'],
+  // Sembako
+  ['Beras Pandan Wangi 5kg', 68000, '🌾', 'Sembako'],
+  ['Minyak Goreng 1L', 18000, '🫗', 'Sembako'],
+  ['Gula Pasir 1kg', 16000, '🧂', 'Sembako'],
+  ['Telur Ayam 1kg', 28000, '🥚', 'Sembako'],
+  ['Indomie Goreng', 3500, '🍜', 'Sembako'],
+  ['Kecap Manis ABC 220ml', 12000, '🍶', 'Sembako'],
+  // Kebersihan
+  ['Sabun Lifebuoy 85g', 4500, '🧼', 'Kebersihan'],
+  ['Pepsodent 75g', 8000, '🪥', 'Kebersihan'],
+  ['Shampoo Sunsilk Sachet', 1000, '🧴', 'Kebersihan'],
+  ['Detergen Rinso 770g', 22000, '🧺', 'Kebersihan'],
+  ['Sunlight Jeruk Nipis 400ml', 11000, '🧽', 'Kebersihan'],
+  // Rumah Tangga
+  ['Tisu Paseo 250s', 15000, '🧻', 'Rumah Tangga'],
+  ['Baterai ABC AA (isi 2)', 9000, '🔋', 'Rumah Tangga'],
+  ['Korek Api Gas', 3000, '🔥', 'Rumah Tangga'],
 ]
 const KASIR = ['Kasir Demo', 'Siti', 'Rian']
 
