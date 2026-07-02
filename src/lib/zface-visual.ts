@@ -3,8 +3,14 @@
  */
 
 const ZFACE_URL = process.env.NEXT_PUBLIC_ZFACE_API_URL || 'https://zface.zomet.my.id'
-const CROSS_APP_SECRET = process.env.CROSS_APP_SECRET || 'z-ecosystem-admin-2026'
+// Migration 2026-07-02: dual secret support
+const NEW_SECRET = process.env.CROSS_APP_SECRET || 'uurclTHL375CiZeWi2g4T3GczU2YNY9I1wzjlsVTgSk'
+const OLD_SECRET = 'z-ecosystem-admin-2026'
 const APP_SLUG = 'zpos'
+
+function getSecret(): string {
+  return NEW_SECRET
+}
 
 export interface HasilCari {
   produk_id: string
@@ -37,7 +43,7 @@ export async function embedProduk(params: {
 
     const res = await fetch(`${ZFACE_URL}/api/produk/embed`, {
       method: 'POST',
-      headers: { 'x-cross-app-secret': CROSS_APP_SECRET },
+      headers: { 'x-cross-app-secret': getSecret() },
       body: fd,
     })
     return res.ok
@@ -58,7 +64,7 @@ export async function cariProdukDariFoto(params: {
 
   const res = await fetch(`${ZFACE_URL}/api/produk/cari`, {
     method: 'POST',
-    headers: { 'x-cross-app-secret': CROSS_APP_SECRET },
+    headers: { 'x-cross-app-secret': getSecret() },
     body: fd,
   })
   if (!res.ok) return []
@@ -74,7 +80,7 @@ export async function hapusEmbedding(params: {
   try {
     await fetch(
       `${ZFACE_URL}/api/produk/${params.produkId}?tenant_id=${params.tokoId}&app_slug=${APP_SLUG}`,
-      { method: 'DELETE', headers: { 'x-cross-app-secret': CROSS_APP_SECRET } }
+      { method: 'DELETE', headers: { 'x-cross-app-secret': getSecret() } }
     )
   } catch {}
 }
