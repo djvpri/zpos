@@ -120,7 +120,10 @@ export async function flushMutasiProduk(): Promise<{ synced: number; pending: nu
         res = await fetch('/api/produk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(entry.mutasi.payload),
+          // client_ref: kunci idempotensi — kalau entry ini sempat sukses
+          // di server tapi gagal terhapus dari antrian lokal (retry),
+          // server kembalikan baris yang sudah ada alih-alih duplikat.
+          body: JSON.stringify({ ...entry.mutasi.payload, client_ref: String(entry.mutasi.tempId) }),
         })
       } else if (entry.mutasi.tipe === 'ubah') {
         res = await fetch(`/api/produk/${entry.mutasi.produkId}`, {
@@ -132,7 +135,11 @@ export async function flushMutasiProduk(): Promise<{ synced: number; pending: nu
         res = await fetch(`/api/produk/${entry.mutasi.produkId}`, { method: 'DELETE' })
       }
 
-      if (res.ok) {
+      // 200/201 = tersimpan. 409 = client_ref sudah ada (percobaan
+      // sebelumnya sempat sukses di server tapi gagal terhapus dari
+      // antrian lokal) — anggap sukses juga, supaya tidak dobel & tidak
+      // nyangkut selamanya di antrian.
+      if (res.ok || res.status === 409) {
         await hapusEntry(entry.localId)
         synced++
       } else {
