@@ -2,13 +2,11 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
 import { signToken } from '@/lib/auth'
+import { registerSchema } from '@/lib/validation'
+import { apiHandler } from '@/lib/api-handler'
 
-export async function POST(req: Request) {
-  const { nama, email, password } = await req.json()
-
-  if (!nama || !email || !password) {
-    return NextResponse.json({ error: 'Semua field wajib diisi' }, { status: 400 })
-  }
+export const POST = apiHandler(async (req: Request, body: { nama: string; email: string; password: string }) => {
+  const { nama, email, password } = body
 
   const existing = await sql`SELECT id FROM "user" WHERE email = ${email}`
   if (existing.length > 0) {
@@ -51,9 +49,9 @@ export async function POST(req: Request) {
   res.cookies.set('zpos_token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     maxAge: 60 * 60 * 24 * 30,
     path: '/',
   })
   return res
-}
+}, { schema: registerSchema })

@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { signResetToken } from '@/lib/auth'
+import { forgotSchema } from '@/lib/validation'
+import { apiHandler } from '@/lib/api-handler'
 
-export async function POST(req: Request) {
-  const { email } = await req.json()
+export const POST = apiHandler(async (req: Request, body: { email: string }) => {
+  const { email } = body
 
   // Selalu balas ok agar tidak membocorkan email mana yang terdaftar.
   const ok = NextResponse.json({ ok: true })
-  if (!email?.trim()) return ok
+  if (!email) return ok
 
   const [user] = await sql`
-    SELECT id, nama, email FROM "user" WHERE email = ${email.trim()} AND aktif = true
+    SELECT id, nama, email FROM "user" WHERE email = ${email} AND aktif = true
   `
   if (!user) return ok
 
@@ -55,4 +57,4 @@ export async function POST(req: Request) {
   }
 
   return ok
-}
+}, { schema: forgotSchema })

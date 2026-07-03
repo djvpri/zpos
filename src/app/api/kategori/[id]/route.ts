@@ -13,7 +13,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const [kat] = await sql`SELECT id FROM kategori WHERE id = ${katId} AND toko_id = ${toko.tokoId}`
   if (!kat) return NextResponse.json({ error: 'Kategori tidak ditemukan' }, { status: 404 })
 
-  // Set produk yang pakai kategori ini jadi null
   await sql`UPDATE produk SET kategori_id = NULL WHERE kategori_id = ${katId} AND toko_id = ${toko.tokoId}`
   await sql`DELETE FROM kategori WHERE id = ${katId}`
 

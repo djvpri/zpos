@@ -3,6 +3,8 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
 import { embedProduk } from '@/lib/zface-visual'
+import { produkSchema } from '@/lib/validation'
+import { apiHandler } from '@/lib/api-handler'
 import type { Produk } from '@/types'
 
 const LIMIT_PRODUK_TRIAL = 100
@@ -21,11 +23,9 @@ export async function GET(req: Request) {
   return NextResponse.json(rows)
 }
 
-export async function POST(req: Request) {
+export const POST = apiHandler(async (req: Request, body: any) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const body = await req.json()
 
   // Kalau ini retry dari antrian offline yang sempat sukses tapi
   // responsnya tidak sampai ke client (lihat lib/offline-produk-mutasi.ts),
@@ -55,10 +55,6 @@ export async function POST(req: Request) {
       RETURNING *
     `
   } catch (e: any) {
-    // Race sempit: dua flush dari client_ref sama persis nyaris bersamaan
-    // (mis. dua tab), keduanya lolos cek "belum ada" sebelum salah satu
-    // insert duluan. Constraint UNIQUE di DB tetap menahan yang kedua —
-    // di sini cukup kembalikan baris yang sudah ada, bukan error 500.
     if (body.client_ref && e.code === '23505') {
       const [existing] = await sql`SELECT * FROM produk WHERE client_ref = ${body.client_ref} AND toko_id = ${toko.tokoId}`
       if (existing) return NextResponse.json(existing, { status: 409 })
@@ -66,10 +62,6 @@ export async function POST(req: Request) {
     throw e
   }
 
-  // Embed foto ke ZFace (server-side) kalau ada foto. tokoId dari sesi
-  // terverifikasi (toko.tokoId), BUKAN dari body request — sebelumnya ini
-  // dipanggil langsung dari browser dengan tokoId dari client, memungkinkan
-  // client yang dimodifikasi mengirim tokoId sembarang.
   if (row.foto_url) {
     embedProduk({
       produkId: row.id,
@@ -78,8 +70,8 @@ export async function POST(req: Request) {
       fotoBase64: row.foto_url,
       tokoId: toko.tokoId,
       fotoUrl: row.foto_url,
-    }).catch(() => {}) // silent fail — jangan gagalkan simpan produk kalau ZFace down
+    }).catch(() => {})
   }
 
   return NextResponse.json(row)
-}
+}, { schema: produkSchema })

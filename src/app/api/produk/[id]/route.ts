@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { embedProduk, hapusEmbedding } from '@/lib/zface-visual'
+import { produkUpdateSchema } from '@/lib/validation'
+import { apiHandler } from '@/lib/api-handler'
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PUT = apiHandler(async (req: Request, body: any, { params }: { params: Promise<{ id: string }> }) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
-  const body = await req.json()
   const [row] = await sql`
     UPDATE produk
     SET nama = ${body.nama}, harga = ${body.harga}, stok = ${body.stok},
@@ -30,7 +31,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   return NextResponse.json(row)
-}
+}, { schema: produkUpdateSchema })
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const toko = await getTokoFromRequest(req)

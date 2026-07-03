@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import { signAdminToken } from '@/lib/auth'
 import { bolehLogin, catatGagal, resetPercobaan, ipDari } from '@/lib/ratelimit'
+import { adminLoginSchema } from '@/lib/validation'
+import { apiHandler } from '@/lib/api-handler'
 
-export async function POST(req: Request) {
-  const { email, password } = await req.json()
+export const POST = apiHandler(async (req: Request, body: { email: string; password: string }) => {
+  const { email, password } = body
 
   const adminEmail = process.env.ADMIN_EMAIL
   const adminPassword = process.env.ADMIN_PASSWORD
@@ -28,9 +30,9 @@ export async function POST(req: Request) {
   res.cookies.set('zpos_admin', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     maxAge: 60 * 60 * 24 * 7,
     path: '/',
   })
   return res
-}
+}, { schema: adminLoginSchema })

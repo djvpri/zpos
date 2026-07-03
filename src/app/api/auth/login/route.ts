@@ -3,11 +3,13 @@ import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
 import { signToken } from '@/lib/auth'
 import { bolehLogin, catatGagal, resetPercobaan, ipDari } from '@/lib/ratelimit'
+import { loginSchema } from '@/lib/validation'
+import { apiHandler } from '@/lib/api-handler'
 
-export async function POST(req: Request) {
-  const { email, password } = await req.json()
+export const POST = apiHandler(async (req: Request, body: { email: string; password: string }) => {
+  const { email, password } = body
 
-  const kunci = `login:${String(email ?? '').toLowerCase().trim()}`
+  const kunci = `login:${email.toLowerCase().trim()}`
   const ip = ipDari(req)
   if (!(await bolehLogin(kunci))) {
     return NextResponse.json({ error: 'Terlalu banyak percobaan login. Coba lagi beberapa menit lagi.' }, { status: 429 })
@@ -47,9 +49,9 @@ export async function POST(req: Request) {
   res.cookies.set('zpos_token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     maxAge: 60 * 60 * 24 * 30,
     path: '/',
   })
   return res
-}
+}, { schema: loginSchema })
