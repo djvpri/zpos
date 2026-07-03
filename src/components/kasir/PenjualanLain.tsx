@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, ShoppingCart, Pencil, X, Check, Settings2 } from 'lucide-react'
+import { Plus, Trash, Cart3, PencilFill, XLg, CheckLg, Gear } from 'react-bootstrap-icons'
 
 interface ItemLain {
   id: string
@@ -111,7 +111,7 @@ export default function PenjualanLain({ onTambahKeKeranjang }: Props) {
         <h2 className="text-sm font-semibold text-gray-800">Penjualan Lainnya</h2>
         <button onClick={() => setKelolaPreset(!kelolaPreset)}
           className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${kelolaPreset ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-          <Settings2 size={12} /> Kelola Preset
+          <Gear size={12} /> Kelola Preset
         </button>
       </div>
 
@@ -133,11 +133,11 @@ export default function PenjualanLain({ onTambahKeKeranjang }: Props) {
                   <div className="flex flex-col gap-1">
                     <button onClick={() => simpanEditPreset(p.id)}
                       className="rounded-lg bg-green-500 p-1.5 text-white hover:bg-green-600">
-                      <Check size={14} />
+                      <CheckLg size={14} />
                     </button>
                     <button onClick={() => setEditPresetId(null)}
                       className="rounded-lg bg-gray-200 p-1.5 text-gray-600 hover:bg-gray-300">
-                      <X size={14} />
+                      <XLg size={14} />
                     </button>
                   </div>
                 </div>
@@ -150,11 +150,11 @@ export default function PenjualanLain({ onTambahKeKeranjang }: Props) {
                   <div className="flex gap-1">
                     <button onClick={() => { setEditPresetId(p.id); setEditNama(p.nama); setEditHarga(String(p.harga)) }}
                       className="rounded-lg bg-blue-50 p-1.5 text-blue-600 hover:bg-blue-100">
-                      <Pencil size={13} />
+                      <PencilFill size={13} />
                     </button>
                     <button onClick={() => hapusPreset(p.id)}
                       className="rounded-lg bg-red-50 p-1.5 text-red-500 hover:bg-red-100">
-                      <Trash2 size={13} />
+                      <Trash size={13} />
                     </button>
                   </div>
                 </div>
@@ -250,7 +250,7 @@ export default function PenjualanLain({ onTambahKeKeranjang }: Props) {
                         className="h-6 w-6 rounded-full border border-gray-200 text-xs text-gray-500 hover:bg-gray-100 flex items-center justify-center">+</button>
                       <button onClick={() => hapusItem(item.id)}
                         className="ml-1 h-6 w-6 rounded-full text-red-400 hover:bg-red-50 flex items-center justify-center">
-                        <Trash2 size={12} />
+                        <Trash size={12} />
                       </button>
                     </div>
                   </div>
@@ -268,7 +268,7 @@ export default function PenjualanLain({ onTambahKeKeranjang }: Props) {
               </div>
               <button onClick={masukKanKeranjang}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 transition">
-                <ShoppingCart size={16} /> Masukkan ke Keranjang
+                <Cart3 size={16} /> Masukkan ke Keranjang
               </button>
             </div>
           )}

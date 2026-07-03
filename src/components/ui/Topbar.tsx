@@ -1,6 +1,6 @@
 'use client'
 
-import { LogOut } from 'lucide-react'
+import { BoxArrowRight } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import NotifikasiPanel from './NotifikasiPanel'
 
@@ -42,7 +42,7 @@ export function Topbar({ halaman }: Props) {
           className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
           title="Keluar"
         >
-          <LogOut size={16} />
+          <BoxArrowRight size={16} />
         </button>
       </div>
     </header>

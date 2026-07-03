@@ -6,7 +6,7 @@ import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Plus, Search, Edit2, Trash2, Package, Tag, X, FileSpreadsheet, ScanLine } from 'lucide-react'
+import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
 const ScanBarcodeMassal = dynamic(() => import('./ScanBarcodemassal'), { ssr: false })
@@ -71,7 +71,7 @@ export default function ProdukPage() {
               tab === 'produk' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            <Package size={14} /> Produk
+            <Box size={14} /> Produk
           </button>
           <button
             onClick={() => setTab('kategori')}
@@ -106,7 +106,7 @@ export default function ProdukPage() {
             />
             {cari && (
               <button onClick={() => setCari('')} className="text-gray-400 hover:text-gray-600">
-                <X size={14} />
+                <XLg size={14} />
               </button>
             )}
           </div>
@@ -159,13 +159,13 @@ export default function ProdukPage() {
                           data-testid="edit-product"
                           onClick={() => setModal(p)}
                           className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors">
-                          <Edit2 size={12} /> Edit
+                          <PencilSquare size={12} /> Edit
                         </button>
                         <button
                           data-testid="delete-product"
                           onClick={() => onHapusProduk(p.id)}
                           className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition-colors">
-                          <Trash2 size={12} /> Hapus
+                          <Trash size={12} /> Hapus
                         </button>
                       </div>
                     </td>
@@ -174,7 +174,7 @@ export default function ProdukPage() {
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={5} className="text-center py-12 text-gray-300">
-                      <Package size={36} className="mx-auto mb-2 opacity-40" />
+                      <Box size={36} className="mx-auto mb-2 opacity-40" />
                       <span className="text-sm">Tidak ada produk</span>
                     </td>
                   </tr>
@@ -225,7 +225,7 @@ export default function ProdukPage() {
                     onClick={() => onHapusKat(k.id, k.nama)}
                     className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   >
-                    <Trash2 size={14} />
+                    <Trash size={14} />
                   </button>
                 </div>
               ))

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { X, ScanLine, Trash2, Check, Loader2, Package, AlertCircle, ShoppingBag } from 'lucide-react'
+import { XLg, QrCodeScan, Trash, CheckLg, ArrowRepeat, Box, ExclamationCircle, Bag } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 
 const BarcodeCameraModal = dynamic(
@@ -107,14 +107,14 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <ScanLine size={18} className="text-indigo-600" />
+            <QrCodeScan size={18} className="text-indigo-600" />
             <span className="font-semibold text-gray-800">Scan Barcode Massal</span>
             {produk.length > 0 && (
               <span className="bg-indigo-100 text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-full">{produk.length}</span>
             )}
           </div>
           <button onClick={onTutup} className="p-1.5 rounded-full hover:bg-gray-100">
-            <X size={16} className="text-gray-500" />
+            <XLg size={16} className="text-gray-500" />
           </button>
         </div>
 
@@ -124,7 +124,7 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup }: Props) {
             <div className="px-5 py-4 border-b border-gray-100 space-y-3">
               <button onClick={() => setShowKamera(true)}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-700 transition">
-                <ScanLine size={18} /> Scan Barcode dengan Kamera
+                <QrCodeScan size={18} /> Scan Barcode dengan Kamera
               </button>
 
               {/* Input manual */}
@@ -150,7 +150,7 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup }: Props) {
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {produk.length === 0 ? (
                 <div className="py-10 text-center">
-                  <ShoppingBag size={36} className="mx-auto mb-2 text-gray-200" />
+                  <Bag size={36} className="mx-auto mb-2 text-gray-200" />
                   <p className="text-sm text-gray-400">Belum ada produk di-scan</p>
                   <p className="text-xs text-gray-300 mt-1">Scan barcode produk untuk memulai</p>
                 </div>
@@ -161,21 +161,21 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup }: Props) {
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-white border border-gray-200 flex-shrink-0 flex items-center justify-center">
                       {p.foto_url
                         ? <img src={p.foto_url} alt="" className="w-full h-full object-cover" />
-                        : <Package size={18} className="text-gray-300" />
+                        : <Box size={18} className="text-gray-300" />
                       }
                     </div>
 
                     <div className="flex-1 min-w-0 space-y-1.5">
                       {p.status === 'loading' ? (
                         <div className="flex items-center gap-2">
-                          <Loader2 size={14} className="animate-spin text-gray-400" />
+                          <ArrowRepeat size={14} className="animate-spin text-gray-400" />
                           <span className="text-xs text-gray-400">Mencari info produk {p.barcode}...</span>
                         </div>
                       ) : (
                         <>
                           <div className="flex items-center gap-1">
-                            {p.status === 'found' && <Check size={12} className="text-green-500 flex-shrink-0" />}
-                            {p.status === 'manual' && <AlertCircle size={12} className="text-orange-500 flex-shrink-0" />}
+                            {p.status === 'found' && <CheckLg size={12} className="text-green-500 flex-shrink-0" />}
+                            {p.status === 'manual' && <ExclamationCircle size={12} className="text-orange-500 flex-shrink-0" />}
                             <span className="text-[10px] text-gray-400 font-mono">{p.barcode}</span>
                           </div>
                           <input value={p.nama} onChange={e => update(p.barcode, 'nama', e.target.value)}
@@ -197,7 +197,7 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup }: Props) {
                     </div>
 
                     <button onClick={() => hapus(p.barcode)} className="p-1 text-gray-300 hover:text-red-400 flex-shrink-0">
-                      <Trash2 size={14} />
+                      <Trash size={14} />
                     </button>
                   </div>
                 </div>
@@ -211,14 +211,14 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup }: Props) {
               </button>
               <button onClick={simpanSemua} disabled={siapSimpan === 0 || menyimpan}
                 className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                {menyimpan ? <><Loader2 size={16} className="animate-spin" /> Menyimpan...</> : <>Simpan {siapSimpan} Produk</>}
+                {menyimpan ? <><ArrowRepeat size={16} className="animate-spin" /> Menyimpan...</> : <>Simpan {siapSimpan} Produk</>}
               </button>
             </div>
           </>
         ) : (
           /* Selesai */
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-            <Check size={48} className="text-green-500 mb-3" />
+            <CheckLg size={48} className="text-green-500 mb-3" />
             <p className="text-lg font-semibold text-gray-800 mb-1">Berhasil!</p>
             <p className="text-sm text-gray-500">{hasil?.berhasil} produk berhasil disimpan</p>
             {hasil?.gagal ? <p className="text-xs text-orange-500 mt-1">{hasil.gagal} produk dilewati</p> : null}

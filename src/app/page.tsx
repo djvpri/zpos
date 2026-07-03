@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ShoppingCart, BarChart3, Package, Smartphone, Users, Zap, Check } from 'lucide-react'
+import { Cart3, BarChartLine, Box, Smartphone, People, LightningCharge, CheckLg } from 'react-bootstrap-icons'
 
 const features = [
   { icon: ShoppingCart, title: 'Kasir Digital', desc: 'Proses transaksi cepat dengan tampilan yang intuitif. Support tunai, QRIS, dan transfer.' },
@@ -60,7 +60,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-14 sm:pb-24 text-center">
         <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-5 sm:mb-6">
-          <Zap size={12} />
+          <LightningCharge size={12} />
           Aplikasi POS untuk UMKM Indonesia
         </div>
 
@@ -217,7 +217,7 @@ export default function LandingPage() {
                 <ul className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-7">
                   {plan.items.map((item, j) => (
                     <li key={j} className="flex items-center gap-2.5 text-sm text-gray-600">
-                      <Check size={15} className="text-indigo-500 shrink-0" />
+                      <CheckLg size={15} className="text-indigo-500 shrink-0" />
                       {item}
                     </li>
                   ))}

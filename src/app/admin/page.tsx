@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ShieldCheck, UserPlus, X, LogOut, Store, Settings2 } from 'lucide-react'
+import { ShieldCheck, PersonPlus, XLg, BoxArrowRight, Shop, Gear } from 'react-bootstrap-icons'
 import { fmtDate } from '@/lib/utils'
 
 interface Member {
@@ -89,7 +89,7 @@ export default function AdminPage() {
             <span className="font-bold">ZPos Admin</span>
           </div>
           <button onClick={logout} className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
-            <LogOut size={15} /> Keluar
+            <BoxArrowRight size={15} /> Keluar
           </button>
         </div>
       </header>
@@ -104,7 +104,7 @@ export default function AdminPage() {
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors"
           >
-            <UserPlus size={16} />
+            <PersonPlus size={16} />
             <span className="hidden sm:inline">Daftarkan Member</span>
           </button>
         </div>
@@ -114,7 +114,7 @@ export default function AdminPage() {
         ) : members.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-              <Store size={24} className="text-gray-400" />
+              <Shop size={24} className="text-gray-400" />
             </div>
             <p className="text-gray-500 font-medium">Belum ada member</p>
             <p className="text-gray-400 text-sm mt-1">Daftarkan toko pertama Anda</p>
@@ -126,7 +126,7 @@ export default function AdminPage() {
               return (
                 <div key={m.id} className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 px-4 py-3.5">
                   <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
-                    <Store size={16} className="text-indigo-600" />
+                    <Shop size={16} className="text-indigo-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-800 truncate">{m.nama}</div>
@@ -152,7 +152,7 @@ export default function AdminPage() {
                     className="p-1.5 text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors shrink-0"
                     title="Kelola"
                   >
-                    <Settings2 size={15} />
+                    <Gear size={15} />
                   </button>
                 </div>
               )
@@ -168,7 +168,7 @@ export default function AdminPage() {
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-semibold text-gray-900">Daftarkan Member</h3>
               <button onClick={() => { setShowModal(false); setError('') }} className="p-1 text-gray-400 hover:text-gray-600">
-                <X size={18} />
+                <XLg size={18} />
               </button>
             </div>
             <form onSubmit={tambah} className="space-y-4">
@@ -251,7 +251,7 @@ export default function AdminPage() {
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-semibold text-gray-900 truncate">{kelola.nama}</h3>
               <button onClick={() => setKelola(null)} className="p-1 text-gray-400 hover:text-gray-600">
-                <X size={18} />
+                <XLg size={18} />
               </button>
             </div>
             <p className="text-xs text-gray-400 mb-5">

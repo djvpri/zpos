@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi, Shift } from '@/types'
-import { TrendingUp, Receipt, ShoppingBag, Percent, Ban, Clock } from 'lucide-react'
+import { GraphUpArrow, Receipt, Bag, Percent, Ban, ClockFill } from 'react-bootstrap-icons'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 const fmtDT = (d: string) => `${fmtDate(d)} ${fmtTime(d)}`

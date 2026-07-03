@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Percent, Save, Store, Phone, MapPin, FileText } from 'lucide-react'
+import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText } from 'react-bootstrap-icons'
 import { usePengaturan } from '@/hooks/usePengaturan'
 
 export default function PengaturanPage() {
@@ -45,14 +45,14 @@ export default function PengaturanPage() {
           {/* Info Toko */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 space-y-4">
             <div className="flex items-center gap-2 text-gray-800 mb-1">
-              <Store size={16} className="text-indigo-500" />
+              <Shop size={16} className="text-indigo-500" />
               <span className="font-medium text-sm">Info Toko</span>
             </div>
             <p className="text-sm text-gray-400">Ditampilkan di header struk transaksi.</p>
 
             <div>
               <label className="text-xs font-medium text-gray-600 flex items-center gap-1">
-                <MapPin size={11} /> Alamat
+                <GeoAlt size={11} /> Alamat
               </label>
               <textarea
                 rows={2}
@@ -66,7 +66,7 @@ export default function PengaturanPage() {
 
             <div>
               <label className="text-xs font-medium text-gray-600 flex items-center gap-1">
-                <Phone size={11} /> Telepon / WhatsApp
+                <Telephone size={11} /> Telepon / WhatsApp
               </label>
               <input
                 type="tel"
@@ -119,7 +119,7 @@ export default function PengaturanPage() {
             type="submit" disabled={saving}
             className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
           >
-            <Save size={15} />
+            <SaveFill size={15} />
             {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
           </button>
         </form>

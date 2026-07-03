@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Bell, X, AlertTriangle, Package, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
+import { BellFill, XLg, ExclamationTriangle, Box, Calendar, ChevronDown, ChevronUp } from 'react-bootstrap-icons'
 
 interface Produk { id: number; nama: string; stok: number; stok_minimum?: number; expired_at?: string; sisa_hari?: number; foto_url?: string }
 interface Notifikasi { stokMenipis: Produk[]; stokHabis: Produk[]; mauKadaluarsa: Produk[]; sudahKadaluarsa: Produk[]; total: number }
@@ -27,7 +27,7 @@ export default function NotifikasiPanel() {
       {/* Tombol Bell */}
       <button onClick={() => setOpen(true)}
         className="relative flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 transition">
-        <Bell size={18} className="text-gray-600" />
+        <BellFill size={18} className="text-gray-600" />
         <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
           {data.total > 99 ? '99+' : data.total}
         </span>
@@ -43,12 +43,12 @@ export default function NotifikasiPanel() {
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <Bell size={16} className="text-orange-500" />
+                <BellFill size={16} className="text-orange-500" />
                 <span className="text-sm font-semibold text-gray-800">Notifikasi</span>
                 <span className="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{data.total}</span>
               </div>
               <button onClick={() => setOpen(false)} className="p-1.5 rounded-full hover:bg-gray-100">
-                <X size={16} className="text-gray-500" />
+                <XLg size={16} className="text-gray-500" />
               </button>
             </div>
 
@@ -89,7 +89,7 @@ export default function NotifikasiPanel() {
               {/* Stok Habis */}
               {data.stokHabis.length > 0 && (
                 <Section
-                  icon={<Package size={14} className="text-red-500" />}
+                  icon={<Box size={14} className="text-red-500" />}
                   title="Stok Habis"
                   count={data.stokHabis.length}
                   color="red"
@@ -105,7 +105,7 @@ export default function NotifikasiPanel() {
               {/* Stok Menipis */}
               {data.stokMenipis.length > 0 && (
                 <Section
-                  icon={<AlertTriangle size={14} className="text-yellow-500" />}
+                  icon={<ExclamationTriangle size={14} className="text-yellow-500" />}
                   title="Stok Menipis"
                   count={data.stokMenipis.length}
                   color="yellow"

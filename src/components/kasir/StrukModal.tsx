@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Transaksi } from '@/types'
 import { fmt, fmtDateTime } from '@/lib/utils'
-import { Printer, Share2, Bluetooth } from 'lucide-react'
+import { Printer, Share, Bluetooth } from 'react-bootstrap-icons'
 import { buildEscPos, printViaBluetooth, isBluetoothSupported, selectPrinter, getSavedPrinterName, PrintStatus, StrukData } from '@/lib/thermal-print'
 
 interface TokoInfo {
@@ -204,7 +204,7 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
               <Printer size={15} /> Cetak
             </button>
             <button onClick={bagikan} className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
-              <Share2 size={15} /> Bagikan
+              <Share size={15} /> Bagikan
             </button>
           </div>
           <button onClick={onTutup} className="w-full py-2.5 bg-indigo-700 text-white rounded-lg text-sm font-medium hover:bg-indigo-800 transition-colors">

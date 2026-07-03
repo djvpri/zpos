@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Clock, PlayCircle, StopCircle, X } from 'lucide-react'
+import { ClockFill, PlayCircle, StopCircle, XLg } from 'react-bootstrap-icons'
 import { useShift } from '@/hooks/useShift'
 import { fmt } from '@/lib/utils'
 import type { Shift } from '@/types'
@@ -58,7 +58,7 @@ function BukaModal({ onBuka, onBatal }: { onBuka: (modal: number) => void; onBat
       <div className="bg-white rounded-2xl w-72 shadow-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <span className="font-semibold text-gray-800">Mulai Shift</span>
-          <button onClick={onBatal} className="p-1 hover:bg-gray-100 rounded-lg"><X size={16} /></button>
+          <button onClick={onBatal} className="p-1 hover:bg-gray-100 rounded-lg"><XLg size={16} /></button>
         </div>
         <label className="text-xs font-medium text-gray-600">Modal Awal Kas (opsional)</label>
         <input
@@ -113,7 +113,7 @@ export function ShiftBanner() {
       {!shift ? (
         <div className="mx-4 mt-3 md:mx-4 md:mt-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-sm">
           <div className="flex items-center gap-2 text-amber-700">
-            <Clock size={15} />
+            <ClockFill size={15} />
             <span>Shift belum dimulai</span>
           </div>
           <button
@@ -126,7 +126,7 @@ export function ShiftBanner() {
       ) : (
         <div className="mx-4 mt-3 md:mx-4 md:mt-4 flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 text-sm">
           <div className="flex items-center gap-2 text-emerald-700">
-            <Clock size={15} />
+            <ClockFill size={15} />
             <span>Shift aktif sejak {fmtTime(shift.buka_at)}</span>
           </div>
           <button

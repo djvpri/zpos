@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { Search, ShoppingCart, X, ScanLine, MoreHorizontal, Camera } from 'lucide-react'
+import { Search, Cart3, XLg, QrCodeScan, ThreeDots, Camera } from 'react-bootstrap-icons'
 import PenjualanLain from '@/components/kasir/PenjualanLain'
 import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
@@ -226,7 +226,7 @@ export default function KasirPage() {
             </button>
             <button onClick={() => setTab('lain')}
               className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors ${tab === 'lain' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>
-              <MoreHorizontal size={14} className="inline mr-1" />Lainnya
+              <ThreeDots size={14} className="inline mr-1" />Lainnya
             </button>
           </div>
 
@@ -237,7 +237,7 @@ export default function KasirPage() {
                 <input value={cari} onChange={e => setCari(e.target.value)}
                   placeholder="Cari produk atau barcode..." className="flex-1 bg-transparent outline-none text-sm" />
                 <button onClick={() => setShowCamera(true)} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors" title="Scan barcode kamera">
-                  <ScanLine size={18} />
+                  <QrCodeScan size={18} />
                 </button>
                 <button onClick={() => setShowScanVisual(true)} className="p-1 text-gray-400 hover:text-purple-600 transition-colors" title="Scan produk visual (AI)">
                   <Camera size={18} />
@@ -264,7 +264,7 @@ export default function KasirPage() {
           <input value={cari} onChange={e => setCari(e.target.value)}
             placeholder="Cari produk..." className="flex-1 bg-transparent outline-none text-sm" />
           <button onClick={() => setShowCamera(true)} className="p-1 text-gray-400 hover:text-indigo-600 transition-colors">
-            <ScanLine size={18} />
+            <QrCodeScan size={18} />
           </button>
           <button onClick={() => setShowScanVisual(true)} className="p-1 text-gray-400 hover:text-purple-600 transition-colors" title="Scan visual AI">
             <Camera size={18} />
@@ -298,7 +298,7 @@ export default function KasirPage() {
       {!showCart && (
         <button onClick={() => setShowCart(true)}
           className="md:hidden fixed bottom-20 right-4 z-40 bg-indigo-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg active:scale-95 transition-transform">
-          <ShoppingCart size={22} />
+          <Cart3 size={22} />
           {totalItem > 0 && (
             <span data-testid="cart-count" className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
               {totalItem}
@@ -315,7 +315,7 @@ export default function KasirPage() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <span className="font-semibold text-gray-800">Keranjang</span>
               <button onClick={() => setShowCart(false)} className="p-1 rounded-lg hover:bg-gray-100">
-                <X size={18} className="text-gray-500" />
+                <XLg size={18} className="text-gray-500" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">

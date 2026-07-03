@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { X, Camera, RefreshCw } from 'lucide-react'
+import { XLg, Camera, ArrowClockwise } from 'react-bootstrap-icons'
 
 interface Props {
   onFoto: (base64: string) => void
@@ -71,7 +71,7 @@ export default function KameraModal({ onFoto, onClose }: Props) {
           <span className="text-sm font-semibold text-white">Foto Produk</span>
           <button onClick={() => { stopKamera(); onClose() }}
             className="rounded-full bg-gray-700 p-1.5 text-gray-300 hover:bg-gray-600">
-            <X size={16} />
+            <XLg size={16} />
           </button>
         </div>
 

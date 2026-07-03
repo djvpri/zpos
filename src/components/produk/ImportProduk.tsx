@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { Upload, Download, X, CheckCircle, AlertCircle, FileSpreadsheet, Loader2 } from 'lucide-react'
+import { Upload, Download, XLg, CheckCircleFill, ExclamationCircle, FileEarmarkSpreadsheet, ArrowRepeat } from 'react-bootstrap-icons'
 import * as XLSX from 'xlsx'
 
 interface ProdukRow {
@@ -92,11 +92,11 @@ export default function ImportProduk({ onSelesai, onTutup }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet size={18} className="text-green-600" />
+            <FileEarmarkSpreadsheet size={18} className="text-green-600" />
             <span className="font-semibold text-gray-800">Import Produk dari Excel</span>
           </div>
           <button onClick={onTutup} className="p-1.5 rounded-full hover:bg-gray-100">
-            <X size={16} className="text-gray-500" />
+            <XLg size={16} className="text-gray-500" />
           </button>
         </div>
 
@@ -129,7 +129,7 @@ export default function ImportProduk({ onSelesai, onTutup }: Props) {
 
               {error && (
                 <div className="flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-600">
-                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                  <ExclamationCircle size={16} className="flex-shrink-0 mt-0.5" />
                   {error}
                 </div>
               )}
@@ -177,7 +177,7 @@ export default function ImportProduk({ onSelesai, onTutup }: Props) {
           {/* Step: Proses */}
           {step === 'proses' && (
             <div className="py-8 text-center">
-              <Loader2 size={40} className="mx-auto mb-3 text-indigo-500 animate-spin" />
+              <ArrowRepeat size={40} className="mx-auto mb-3 text-indigo-500 animate-spin" />
               <p className="text-sm font-medium text-gray-700">Menyimpan {produk.length} produk...</p>
               <p className="text-xs text-gray-400 mt-1">Mohon tunggu</p>
             </div>
@@ -186,7 +186,7 @@ export default function ImportProduk({ onSelesai, onTutup }: Props) {
           {/* Step: Selesai */}
           {step === 'selesai' && hasil && (
             <div className="py-6 text-center">
-              <CheckCircle size={40} className="mx-auto mb-3 text-green-500" />
+              <CheckCircleFill size={40} className="mx-auto mb-3 text-green-500" />
               <p className="text-base font-semibold text-gray-800 mb-1">Import Selesai!</p>
               <p className="text-sm text-gray-500">{hasil.berhasil} produk berhasil diimport</p>
               {hasil.gagal > 0 && (
