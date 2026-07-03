@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import { flushQueue, getQueueCount } from '@/lib/offline-queue'
+import { flushMutasiProduk, getMutasiProduk } from '@/lib/offline-produk-mutasi'
+import { flushPengaturan, getPendingPengaturan } from '@/lib/offline-settings'
 
 export interface TokoInfo {
   userId: number
@@ -74,16 +76,33 @@ export function useAuthProvider() {
   const [pendingSync, setPendingSync] = useState(0)
 
   const refreshQueueCount = useCallback(async () => {
-    try { setPendingSync(await getQueueCount()) } catch {}
+    try {
+      const [transaksi, mutasiProduk, pengaturan] = await Promise.all([
+        getQueueCount(),
+        getMutasiProduk(),
+        getPendingPengaturan(),
+      ])
+      setPendingSync(transaksi + mutasiProduk.length + (pengaturan ? 1 : 0))
+    } catch {}
   }, [])
 
-  // Coba kirim transaksi yang tertunda. Dipanggil saat app dibuka, saat
-  // browser mendeteksi koneksi kembali ('online'), dan berkala (jaga-jaga
-  // kalau event 'online' tidak terpicu tapi sinyal sebenarnya sudah ada,
-  // mis. berpindah dari WiFi mati ke data seluler).
+  // Coba kirim semua yang tertunda: transaksi, mutasi produk (buat/ubah/
+  // hapus), dan pengaturan. Dipanggil saat app dibuka, saat browser
+  // mendeteksi koneksi kembali ('online'), dan berkala (jaga-jaga kalau
+  // event 'online' tidak terpicu tapi sinyal sebenarnya sudah ada, mis.
+  // berpindah dari WiFi mati ke data seluler).
   const cobaSinkron = useCallback(async () => {
     try {
       await flushQueue()
+    } catch {}
+    try {
+      const hasilProduk = await flushMutasiProduk()
+      if (hasilProduk.synced > 0) window.dispatchEvent(new Event('zpos:produk-synced'))
+    } catch {}
+    try {
+      const sebelumnya = await getPendingPengaturan()
+      const berhasil = await flushPengaturan()
+      if (berhasil && sebelumnya) window.dispatchEvent(new Event('zpos:pengaturan-synced'))
     } catch {}
     refreshQueueCount()
   }, [refreshQueueCount])

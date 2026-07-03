@@ -6,9 +6,11 @@
 // (IndexedDB cuma boleh 1 versi aktif per nama DB).
 
 export const DB_NAME = 'zpos-offline'
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 export const STORE_ANTRIAN = 'antrian-transaksi'
 export const STORE_CACHE = 'cache-baca'
+export const STORE_PENGATURAN_PENDING = 'pengaturan-pending'
+export const STORE_MUTASI_PRODUK = 'antrian-mutasi-produk'
 
 export function openOfflineDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -20,6 +22,12 @@ export function openOfflineDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_CACHE)) {
         db.createObjectStore(STORE_CACHE, { keyPath: 'key' })
+      }
+      if (!db.objectStoreNames.contains(STORE_PENGATURAN_PENDING)) {
+        db.createObjectStore(STORE_PENGATURAN_PENDING, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(STORE_MUTASI_PRODUK)) {
+        db.createObjectStore(STORE_MUTASI_PRODUK, { keyPath: 'localId' })
       }
     }
     req.onsuccess = () => resolve(req.result)

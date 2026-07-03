@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi, Shift } from '@/types'
 import { GraphUpArrow, Receipt, Bag, Percent, Ban, ClockFill } from 'react-bootstrap-icons'
+import { cacheGet, cacheSet } from '@/lib/offline-cache'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 const fmtDT = (d: string) => `${fmtDate(d)} ${fmtTime(d)}`
@@ -23,12 +24,26 @@ export default function LaporanPage() {
   const [shiftLoaded, setShiftLoaded] = useState(false)
 
   const loadRingkasan = useCallback(async () => {
-    const res = await fetch('/api/laporan')
-    if (res.ok) {
-      const { laporan, terlaris, riwayat } = await res.json()
-      setLaporan(laporan)
-      setTerlaris(terlaris)
-      setRiwayat(riwayat)
+    try {
+      const res = await fetch('/api/laporan')
+      if (!res.ok) throw new Error('gagal')
+      const data = await res.json()
+      setLaporan(data.laporan)
+      setTerlaris(data.terlaris)
+      setRiwayat(data.riwayat)
+      cacheSet('laporan', data).catch(() => {})
+    } catch {
+      // Offline — pakai laporan terakhir yang berhasil dimuat, supaya owner
+      // tetap bisa lihat ringkasan (walau bukan data paling baru) alih-alih
+      // layar kosong. Transaksi yang masih di antrian offline (belum
+      // tersinkron) TIDAK ikut di sini karena belum pernah sampai ke
+      // server — baru muncul di laporan setelah berhasil sinkron.
+      const cached = await cacheGet<{ laporan: LaporanHarian[]; terlaris: ProdukTerlaris[]; riwayat: Transaksi[] }>('laporan').catch(() => null)
+      if (cached) {
+        setLaporan(cached.laporan)
+        setTerlaris(cached.terlaris)
+        setRiwayat(cached.riwayat)
+      }
     }
     setLoadingRingkasan(false)
   }, [])
@@ -36,8 +51,16 @@ export default function LaporanPage() {
   const loadShift = useCallback(async () => {
     if (shiftLoaded) return
     setLoadingShift(true)
-    const res = await fetch('/api/shift')
-    if (res.ok) setShifts(await res.json())
+    try {
+      const res = await fetch('/api/shift')
+      if (!res.ok) throw new Error('gagal')
+      const data = await res.json()
+      setShifts(data)
+      cacheSet('riwayat-shift', data).catch(() => {})
+    } catch {
+      const cached = await cacheGet<Shift[]>('riwayat-shift').catch(() => null)
+      if (cached) setShifts(cached)
+    }
     setLoadingShift(false)
     setShiftLoaded(true)
   }, [shiftLoaded])

@@ -2,15 +2,17 @@
 import { useState, useRef } from 'react'
 import { Upload, Download, XLg, CheckCircleFill, ExclamationCircle, FileEarmarkSpreadsheet, ArrowRepeat } from 'react-bootstrap-icons'
 import * as XLSX from 'xlsx'
+import { useKategori } from '@/hooks/useKategori'
 
 interface ProdukRow {
   nama: string; harga: number; stok: number; kategori: string
   deskripsi?: string; barcode?: string; expired_at?: string; stok_minimum?: number
 }
 
-interface Props { onSelesai: () => void; onTutup: () => void }
+interface Props { onSelesai: () => void; onTutup: () => void; tambahOffline: (p: any) => Promise<{ message: string } | null> }
 
-export default function ImportProduk({ onSelesai, onTutup }: Props) {
+export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Props) {
+  const { kategori: daftarKategori } = useKategori()
   const fileRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState<'upload' | 'preview' | 'proses' | 'selesai'>('upload')
   const [produk, setProduk] = useState<ProdukRow[]>([])
@@ -80,8 +82,27 @@ export default function ImportProduk({ onSelesai, onTutup }: Props) {
       setStep('selesai')
       if (data.berhasil > 0) onSelesai()
     } catch {
-      setError('Gagal menyimpan ke server')
-      setStep('preview')
+      // Endpoint bulk gagal total (kemungkinan besar offline) — antrikan
+      // satu-satu lewat mekanisme yang sama dengan tambah produk manual.
+      // Kategori diresolusi dari daftar yang sudah ter-cache lokal (tidak
+      // bisa buat kategori baru saat offline) — kalau namanya belum ada
+      // di cache, produk masuk tanpa kategori dulu, bisa diatur ulang
+      // manual nanti setelah online. Tiap produk langsung tampil di
+      // daftar dengan penanda "belum tersinkron", otomatis terkirim
+      // begitu koneksi kembali.
+      let berhasil = 0
+      for (const p of produk) {
+        const kat = daftarKategori.find(k => k.nama.toLowerCase() === p.kategori.toLowerCase())
+        const gagal = await tambahOffline({
+          nama: p.nama, harga: p.harga, stok: p.stok, emoji: '📦', aktif: true,
+          deskripsi: p.deskripsi, barcode: p.barcode, expired_at: p.expired_at,
+          stok_minimum: p.stok_minimum, kategori_id: kat?.id ?? null,
+        })
+        if (!gagal) berhasil++
+      }
+      setHasil({ berhasil, gagal: produk.length - berhasil, errors: [] })
+      setStep('selesai')
+      if (berhasil > 0) onSelesai()
     }
   }
 

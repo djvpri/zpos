@@ -15,6 +15,9 @@ export interface Produk {
   updated_at?: string
   // join
   kategori?: { nama: string }
+  // Klien-saja: true kalau produk ini masih menunggu sinkron ke server
+  // (dibuat/diubah saat offline). Tidak pernah dikirim ke API.
+  _pending?: boolean
 }
 
 export interface Kategori {

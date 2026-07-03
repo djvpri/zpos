@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { cacheGet, cacheSet } from '@/lib/offline-cache'
+import { setPendingPengaturan } from '@/lib/offline-settings'
 
 export interface Pengaturan {
   pajak_persen: number
@@ -40,20 +41,39 @@ export function usePengaturan() {
 
   useEffect(() => { load() }, [load])
 
+  // Reload setelah siklus sinkron (useAuth.ts) berhasil kirim pengaturan
+  // yang sempat tertunda, supaya data lokal sejalan lagi dengan server.
+  useEffect(() => {
+    const onSynced = () => load()
+    window.addEventListener('zpos:pengaturan-synced', onSynced)
+    return () => window.removeEventListener('zpos:pengaturan-synced', onSynced)
+  }, [load])
+
   const simpan = async (payload: Partial<Pengaturan>) => {
-    const res = await fetch('/api/pengaturan', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, ...payload }),
-    })
-    if (res.ok) {
-      const updated = await res.json()
-      setData(updated)
-      cacheSet(CACHE_KEY, updated).catch(() => {})
-      return { error: null }
+    const gabungan = { ...data, ...payload }
+    try {
+      const res = await fetch('/api/pengaturan', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gabungan),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setData(updated)
+        cacheSet(CACHE_KEY, updated).catch(() => {})
+        return { error: null }
+      }
+      const err = await res.json().catch(() => ({}))
+      return { error: err.error || 'Gagal menyimpan' }
+    } catch {
+      // Offline — terapkan langsung ke tampilan lokal (owner lihat
+      // hasilnya seketika) & antrikan pengiriman ke server. Single-slot:
+      // kalau diubah lagi sebelum sempat sinkron, versi terbaru yang menang.
+      setData(gabungan)
+      cacheSet(CACHE_KEY, gabungan).catch(() => {})
+      await setPendingPengaturan(gabungan)
+      return { error: null, queued: true as const }
     }
-    const err = await res.json().catch(() => ({}))
-    return { error: err.error || 'Gagal menyimpan' }
   }
 
   return { ...data, pajakPersen: data.pajak_persen, loading, simpan }

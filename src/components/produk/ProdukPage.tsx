@@ -234,8 +234,8 @@ export default function ProdukPage() {
         </div>
       )}
 
-      {showScanMassal && <ScanBarcodeMassal onSelesai={fetchProduk} onTutup={() => setShowScanMassal(false)} />}
-      {showImport && <ImportProduk onSelesai={fetchProduk} onTutup={() => setShowImport(false)} />}
+      {showScanMassal && <ScanBarcodeMassal onSelesai={fetchProduk} onTutup={() => setShowScanMassal(false)} tambahOffline={tambah} />}
+      {showImport && <ImportProduk onSelesai={fetchProduk} onTutup={() => setShowImport(false)} tambahOffline={tambah} />}
       {modal && (
         <ProdukModal
           produk={modal === 'tambah' ? null : modal}

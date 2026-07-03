@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { XLg, QrCodeScan, Trash, CheckLg, ArrowRepeat, Box, ExclamationCircle, Bag } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
+import { useKategori } from '@/hooks/useKategori'
 
 const BarcodeCameraModal = dynamic(
   () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
@@ -21,6 +22,7 @@ interface ProdukScan {
 interface Props {
   onSelesai: () => void
   onTutup: () => void
+  tambahOffline: (p: any) => Promise<{ message: string } | null>
 }
 
 async function lookupBarcode(barcode: string): Promise<Partial<ProdukScan> | null> {
@@ -37,7 +39,8 @@ async function lookupBarcode(barcode: string): Promise<Partial<ProdukScan> | nul
   } catch { return null }
 }
 
-export default function ScanBarcodeMassal({ onSelesai, onTutup }: Props) {
+export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }: Props) {
+  const { kategori: daftarKategori } = useKategori()
   const [produk, setProduk] = useState<ProdukScan[]>([])
   const [showKamera, setShowKamera] = useState(false)
   const [menyimpan, setMenyimpan] = useState(false)
@@ -94,7 +97,23 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup }: Props) {
       setHasil(data)
       setSelesai(true)
       if (data.berhasil > 0) onSelesai()
-    } catch { alert('Gagal menyimpan') }
+    } catch {
+      // Endpoint bulk gagal total (kemungkinan besar offline) — antrikan
+      // satu-satu, sama seperti ImportProduk.tsx. Kategori dari cache
+      // lokal, default tanpa kategori kalau namanya belum pernah ada.
+      let berhasil = 0
+      for (const p of valid) {
+        const kat = daftarKategori.find(k => k.nama.toLowerCase() === p.kategori.toLowerCase())
+        const gagal = await tambahOffline({
+          nama: p.nama, harga: p.harga, stok: p.stok, emoji: '📦', aktif: true,
+          barcode: p.barcode, foto_url: p.foto_url, kategori_id: kat?.id ?? null,
+        })
+        if (!gagal) berhasil++
+      }
+      setHasil({ berhasil, gagal: valid.length - berhasil })
+      setSelesai(true)
+      if (berhasil > 0) onSelesai()
+    }
     setMenyimpan(false)
   }
 
