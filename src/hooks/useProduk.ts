@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Produk } from '@/types'
+import { cacheGet, cacheSet } from '@/lib/offline-cache'
+
+const CACHE_KEY = 'produk'
 
 export function useProduk() {
   const [produk, setProduk] = useState<Produk[]>([])
@@ -13,9 +16,20 @@ export function useProduk() {
     try {
       const res = await globalThis.fetch('/api/produk')
       if (!res.ok) throw new Error('Gagal memuat produk')
-      setProduk(await res.json())
+      const data = await res.json()
+      setProduk(data)
+      setError(null)
+      cacheSet(CACHE_KEY, data).catch(() => {})
     } catch (e: any) {
-      setError(e.message)
+      // Gagal (kemungkinan besar offline) — pakai cache lokal kalau ada,
+      // supaya kasir tetap punya katalog untuk dijual, bukan layar kosong.
+      const cached = await cacheGet<Produk[]>(CACHE_KEY).catch(() => null)
+      if (cached) {
+        setProduk(cached)
+        setError(null)
+      } else {
+        setError(e.message)
+      }
     } finally {
       setLoading(false)
     }

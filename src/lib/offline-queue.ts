@@ -2,15 +2,9 @@
 // ada jaringan (bukan karena data ditolak server), transaksi disimpan di
 // sini dulu — struk tetap dicetak dari data lokal, kasir tidak perlu
 // menunggu. Begitu koneksi kembali, semua yang tertunda otomatis dikirim.
-//
-// Pakai IndexedDB langsung (bukan localStorage) karena data transaksi bisa
-// menumpuk banyak & butuh akses async yang tidak memblokir UI thread.
 
 import type { Transaksi, DetailTransaksi } from '@/types'
-
-const DB_NAME = 'zpos-offline'
-const STORE = 'antrian-transaksi'
-const DB_VERSION = 1
+import { openOfflineDb, STORE_ANTRIAN } from './offline-db'
 
 export interface QueuedTrx {
   localId: string
@@ -20,22 +14,8 @@ export interface QueuedTrx {
   attempts: number
 }
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION)
-    req.onupgradeneeded = () => {
-      const db = req.result
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE, { keyPath: 'localId' })
-      }
-    }
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
-}
-
 export async function queueTransaksi(trx: Transaksi, items: DetailTransaksi[]): Promise<void> {
-  const db = await openDb()
+  const db = await openOfflineDb()
   const entry: QueuedTrx = {
     localId: `${trx.no_transaksi}-${Date.now()}`,
     trx, items,
@@ -43,8 +23,8 @@ export async function queueTransaksi(trx: Transaksi, items: DetailTransaksi[]): 
     attempts: 0,
   }
   await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite')
-    tx.objectStore(STORE).put(entry)
+    const tx = db.transaction(STORE_ANTRIAN, 'readwrite')
+    tx.objectStore(STORE_ANTRIAN).put(entry)
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error)
   })
@@ -52,10 +32,10 @@ export async function queueTransaksi(trx: Transaksi, items: DetailTransaksi[]): 
 }
 
 export async function getQueue(): Promise<QueuedTrx[]> {
-  const db = await openDb()
+  const db = await openOfflineDb()
   const result = await new Promise<QueuedTrx[]>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readonly')
-    const req = tx.objectStore(STORE).getAll()
+    const tx = db.transaction(STORE_ANTRIAN, 'readonly')
+    const req = tx.objectStore(STORE_ANTRIAN).getAll()
     req.onsuccess = () => resolve(req.result as QueuedTrx[])
     req.onerror = () => reject(req.error)
   })
@@ -64,10 +44,10 @@ export async function getQueue(): Promise<QueuedTrx[]> {
 }
 
 export async function getQueueCount(): Promise<number> {
-  const db = await openDb()
+  const db = await openOfflineDb()
   const count = await new Promise<number>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readonly')
-    const req = tx.objectStore(STORE).count()
+    const tx = db.transaction(STORE_ANTRIAN, 'readonly')
+    const req = tx.objectStore(STORE_ANTRIAN).count()
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(req.error)
   })
@@ -76,10 +56,10 @@ export async function getQueueCount(): Promise<number> {
 }
 
 async function removeFromQueue(localId: string): Promise<void> {
-  const db = await openDb()
+  const db = await openOfflineDb()
   await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite')
-    tx.objectStore(STORE).delete(localId)
+    const tx = db.transaction(STORE_ANTRIAN, 'readwrite')
+    tx.objectStore(STORE_ANTRIAN).delete(localId)
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error)
   })
@@ -87,10 +67,10 @@ async function removeFromQueue(localId: string): Promise<void> {
 }
 
 async function bumpAttempts(entry: QueuedTrx): Promise<void> {
-  const db = await openDb()
+  const db = await openOfflineDb()
   await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite')
-    tx.objectStore(STORE).put({ ...entry, attempts: entry.attempts + 1 })
+    const tx = db.transaction(STORE_ANTRIAN, 'readwrite')
+    tx.objectStore(STORE_ANTRIAN).put({ ...entry, attempts: entry.attempts + 1 })
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error)
   })
