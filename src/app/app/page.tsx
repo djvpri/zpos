@@ -27,7 +27,7 @@ const NAV_KASIR = [
 ]
 
 export default function AppPage() {
-  const { toko, loading, logout } = useAuth()
+  const { toko, loading, offline, logout } = useAuth()
   const [halaman, setHalaman] = useState<Halaman>('kasir')
 
   // Redirect kasir yang coba akses halaman admin
@@ -81,7 +81,13 @@ export default function AppPage() {
   const nav = isOwner ? NAV_OWNER : NAV_KASIR
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex flex-col h-screen overflow-hidden">
+      {offline && (
+        <div className="shrink-0 bg-amber-500 text-white text-[11px] font-medium text-center py-1">
+          Mode offline — pakai sesi tersimpan. Data terbaru dari server akan dimuat begitu koneksi kembali.
+        </div>
+      )}
+      <div className="flex flex-1 overflow-hidden">
       <div className="hidden md:block">
         <Sidebar aktif={halaman} onNavigasi={setHalaman} role={toko?.role ?? 'kasir'} />
       </div>
@@ -108,6 +114,7 @@ export default function AppPage() {
           </button>
         ))}
       </nav>
+      </div>
     </div>
   )
 }
