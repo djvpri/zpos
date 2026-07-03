@@ -1,16 +1,16 @@
+// SERVER-ONLY — jangan pernah diimpor dari komponen 'use client'. Fungsi di
+// sini memakai CROSS_APP_SECRET, yang tidak boleh (dan tidak bisa) terlihat
+// di browser. Komponen client harus panggil endpoint /api/produk/* milik
+// ZPOS sendiri (cookie session), yang lalu memanggil fungsi-fungsi ini di
+// server. Lihat: api/produk/route.ts, api/produk/[id]/route.ts,
+// api/produk/scan-visual/route.ts.
 /**
  * Helper untuk ZFace Visual Search (CLIP product recognition)
  */
+import { getCrossAppSecret } from './secrets'
 
 const ZFACE_URL = process.env.NEXT_PUBLIC_ZFACE_API_URL || 'https://zface.zomet.my.id'
-// Migration 2026-07-02: dual secret support
-const NEW_SECRET = process.env.CROSS_APP_SECRET || 'uurclTHL375CiZeWi2g4T3GczU2YNY9I1wzjlsVTgSk'
-const OLD_SECRET = 'z-ecosystem-admin-2026'
 const APP_SLUG = 'zpos'
-
-function getSecret(): string {
-  return NEW_SECRET
-}
 
 export interface HasilCari {
   produk_id: string
@@ -43,7 +43,7 @@ export async function embedProduk(params: {
 
     const res = await fetch(`${ZFACE_URL}/api/produk/embed`, {
       method: 'POST',
-      headers: { 'x-cross-app-secret': getSecret() },
+      headers: { 'x-cross-app-secret': getCrossAppSecret() },
       body: fd,
     })
     return res.ok
@@ -64,7 +64,7 @@ export async function cariProdukDariFoto(params: {
 
   const res = await fetch(`${ZFACE_URL}/api/produk/cari`, {
     method: 'POST',
-    headers: { 'x-cross-app-secret': getSecret() },
+    headers: { 'x-cross-app-secret': getCrossAppSecret() },
     body: fd,
   })
   if (!res.ok) return []
@@ -80,7 +80,7 @@ export async function hapusEmbedding(params: {
   try {
     await fetch(
       `${ZFACE_URL}/api/produk/${params.produkId}?tenant_id=${params.tokoId}&app_slug=${APP_SLUG}`,
-      { method: 'DELETE', headers: { 'x-cross-app-secret': getSecret() } }
+      { method: 'DELETE', headers: { 'x-cross-app-secret': getCrossAppSecret() } }
     )
   } catch {}
 }

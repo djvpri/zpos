@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Camera, X, RefreshCw, ShoppingCart, CheckCircle, AlertCircle, Pause, Play } from 'lucide-react'
-import { cariProdukDariFoto, HasilCari } from '@/lib/zface-visual'
+import { scanProdukVisual, HasilCari } from '@/lib/produk-scan-client'
 import { useAuth } from '@/hooks/useAuth'
 
 interface Props {
@@ -129,7 +129,7 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
     try {
       const blob = await ambilFrame()
       if (!blob) { setStatus('kamera'); scanningRef.current = false; return }
-      const data = await cariProdukDariFoto({ fotoBlob: blob, tokoId: toko.tokoId })
+      const data = await scanProdukVisual(blob)
 
       if (data.length > 0 && data[0].confidence >= 70) {
         setHasil(data)
@@ -153,7 +153,7 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
     try {
       const blob = await ambilFrame()
       if (!blob) { setStatus('error'); setErrorMsg('Gagal ambil frame'); return }
-      const data = await cariProdukDariFoto({ fotoBlob: blob, tokoId: toko.tokoId })
+      const data = await scanProdukVisual(blob)
       setHasil(data)
       setStatus('hasil')
       stopKamera()

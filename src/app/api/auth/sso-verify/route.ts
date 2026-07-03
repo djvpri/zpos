@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SignJWT, jwtVerify } from 'jose'
+import { jwtVerify } from 'jose'
 import sql from '@/lib/db'
 import { signToken } from '@/lib/auth'
+import { getCrossAppSecret } from '@/lib/secrets'
 
-// Migration 2026-07-02: dual secret support  
-const NEW_SECRET = new TextEncoder().encode(
-  process.env.CROSS_APP_SECRET || 'uurclTHL375CiZeWi2g4T3GczU2YNY9I1wzjlsVTgSk'
-)
-const OLD_SECRET = new TextEncoder().encode('z-ecosystem-admin-2026')
-const VALID_SECRETS = [NEW_SECRET, OLD_SECRET]
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!)
 
 // Terima SSO token dari Z One, cocokkan ke user ZPOS, buat sesi ZPOS
@@ -19,18 +14,11 @@ export async function POST(req: NextRequest) {
 
     // 1. Verifikasi token dari Z One
     let payload: any
-    let verified = false
-    for (const secret of VALID_SECRETS) {
-      try {
-        const result = await jwtVerify(token, secret)
-        payload = result.payload
-        verified = true
-        break
-      } catch {
-        continue
-      }
-    }
-    if (!verified) {
+    try {
+      const crossSecret = new TextEncoder().encode(getCrossAppSecret())
+      const result = await jwtVerify(token, crossSecret)
+      payload = result.payload
+    } catch {
       return NextResponse.json({ error: 'Token SSO tidak valid atau kedaluwarsa' }, { status: 401 })
     }
 

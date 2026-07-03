@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useProduk } from '@/hooks/useProduk'
 import { useKategori } from '@/hooks/useKategori'
-import { useAuth } from '@/hooks/useAuth'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
@@ -11,7 +10,6 @@ import { Plus, Search, Edit2, Trash2, Package, Tag, X, FileSpreadsheet, ScanLine
 import dynamic from 'next/dynamic'
 const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
 const ScanBarcodeMassal = dynamic(() => import('./ScanBarcodemassal'), { ssr: false })
-import { embedProduk, hapusEmbedding } from '@/lib/zface-visual'
 
 type Tab = 'produk' | 'kategori'
 
@@ -29,32 +27,18 @@ export default function ProdukPage() {
 
   const filtered = produk.filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
 
-  const { toko } = useAuth()
-
   const onSimpan = async (p: Partial<Produk>) => {
-    let saved: any
-    if (p.id) saved = await update(p.id, p)
-    else saved = await tambah(p as any)
+    if (p.id) await update(p.id, p)
+    else await tambah(p as any)
     setModal(null)
-
-    // Auto-embed ke ZFace jika ada foto
-    if (toko && p.foto_url && (saved?.id || p.id)) {
-      const produkId = saved?.id || p.id
-      embedProduk({
-        produkId,
-        nama: p.nama || '',
-        harga: p.harga || 0,
-        fotoBase64: p.foto_url,
-        tokoId: toko.tokoId,
-        fotoUrl: p.foto_url,
-      }).catch(() => {}) // silent fail
-    }
+    // Embed ke ZFace sekarang ditangani server-side di api/produk (POST/PUT),
+    // otomatis kalau ada foto — tidak perlu panggilan terpisah dari client lagi.
   }
 
   const onHapusProduk = async (id: number) => {
     if (confirm('Hapus produk ini?')) {
       await hapus(id)
-      if (toko) hapusEmbedding({ produkId: id, tokoId: toko.tokoId }).catch(() => {})
+      // hapusEmbedding ditangani server-side di api/produk/[id] (DELETE).
     }
   }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
+import { embedProduk } from '@/lib/zface-visual'
 
 const LIMIT_PRODUK_TRIAL = 100
 
@@ -40,5 +41,21 @@ export async function POST(req: Request) {
     VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId}, ${body.expired_at || null}, ${body.stok_minimum ?? 5})
     RETURNING *
   `
+
+  // Embed foto ke ZFace (server-side) kalau ada foto. tokoId dari sesi
+  // terverifikasi (toko.tokoId), BUKAN dari body request — sebelumnya ini
+  // dipanggil langsung dari browser dengan tokoId dari client, memungkinkan
+  // client yang dimodifikasi mengirim tokoId sembarang.
+  if (row.foto_url) {
+    embedProduk({
+      produkId: row.id,
+      nama: row.nama,
+      harga: row.harga,
+      fotoBase64: row.foto_url,
+      tokoId: toko.tokoId,
+      fotoUrl: row.foto_url,
+    }).catch(() => {}) // silent fail — jangan gagalkan simpan produk kalau ZFace down
+  }
+
   return NextResponse.json(row)
 }
