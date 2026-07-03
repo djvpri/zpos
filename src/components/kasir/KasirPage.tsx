@@ -26,7 +26,7 @@ export default function KasirPage() {
   const { produk, loading, kurangiStok, tambahStok } = useProduk()
   const { simpan } = useTransaksi()
   const { kategori } = useKategori()
-  const { toko } = useAuth()
+  const { toko, syncNow } = useAuth()
   const { pajakPersen, alamat, telepon, catatan_struk } = usePengaturan()
 
   const [katId, setKatId] = useState<number | null>(null)
@@ -41,7 +41,8 @@ export default function KasirPage() {
   const [showCamera, setShowCamera] = useState(false)
   const [tab, setTab] = useState<'produk' | 'lain'>('produk')
   const [showScanVisual, setShowScanVisual] = useState(false)
-  const [virtualProduk, setVirtualProduk] = useState<Record<number, {id:number;nama:string;harga:number;stok:number;kategori_id:null;barcode:null;foto_url:null}>>({}) 
+  const [virtualProduk, setVirtualProduk] = useState<Record<number, {id:number;nama:string;harga:number;stok:number;kategori_id:null;barcode:null;foto_url:null}>>({})
+  const [pesanSimpan, setPesanSimpan] = useState<{ tipe: 'antri' | 'gagal'; teks: string } | null>(null)
 
   const produkFiltered = useMemo(() =>
     produk.filter(p =>
@@ -130,6 +131,7 @@ export default function KasirPage() {
   const bayarSekarang = async () => {
     if (items.length === 0 || (metode === 'Tunai' && kurang > 0)) return
     setSaving(true)
+    setPesanSimpan(null)
 
     const trxData: Transaksi = {
       no_transaksi: noTrx(),
@@ -138,6 +140,7 @@ export default function KasirPage() {
       kembali: metode === 'Tunai' ? kembali : 0,
       metode_bayar: metode,
       kasir: toko?.userName ?? '',
+      created_at: new Date().toISOString(), // waktu jual sesungguhnya, dipakai kalau nanti disinkron belakangan
       items: items.map(it => ({
         produk_id: it.id,
         nama_produk: it.nama,
@@ -155,7 +158,21 @@ export default function KasirPage() {
       subtotal: it.harga * it.qty,
     }))
 
-    await simpan(trxData, details)
+    const hasil = await simpan(trxData, details)
+    setSaving(false)
+
+    if (hasil.error) {
+      // Server terjangkau tapi benar-benar menolak (mis. langganan habis) —
+      // jangan cetak struk / kosongkan keranjang, kasir perlu tahu & coba lagi.
+      setPesanSimpan({ tipe: 'gagal', teks: hasil.error })
+      return
+    }
+    if (hasil.queued) {
+      setPesanSimpan({ tipe: 'antri', teks: 'Tidak ada koneksi — transaksi disimpan & akan otomatis terkirim.' })
+      setTimeout(() => setPesanSimpan(null), 6000)
+      syncNow() // coba langsung, jaga-jaga koneksi sebenarnya sempat balik
+    }
+
     setStruk(trxData)
     setKeranjang({})
     setVirtualProduk({})
@@ -163,7 +180,6 @@ export default function KasirPage() {
     setDiskon(0)
     setMetode('Tunai')
     setShowCart(false)
-    setSaving(false)
   }
 
   const filterChips = (
@@ -191,6 +207,13 @@ export default function KasirPage() {
   return (
     <>
       <ShiftBanner />
+      {pesanSimpan && (
+        <div className={`mx-4 mt-2 rounded-lg px-4 py-2 text-xs font-medium ${
+          pesanSimpan.tipe === 'antri' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {pesanSimpan.teks}
+        </div>
+      )}
 
       {/* Desktop */}
       <div className="hidden md:grid grid-cols-[1fr_310px] gap-4 p-4 h-[calc(100vh-56px)]">

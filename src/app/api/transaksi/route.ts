@@ -14,15 +14,26 @@ export async function POST(req: Request) {
 
   const { trx, items }: { trx: Transaksi; items: DetailTransaksi[] } = await req.json()
 
+  // Kalau transaksi ini sudah pernah masuk (retry dari antrian offline yang
+  // sempat sukses tapi responsnya tidak sampai ke client), kembalikan baris
+  // yang sudah ada — supaya sinkronisasi ulang tidak gagal atau dobel.
+  const [existing] = await sql`SELECT * FROM transaksi WHERE no_transaksi = ${trx.no_transaksi}`
+  if (existing) return NextResponse.json(existing, { status: 409 })
+
   const [activeShift] = await sql`
     SELECT id FROM shift WHERE toko_id = ${toko.tokoId} AND user_id = ${toko.userId} AND aktif = true LIMIT 1
   `
   const shiftId = activeShift?.id ?? null
 
+  // created_at: kalau client kirim (mis. transaksi offline yang baru
+  // tersinkron belakangan), pakai waktu jual SESUNGGUHNYA itu — bukan
+  // waktu sinkron — supaya laporan harian tidak salah tanggal.
+  const waktuJual = trx.created_at ? new Date(trx.created_at) : new Date()
+
   const [saved] = await sql`
-    INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id, shift_id)
+    INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id, shift_id, created_at)
     VALUES (${trx.no_transaksi}, ${trx.subtotal}, ${trx.diskon}, ${trx.pajak}, ${trx.total},
-            ${trx.bayar}, ${trx.kembali}, ${trx.metode_bayar}, ${toko.userName}, ${toko.tokoId}, ${shiftId})
+            ${trx.bayar}, ${trx.kembali}, ${trx.metode_bayar}, ${toko.userName}, ${toko.tokoId}, ${shiftId}, ${waktuJual})
     RETURNING *
   `
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, createContext, useContext } from 'react'
+import { flushQueue, getQueueCount } from '@/lib/offline-queue'
 
 export interface TokoInfo {
   userId: number
@@ -19,13 +20,15 @@ interface AuthContextValue {
   toko: TokoInfo | null
   loading: boolean
   offline: boolean
+  pendingSync: number
   logout: () => Promise<void>
   refresh: () => void
+  syncNow: () => void
 }
 
 export const AuthContext = createContext<AuthContextValue>({
-  toko: null, loading: true, offline: false,
-  logout: async () => {}, refresh: () => {}
+  toko: null, loading: true, offline: false, pendingSync: 0,
+  logout: async () => {}, refresh: () => {}, syncNow: () => {}
 })
 
 export function useAuth() {
@@ -68,6 +71,22 @@ export function useAuthProvider() {
   const [toko, setToko] = useState<TokoInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [offline, setOffline] = useState(false)
+  const [pendingSync, setPendingSync] = useState(0)
+
+  const refreshQueueCount = useCallback(async () => {
+    try { setPendingSync(await getQueueCount()) } catch {}
+  }, [])
+
+  // Coba kirim transaksi yang tertunda. Dipanggil saat app dibuka, saat
+  // browser mendeteksi koneksi kembali ('online'), dan berkala (jaga-jaga
+  // kalau event 'online' tidak terpicu tapi sinyal sebenarnya sudah ada,
+  // mis. berpindah dari WiFi mati ke data seluler).
+  const cobaSinkron = useCallback(async () => {
+    try {
+      await flushQueue()
+    } catch {}
+    refreshQueueCount()
+  }, [refreshQueueCount])
 
   const fetchMe = useCallback(async () => {
     try {
@@ -102,13 +121,21 @@ export function useAuthProvider() {
 
   useEffect(() => {
     fetchMe()
+    refreshQueueCount()
+    cobaSinkron()
     window.addEventListener('focus', fetchMe)
     window.addEventListener('online', fetchMe)
+    window.addEventListener('online', cobaSinkron)
+    // Jaga-jaga event 'online' tidak terpicu (kadang tidak konsisten di
+    // beberapa browser Android) — coba sinkron tiap 2 menit selama app terbuka.
+    const interval = setInterval(cobaSinkron, 2 * 60 * 1000)
     return () => {
       window.removeEventListener('focus', fetchMe)
       window.removeEventListener('online', fetchMe)
+      window.removeEventListener('online', cobaSinkron)
+      clearInterval(interval)
     }
-  }, [fetchMe])
+  }, [fetchMe, cobaSinkron, refreshQueueCount])
 
   const logout = useCallback(async () => {
     clearHint()
@@ -116,5 +143,5 @@ export function useAuthProvider() {
     window.location.href = '/login'
   }, [])
 
-  return { toko, loading, offline, logout, refresh: fetchMe }
+  return { toko, loading, offline, pendingSync, logout, refresh: fetchMe, syncNow: cobaSinkron }
 }
