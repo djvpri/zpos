@@ -1,13 +1,13 @@
 import Link from 'next/link'
-import { Cart3, BarChartLine, Box, Smartphone, People, LightningCharge, CheckLg } from 'react-bootstrap-icons'
+import { Cart3, BarChartLine, Box, PhoneFill, People, LightningCharge, CheckLg } from 'react-bootstrap-icons'
 
 const features = [
-  { icon: ShoppingCart, title: 'Kasir Digital', desc: 'Proses transaksi cepat dengan tampilan yang intuitif. Support tunai, QRIS, dan transfer.' },
-  { icon: Package, title: 'Manajemen Produk', desc: 'Tambah, edit, dan kelola produk dengan mudah. Stok otomatis berkurang saat transaksi.' },
-  { icon: BarChart3, title: 'Laporan Penjualan', desc: 'Pantau performa toko dengan laporan harian, produk terlaris, dan riwayat transaksi.' },
-  { icon: Smartphone, title: 'Mobile Friendly', desc: 'Akses dari HP atau tablet kapan saja. Tampilan responsif untuk semua ukuran layar.' },
-  { icon: Users, title: 'Multi Toko', desc: 'Daftarkan beberapa toko dengan akun berbeda. Data setiap toko terisolasi dan aman.' },
-  { icon: Zap, title: 'Cepat & Ringan', desc: 'Dibangun dengan teknologi modern. Tidak perlu install aplikasi, cukup buka browser.' },
+  { icon: Cart3, title: 'Kasir Digital', desc: 'Proses transaksi cepat dengan tampilan yang intuitif. Support tunai, QRIS, dan transfer.' },
+  { icon: Box, title: 'Manajemen Produk', desc: 'Tambah, edit, dan kelola produk dengan mudah. Stok otomatis berkurang saat transaksi.' },
+  { icon: BarChartLine, title: 'Laporan Penjualan', desc: 'Pantau performa toko dengan laporan harian, produk terlaris, dan riwayat transaksi.' },
+  { icon: PhoneFill, title: 'Mobile Friendly', desc: 'Akses dari HP atau tablet kapan saja. Tampilan responsif untuk semua ukuran layar.' },
+  { icon: People, title: 'Multi Toko', desc: 'Daftarkan beberapa toko dengan akun berbeda. Data setiap toko terisolasi dan aman.' },
+  { icon: LightningCharge, title: 'Cepat & Ringan', desc: 'Dibangun dengan teknologi modern. Tidak perlu install aplikasi, cukup buka browser.' },
 ]
 
 const plans = [
@@ -99,7 +99,7 @@ export default function LandingPage() {
                 <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
                   <span className="text-white text-xs font-bold">Z</span>
                 </div>
-                {[ShoppingCart, Package, BarChart3].map((Icon, i) => (
+                {[Cart3, Box, BarChartLine].map((Icon, i) => (
                   <div key={i} className={`w-8 h-8 rounded-lg flex items-center justify-center ${i === 0 ? 'bg-indigo-50 text-indigo-600' : 'text-gray-300'}`}>
                     <Icon size={16} />
                   </div>
@@ -156,7 +156,7 @@ export default function LandingPage() {
               </div>
               {/* Bottom bar */}
               <div className="bg-white border-t border-gray-100 flex justify-around py-2.5">
-                {[ShoppingCart, Package, BarChart3].map((Icon, i) => (
+                {[Cart3, Box, BarChartLine].map((Icon, i) => (
                   <div key={i} className={`flex flex-col items-center gap-0.5 ${i === 0 ? 'text-indigo-600' : 'text-gray-300'}`}>
                     <Icon size={14} />
                     <div className={`w-1 h-1 rounded-full ${i === 0 ? 'bg-indigo-600' : 'bg-transparent'}`} />

@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { Produk } from '@/types'
 import { useKategori } from '@/hooks/useKategori'
-import { XLg, Camera, Trash, QrCodeScan, QrCodeScan, Image } from 'react-bootstrap-icons'
+import { XLg, Camera, Trash, UpcScan, QrCodeScan, Image as ImageIcon } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 const KameraModal = dynamic(() => import('./KameraModal'), { ssr: false })
 const BarcodeCameraModal = dynamic(
@@ -140,7 +140,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
                     disabled={uploading}
                     className="flex-1 h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-indigo-300 hover:text-indigo-400 transition-colors disabled:opacity-60"
                   >
-                    <Image size={22} />
+                    <ImageIcon size={22} />
                     <span className="text-xs">{uploading ? 'Memproses...' : 'Galeri'}</span>
                   </button>
                   <button
@@ -165,7 +165,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
           </div>
           <div>
             <label className="text-xs text-gray-500 flex items-center gap-1">
-              <QrCodeScan size={12} /> Barcode <span className="text-gray-300">(opsional)</span>
+              <UpcScan size={12} /> Barcode <span className="text-gray-300">(opsional)</span>
             </label>
             <div className="flex gap-2 mt-1">
               <input

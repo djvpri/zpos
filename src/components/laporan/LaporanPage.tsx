@@ -58,9 +58,9 @@ export default function LaporanPage() {
   const hari = laporan[0] || { total_penjualan: 0, jumlah_transaksi: 0, rata_rata: 0, total_diskon: 0 }
 
   const cards = [
-    { label: 'Penjualan Hari Ini', val: fmt(hari.total_penjualan || 0), icon: TrendingUp, color: 'indigo' },
+    { label: 'Penjualan Hari Ini', val: fmt(hari.total_penjualan || 0), icon: GraphUpArrow, color: 'indigo' },
     { label: 'Jumlah Transaksi', val: String(hari.jumlah_transaksi || 0), icon: Receipt, color: 'teal' },
-    { label: 'Rata-rata Transaksi', val: fmt(hari.rata_rata || 0), icon: ShoppingBag, color: 'amber' },
+    { label: 'Rata-rata Transaksi', val: fmt(hari.rata_rata || 0), icon: Bag, color: 'amber' },
     { label: 'Total Diskon', val: fmt(hari.total_diskon || 0), icon: Percent, color: 'rose' },
   ]
 

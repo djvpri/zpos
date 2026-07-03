@@ -16,10 +16,10 @@ type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan'
 
 const NAV_OWNER = [
   { id: 'kasir' as Halaman, icon: Receipt, label: 'Kasir' },
-  { id: 'produk' as Halaman, icon: Package, label: 'Produk' },
-  { id: 'laporan' as Halaman, icon: BarChart3, label: 'Laporan' },
-  { id: 'staff' as Halaman, icon: Users, label: 'Staff' },
-  { id: 'pengaturan' as Halaman, icon: Settings, label: 'Atur' },
+  { id: 'produk' as Halaman, icon: Box, label: 'Produk' },
+  { id: 'laporan' as Halaman, icon: BarChartLine, label: 'Laporan' },
+  { id: 'staff' as Halaman, icon: People, label: 'Staff' },
+  { id: 'pengaturan' as Halaman, icon: Gear, label: 'Atur' },
 ]
 
 const NAV_KASIR = [

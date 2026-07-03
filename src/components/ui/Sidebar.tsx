@@ -4,10 +4,10 @@ import { Receipt, Box, BarChartLine, People, Gear } from 'react-bootstrap-icons'
 
 const NAV_OWNER = [
   { id: 'kasir', icon: Receipt, label: 'Kasir' },
-  { id: 'produk', icon: Package, label: 'Produk' },
-  { id: 'laporan', icon: BarChart3, label: 'Laporan' },
-  { id: 'staff', icon: Users, label: 'Staff' },
-  { id: 'pengaturan', icon: Settings, label: 'Atur' },
+  { id: 'produk', icon: Box, label: 'Produk' },
+  { id: 'laporan', icon: BarChartLine, label: 'Laporan' },
+  { id: 'staff', icon: People, label: 'Staff' },
+  { id: 'pengaturan', icon: Gear, label: 'Atur' },
 ] as const
 
 const NAV_KASIR = [
