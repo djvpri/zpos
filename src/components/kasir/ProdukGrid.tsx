@@ -2,7 +2,7 @@
 
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Search } from 'lucide-react'
+import { Search } from 'react-bootstrap-icons'
 
 interface Props {
   produk: Produk[]

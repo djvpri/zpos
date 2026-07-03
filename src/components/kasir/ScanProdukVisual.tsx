@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Camera, X, RefreshCw, ShoppingCart, CheckCircle, AlertCircle, Pause, Play } from 'lucide-react'
+import { Camera, XLg, ArrowClockwise, Cart3, CheckCircleFill, ExclamationCircle, PauseFill, PlayFill } from 'react-bootstrap-icons'
 import { scanProdukVisual, HasilCari } from '@/lib/produk-scan-client'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -198,12 +198,12 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
             {status === 'kamera' && (
               <button onClick={() => setAutoScan(a => !a)}
                 className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition border ${autoScan ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                {autoScan ? <><Pause size={11} /> Auto</> : <><Play size={11} /> Manual</>}
+                {autoScan ? <><PauseFill size={11} /> Auto</> : <><PlayFill size={11} /> Manual</>}
               </button>
             )}
             <button onClick={() => { stopKamera(); onClose() }}
               className="rounded-full bg-gray-100 p-1.5 text-gray-500 hover:bg-gray-200">
-              <X size={16} />
+              <XLg size={16} />
             </button>
           </div>
         </div>
@@ -255,7 +255,7 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
           <div className="p-4">
             {hasil.length === 0 ? (
               <div className="py-6 text-center">
-                <AlertCircle size={32} className="mx-auto mb-2 text-gray-300" />
+                <ExclamationCircle size={32} className="mx-auto mb-2 text-gray-300" />
                 <p className="text-sm text-gray-500">Produk tidak ditemukan</p>
               </div>
             ) : (
@@ -268,7 +268,7 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900 truncate">{h.nama}</span>
-                        {i === 0 && <CheckCircle size={14} className="text-green-500 flex-shrink-0" />}
+                        {i === 0 && <CheckCircleFill size={14} className="text-green-500 flex-shrink-0" />}
                       </div>
                       <div className="text-xs text-gray-500">Rp {h.harga.toLocaleString('id-ID')}</div>
                     </div>
@@ -276,7 +276,7 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium border ${confidenceColor(h.status)}`}>
                         {h.confidence}%
                       </span>
-                      <div className="mt-1"><ShoppingCart size={14} className="text-indigo-500 ml-auto" /></div>
+                      <div className="mt-1"><Cart3 size={14} className="text-indigo-500 ml-auto" /></div>
                     </div>
                   </button>
                 ))}
@@ -288,7 +288,7 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
         {/* Error */}
         {status === 'error' && (
           <div className="p-6 text-center">
-            <AlertCircle size={32} className="mx-auto mb-2 text-red-400" />
+            <ExclamationCircle size={32} className="mx-auto mb-2 text-red-400" />
             <p className="text-sm text-red-600 mb-1">Terjadi Kesalahan</p>
             <p className="text-xs text-gray-500">{errorMsg}</p>
           </div>
@@ -305,7 +305,7 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
           {(status === 'hasil' || status === 'error') && (
             <button onClick={ulangi}
               className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gray-100 py-3 text-sm font-medium text-gray-700 hover:bg-gray-200 transition">
-              <RefreshCw size={16} /> Coba Lagi
+              <ArrowClockwise size={16} /> Coba Lagi
             </button>
           )}
           <button onClick={() => { stopKamera(); onClose() }}

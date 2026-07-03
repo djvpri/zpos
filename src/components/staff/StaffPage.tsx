@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { UserPlus, Trash2, X } from 'lucide-react'
+import { PersonPlus, Trash, XLg } from 'react-bootstrap-icons'
 import { Staff } from '@/types'
 
 export default function StaffPage() {
@@ -59,7 +59,7 @@ export default function StaffPage() {
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors"
         >
-          <UserPlus size={16} />
+          <PersonPlus size={16} />
           <span className="hidden sm:inline">Tambah Kasir</span>
         </button>
       </div>
@@ -69,7 +69,7 @@ export default function StaffPage() {
       ) : staff.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-            <UserPlus size={24} className="text-gray-400" />
+            <PersonPlus size={24} className="text-gray-400" />
           </div>
           <p className="text-gray-500 font-medium">Belum ada kasir</p>
           <p className="text-gray-400 text-sm mt-1">Tambah akun kasir untuk staff toko Anda</p>
@@ -92,7 +92,7 @@ export default function StaffPage() {
                 onClick={() => hapus(s.id)}
                 className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
               >
-                <Trash2 size={15} />
+                <Trash size={15} />
               </button>
             </div>
           ))}
@@ -105,7 +105,7 @@ export default function StaffPage() {
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-semibold text-gray-900">Tambah Kasir</h3>
               <button onClick={() => { setShowModal(false); setError('') }} className="p-1 text-gray-400 hover:text-gray-600">
-                <X size={18} />
+                <XLg size={18} />
               </button>
             </div>
             <form onSubmit={tambah} className="space-y-4">

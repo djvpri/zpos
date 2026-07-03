@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ScanLine, X } from 'lucide-react'
+import { QrCodeScan, XLg } from 'react-bootstrap-icons'
 import { useZxing } from 'react-zxing'
 
 interface Props {
@@ -28,14 +28,14 @@ export function BarcodeCameraModal({ onScan, onTutup }: { onScan: (b: string) =>
         <div className="flex items-center justify-between px-4 py-3 bg-black/60">
           <span className="text-white text-sm font-medium">Arahkan kamera ke barcode</span>
           <button onClick={onTutup} className="p-1 text-white/70 hover:text-white">
-            <X size={20} />
+            <XLg size={20} />
           </button>
         </div>
         <div className="relative">
           <video ref={ref} className="w-full aspect-square object-cover" />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-48 h-48 border-2 border-indigo-400 rounded-xl opacity-80">
-              <ScanLine size={24} className="text-indigo-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+              <QrCodeScan size={24} className="text-indigo-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
             </div>
           </div>
         </div>

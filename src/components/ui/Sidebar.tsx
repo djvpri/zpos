@@ -1,6 +1,6 @@
 'use client'
 
-import { Receipt, Package, BarChart3, Users, Settings } from 'lucide-react'
+import { Receipt, Box, BarChartLine, People, Gear } from 'react-bootstrap-icons'
 
 const NAV_OWNER = [
   { id: 'kasir', icon: Receipt, label: 'Kasir' },

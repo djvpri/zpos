@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { Produk } from '@/types'
 import { useKategori } from '@/hooks/useKategori'
-import { X, Camera, Trash2, Barcode, ScanLine, Image as ImageIcon } from 'lucide-react'
+import { XLg, Camera, Trash, QrCodeScan, QrCodeScan, Image } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 const KameraModal = dynamic(() => import('./KameraModal'), { ssr: false })
 const BarcodeCameraModal = dynamic(
@@ -104,7 +104,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       <div className="bg-white rounded-2xl p-6 w-96 shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-semibold text-base">{produk ? 'Edit Produk' : 'Tambah Produk'}</h3>
-          <button onClick={onTutup} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          <button onClick={onTutup} className="text-gray-400 hover:text-gray-600"><XLg size={18} /></button>
         </div>
 
         <div className="space-y-3">
@@ -128,7 +128,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
                       onClick={() => set('foto_url', '')}
                       className="p-2 bg-white rounded-lg text-red-500 hover:bg-red-50"
                     >
-                      <Trash2 size={16} />
+                      <Trash size={16} />
                     </button>
                   </div>
                 </div>
@@ -140,7 +140,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
                     disabled={uploading}
                     className="flex-1 h-28 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-indigo-300 hover:text-indigo-400 transition-colors disabled:opacity-60"
                   >
-                    <ImageIcon size={22} />
+                    <Image size={22} />
                     <span className="text-xs">{uploading ? 'Memproses...' : 'Galeri'}</span>
                   </button>
                   <button
@@ -165,7 +165,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
           </div>
           <div>
             <label className="text-xs text-gray-500 flex items-center gap-1">
-              <Barcode size={12} /> Barcode <span className="text-gray-300">(opsional)</span>
+              <QrCodeScan size={12} /> Barcode <span className="text-gray-300">(opsional)</span>
             </label>
             <div className="flex gap-2 mt-1">
               <input
@@ -181,7 +181,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
                 className="px-3 py-2 border border-gray-200 rounded-xl text-gray-400 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
                 title="Scan dengan kamera"
               >
-                <ScanLine size={16} />
+                <QrCodeScan size={16} />
               </button>
             </div>
           </div>

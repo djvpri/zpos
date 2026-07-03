@@ -8,7 +8,7 @@ import ProdukPage from '@/components/produk/ProdukPage'
 import LaporanPage from '@/components/laporan/LaporanPage'
 import StaffPage from '@/components/staff/StaffPage'
 import PengaturanPage from '@/components/pengaturan/PengaturanPage'
-import { Receipt, Package, BarChart3, Users, Settings, Lock, LogOut } from 'lucide-react'
+import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import { fmtDate } from '@/lib/utils'
 
@@ -51,7 +51,7 @@ export default function AppPage() {
     return (
       <div className="flex flex-col h-screen items-center justify-center bg-gray-50 px-6 text-center">
         <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-5">
-          <Lock size={28} className="text-red-500" />
+          <LockFill size={28} className="text-red-500" />
         </div>
         <h1 className="text-xl font-bold text-gray-900 mb-2">
           {nonaktif ? 'Toko Dinonaktifkan' : 'Langganan Berakhir'}
@@ -71,7 +71,7 @@ export default function AppPage() {
           onClick={logout}
           className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors"
         >
-          <LogOut size={15} /> Keluar
+          <BoxArrowRight size={15} /> Keluar
         </button>
       </div>
     )
