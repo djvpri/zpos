@@ -100,11 +100,15 @@ export default function KasirPage() {
     kurangiStok(p.id, 1)
   }
 
-  const onBarcodeScan = useCallback(async (code: string) => {
-    const res = await fetch(`/api/produk/barcode/${encodeURIComponent(code)}`)
-    if (!res.ok) return
-    const p = await res.json()
-    tambahKeKeranjang(p)
+  const onBarcodeScan = useCallback((code: string) => {
+    // Cari dari katalog yang sudah dimuat client (produk dari useProduk,
+    // yang sekarang ter-cache offline juga) — TIDAK perlu round-trip
+    // server. Ini juga membuat scan tetap jalan saat offline total, dan
+    // lebih cepat + lebih ringan ke server bahkan saat online.
+    const p = produk.find(x => x.barcode === code)
+    if (p) tambahKeKeranjang(p)
+    // Kalau tidak ketemu, diam saja (perilaku sama seperti sebelumnya
+    // saat server membalas 404) — kasir bisa cari manual di grid produk.
   }, [produk])
 
   useBarcodeUsbListener(onBarcodeScan)
