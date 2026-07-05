@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 
-export async function GET(req: Request) {
+export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const auth = await getTokoFromRequest(req)
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (auth.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   return NextResponse.json(staff)
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const auth = await getTokoFromRequest(req)
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (auth.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

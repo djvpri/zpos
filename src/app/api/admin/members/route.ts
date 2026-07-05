@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
 import { getAdminFromRequest } from '@/lib/auth'
 
-export async function GET(req: Request) {
+export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const admin = await getAdminFromRequest(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   return NextResponse.json(rows)
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const admin = await getAdminFromRequest(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

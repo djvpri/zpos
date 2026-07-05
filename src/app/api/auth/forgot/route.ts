@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { signResetToken } from '@/lib/auth'
 
-export async function POST(req: Request) {
+export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const { email } = await req.json()
 
   // Selalu balas ok agar tidak membocorkan email mana yang terdaftar.

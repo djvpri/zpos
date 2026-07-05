@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 
-export async function GET(req: Request) {
+export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   return NextResponse.json(rows)
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (toko.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

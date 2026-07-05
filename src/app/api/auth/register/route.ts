@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
 import { signToken } from '@/lib/auth'
 
-export async function POST(req: Request) {
+export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const { nama, email, password } = await req.json()
 
   if (!nama || !email || !password) {

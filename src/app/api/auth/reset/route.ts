@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
 import { verifyResetToken } from '@/lib/auth'
 
-export async function POST(req: Request) {
+export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const { token, password } = await req.json()
 
   if (!token || !password) {

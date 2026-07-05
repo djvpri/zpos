@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { signAdminToken } from '@/lib/auth'
 import { bolehLogin, catatGagal, resetPercobaan, ipDari } from '@/lib/ratelimit'
 
-export async function POST(req: Request) {
+export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const { email, password } = await req.json()
 
   const adminEmail = process.env.ADMIN_EMAIL

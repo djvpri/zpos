@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
 
-export async function GET(req: Request) {
+export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json(null, { status: 401 })
   const status = await statusToko(toko.tokoId)

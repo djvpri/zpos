@@ -4,7 +4,7 @@ import sql from '@/lib/db'
 import { signToken } from '@/lib/auth'
 import { bolehLogin, catatGagal, resetPercobaan, ipDari } from '@/lib/ratelimit'
 
-export async function POST(req: Request) {
+export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const { email, password } = await req.json()
 
   const kunci = `login:${String(email ?? '').toLowerCase().trim()}`
