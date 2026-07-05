@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
 import { Produk } from '@/types'
 import { cacheGet, cacheSet } from '@/lib/offline-cache'
 import { queueBuatProduk, queueUbahProduk, queueHapusProduk, isTempId } from '@/lib/offline-produk-mutasi'
