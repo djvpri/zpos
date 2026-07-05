@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
+import { embedProduk } from '@/lib/zface-visual'
+import { produkSchema } from '@/lib/validation'
+import { apiHandler } from '@/lib/api-handler'
+import type { Produk } from '@/types'
 
 const LIMIT_PRODUK_TRIAL = 100
 
@@ -19,9 +23,18 @@ export async function GET(req: Request, _ctx: { params: Promise<Record<string, s
   return NextResponse.json(rows)
 }
 
-export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export const POST = apiHandler(async (req: Request, body: any) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Kalau ini retry dari antrian offline yang sempat sukses tapi
+  // responsnya tidak sampai ke client (lihat lib/offline-produk-mutasi.ts),
+  // kembalikan baris yang sudah ada — SEBELUM cek limit trial & embed foto,
+  // supaya retry tidak salah kena limit / kirim ulang foto ke ZFace.
+  if (body.client_ref) {
+    const [existing] = await sql`SELECT * FROM produk WHERE client_ref = ${body.client_ref} AND toko_id = ${toko.tokoId}`
+    if (existing) return NextResponse.json(existing, { status: 409 })
+  }
 
   const status = await statusToko(toko.tokoId)
   if (!status.aktif) return NextResponse.json({ error: 'Toko dinonaktifkan. Hubungi admin.' }, { status: 403 })
@@ -34,11 +47,31 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
     }
   }
 
-  const body = await req.json()
-  const [row] = await sql`
-    INSERT INTO produk (nama, harga, stok, emoji, deskripsi, foto_url, barcode, kategori_id, toko_id)
-    VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId})
-    RETURNING *
-  `
+  let row: Produk
+  try {
+    ;[row] = await sql`
+      INSERT INTO produk (nama, harga, stok, emoji, deskripsi, foto_url, barcode, kategori_id, toko_id, expired_at, stok_minimum, client_ref)
+      VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId}, ${body.expired_at || null}, ${body.stok_minimum ?? 5}, ${body.client_ref || null})
+      RETURNING *
+    `
+  } catch (e: any) {
+    if (body.client_ref && e.code === '23505') {
+      const [existing] = await sql`SELECT * FROM produk WHERE client_ref = ${body.client_ref} AND toko_id = ${toko.tokoId}`
+      if (existing) return NextResponse.json(existing, { status: 409 })
+    }
+    throw e
+  }
+
+  if (row.foto_url) {
+    embedProduk({
+      produkId: row.id,
+      nama: row.nama,
+      harga: row.harga,
+      fotoBase64: row.foto_url,
+      tokoId: toko.tokoId,
+      fotoUrl: row.foto_url,
+    }).catch(() => {})
+  }
+
   return NextResponse.json(row)
-}
+}, { schema: produkSchema })

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
+import { shiftSchema } from '@/lib/validation'
+import { apiHandler } from '@/lib/api-handler'
 
 const withTotals = (tokoId: number, extraWhere: string = '') => sql`
   SELECT
@@ -18,36 +20,31 @@ const withTotals = (tokoId: number, extraWhere: string = '') => sql`
   LIMIT 50
 `
 
-// GET: list shift (owner: semua, kasir: hanya milik sendiri)
 export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const rows = await withTotals(toko.tokoId)
-  const filtered = toko.role === 'owner'
+  const filtered = toko.role === 'admin'
     ? rows
     : rows.filter((s: any) => s.kasir_nama === toko.userName)
 
   return NextResponse.json(filtered)
 }
 
-// POST: buka shift baru
-export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export const POST = apiHandler(async (req: Request, body: { modal_awal?: number }) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Cek shift aktif yang sudah ada
   const [existing] = await sql`
     SELECT id FROM shift WHERE toko_id = ${toko.tokoId} AND user_id = ${toko.userId} AND aktif = true LIMIT 1
   `
   if (existing) return NextResponse.json({ error: 'Shift sudah aktif' }, { status: 400 })
 
-  const { modal_awal = 0 } = await req.json().catch(() => ({}))
-
   const [shift] = await sql`
     INSERT INTO shift (toko_id, user_id, kasir_nama, modal_awal)
-    VALUES (${toko.tokoId}, ${toko.userId}, ${toko.userName}, ${Math.max(0, Number(modal_awal) || 0)})
+    VALUES (${toko.tokoId}, ${toko.userId}, ${toko.userName}, ${Math.max(0, Number(body.modal_awal ?? 0) || 0)})
     RETURNING *
   `
   return NextResponse.json(shift)
-}
+}, { schema: shiftSchema })

@@ -2,16 +2,11 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
 import { verifyResetToken } from '@/lib/auth'
+import { resetSchema } from '@/lib/validation'
+import { apiHandler } from '@/lib/api-handler'
 
-export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
-  const { token, password } = await req.json()
-
-  if (!token || !password) {
-    return NextResponse.json({ error: 'Token dan password wajib diisi' }, { status: 400 })
-  }
-  if (password.length < 6) {
-    return NextResponse.json({ error: 'Password minimal 6 karakter' }, { status: 400 })
-  }
+export const POST = apiHandler(async (req: Request, body: { token: string; password: string }) => {
+  const { token, password } = body
 
   const payload = await verifyResetToken(token)
   if (!payload) {
@@ -27,4 +22,4 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
   await sql`UPDATE "user" SET password_hash = ${password_hash} WHERE id = ${payload.userId}`
 
   return NextResponse.json({ ok: true })
-}
+}, { schema: resetSchema })

@@ -3,47 +3,44 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Transaksi, DetailTransaksi } from '@/types'
+import { queueTransaksi } from '@/lib/offline-queue'
 
 export function useTransaksi() {
   const [loading, setLoading] = useState(false)
   const [riwayat, setRiwayat] = useState<Transaksi[]>([])
 
+  // simpan() coba kirim langsung dulu. Kalau gagal karena SERVER TERJANGKAU
+  // tapi menolak (400/403/dst — mis. langganan habis, data tidak valid),
+  // itu error asli yang harus diberitahu ke kasir, JANGAN dimasukkan
+  // antrian (mengulang data yang sama tidak akan memperbaikinya). Kalau
+  // gagal karena request tidak pernah sampai sama sekali (offline), baru
+  // masuk antrian lokal — struk tetap bisa dicetak, transaksi otomatis
+  // terkirim begitu koneksi kembali.
   const simpan = async (trx: Transaksi, items: DetailTransaksi[]) => {
     setLoading(true)
     try {
-      const { data: trxData, error: trxErr } = await supabase
-        .from('transaksi')
-        .insert({
-          no_transaksi: trx.no_transaksi,
-          subtotal: trx.subtotal,
-          diskon: trx.diskon,
-          pajak: trx.pajak,
-          total: trx.total,
-          bayar: trx.bayar,
-          kembali: trx.kembali,
-          metode_bayar: trx.metode_bayar,
-          kasir: trx.kasir || 'Kasir 1',
+      let res: Response
+      try {
+        res = await fetch('/api/transaksi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trx, items }),
         })
-        .select()
-        .single()
+      } catch {
+        // Fetch gagal total — tidak ada koneksi. Antrikan.
+        await queueTransaksi(trx, items)
+        return { data: trx, error: null, queued: true as const }
+      }
 
-      if (trxErr) throw trxErr
+      if (res.ok || res.status === 409) {
+        const data = await res.json()
+        return { data, error: null, queued: false as const }
+      }
 
-      const details = items.map(it => ({
-        transaksi_id: trxData.id,
-        produk_id: it.produk_id,
-        nama_produk: it.nama_produk,
-        harga: it.harga,
-        qty: it.qty,
-        subtotal: it.subtotal,
-      }))
-
-      const { error: detErr } = await supabase.from('detail_transaksi').insert(details)
-      if (detErr) throw detErr
-
-      return { data: trxData, error: null }
-    } catch (e: any) {
-      return { data: null, error: e.message }
+      // Server terjangkau tapi menolak — error asli, jangan diantrikan.
+      let msg = 'Gagal menyimpan transaksi'
+      try { msg = (await res.json()).error || msg } catch {}
+      return { data: null, error: msg, queued: false as const }
     } finally {
       setLoading(false)
     }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'react-bootstrap-icons'
 
 export default function AdminLoginPage() {
   const router = useRouter()

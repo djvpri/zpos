@@ -2,15 +2,24 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Kategori } from '@/types'
+import { cacheGet, cacheSet } from '@/lib/offline-cache'
+
+const CACHE_KEY = 'kategori'
 
 export function useKategori() {
   const [kategori, setKategori] = useState<Kategori[]>([])
 
   const load = useCallback(() => {
     fetch('/api/kategori')
-      .then(r => r.ok ? r.json() : [])
-      .then(setKategori)
-      .catch(() => {})
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('gagal')))
+      .then(data => {
+        setKategori(data)
+        cacheSet(CACHE_KEY, data).catch(() => {})
+      })
+      .catch(async () => {
+        const cached = await cacheGet<Kategori[]>(CACHE_KEY).catch(() => null)
+        if (cached) setKategori(cached)
+      })
   }, [])
 
   useEffect(() => { load() }, [load])

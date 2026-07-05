@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
+import { embedProduk, hapusEmbedding } from '@/lib/zface-visual'
+import { produkUpdateSchema } from '@/lib/validation'
+import { apiHandler } from '@/lib/api-handler'
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PUT = apiHandler(async (req: Request, body: any, context) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { id } = await params
-  const body = await req.json()
+  const params = await context.params
+  const id = String(params.id)
   const [row] = await sql`
     UPDATE produk
     SET nama = ${body.nama}, harga = ${body.harga}, stok = ${body.stok},
@@ -16,8 +19,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     WHERE id = ${Number(id)} AND toko_id = ${toko.tokoId}
     RETURNING *
   `
+
+  if (row?.foto_url) {
+    embedProduk({
+      produkId: row.id,
+      nama: row.nama,
+      harga: row.harga,
+      fotoBase64: row.foto_url,
+      tokoId: toko.tokoId,
+      fotoUrl: row.foto_url,
+    }).catch(() => {})
+  }
+
   return NextResponse.json(row)
-}
+}, { schema: produkUpdateSchema })
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const toko = await getTokoFromRequest(req)
@@ -25,5 +40,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   const { id } = await params
   await sql`UPDATE produk SET aktif = false WHERE id = ${Number(id)} AND toko_id = ${toko.tokoId}`
+  hapusEmbedding({ produkId: Number(id), tokoId: toko.tokoId }).catch(() => {})
   return NextResponse.json({ ok: true })
 }

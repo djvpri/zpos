@@ -53,7 +53,7 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
 
   await sql`
     INSERT INTO "user" (toko_id, nama, email, password_hash, role)
-    VALUES (${toko.id}, ${nama.trim()}, ${email.trim()}, ${password_hash}, 'owner')
+    VALUES (${toko.id}, ${nama.trim()}, ${email.trim()}, ${password_hash}, 'admin')
   `
 
   await sql`

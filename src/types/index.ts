@@ -4,12 +4,20 @@ export interface Produk {
   harga: number
   stok: number
   emoji: string
+  deskripsi?: string
+  foto_url?: string
+  barcode?: string
   kategori_id: number | null
   aktif: boolean
+  expired_at?: string | null
+  stok_minimum?: number
   created_at?: string
   updated_at?: string
   // join
   kategori?: { nama: string }
+  // Klien-saja: true kalau produk ini masih menunggu sinkron ke server
+  // (dibuat/diubah saat offline). Tidak pernah dikirim ke API.
+  _pending?: boolean
 }
 
 export interface Kategori {
@@ -27,11 +35,13 @@ export interface Transaksi {
   subtotal: number
   diskon: number
   pajak: number
+  pajak_persen?: number // hanya untuk tampilan struk, tidak disimpan
   total: number
   bayar: number
   kembali: number
   metode_bayar: 'Tunai' | 'QRIS' | 'Transfer'
   kasir?: string
+  dibatalkan?: boolean
   created_at?: string
   items?: DetailTransaksi[]
 }
@@ -46,6 +56,15 @@ export interface DetailTransaksi {
   subtotal: number
 }
 
+export interface Staff {
+  id: number
+  nama: string
+  email: string
+  role: 'kasir'
+  aktif: boolean
+  created_at: string
+}
+
 export interface Shift {
   id: number
   kasir_nama: string
@@ -58,15 +77,6 @@ export interface Shift {
   total_tunai?: number
   total_qris?: number
   total_transfer?: number
-}
-
-export interface Staff {
-  id: number
-  nama: string
-  email: string
-  role: string
-  aktif: boolean
-  created_at?: string
 }
 
 export interface LaporanHarian {

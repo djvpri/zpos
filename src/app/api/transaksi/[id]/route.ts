@@ -3,11 +3,11 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 
 // Batalkan (void) transaksi: kembalikan stok & keluarkan dari laporan.
-// Hanya owner. Tidak menghapus baris agar jejak audit tetap ada.
+// Hanya admin. Tidak menghapus baris agar jejak audit tetap ada.
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (toko.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (toko.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
   const trxId = parseInt(id)

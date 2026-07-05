@@ -1,59 +1,52 @@
 'use client'
 
-import { Receipt, Package, ChartBar, Users, Settings } from 'lucide-react'
-
-type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan'
+import { Receipt, Box, BarChartLine, People, Gear } from 'react-bootstrap-icons'
 
 const NAV_OWNER = [
-  { id: 'kasir' as Halaman, label: 'Kasir', icon: Receipt },
-  { id: 'produk' as Halaman, label: 'Produk', icon: Package },
-  { id: 'laporan' as Halaman, label: 'Laporan', icon: ChartBar },
-  { id: 'staff' as Halaman, label: 'Staff', icon: Users },
-  { id: 'pengaturan' as Halaman, label: 'Pengaturan', icon: Settings },
+  { id: 'kasir', icon: Receipt, label: 'Kasir' },
+  { id: 'produk', icon: Box, label: 'Produk' },
+  { id: 'laporan', icon: BarChartLine, label: 'Laporan' },
+  { id: 'staff', icon: People, label: 'Staff' },
+  { id: 'pengaturan', icon: Gear, label: 'Atur' },
 ] as const
 
 const NAV_KASIR = [
-  { id: 'kasir' as Halaman, label: 'Kasir', icon: Receipt },
+  { id: 'kasir', icon: Receipt, label: 'Kasir' },
 ] as const
+
+type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan'
 
 interface Props {
   aktif: Halaman
   onNavigasi: (h: Halaman) => void
-  role?: string
+  role: 'admin' | 'kasir'
 }
 
 export function Sidebar({ aktif, onNavigasi, role }: Props) {
-  const nav = role === 'owner' ? NAV_OWNER : NAV_KASIR
+  const nav = role === 'admin' ? NAV_OWNER : NAV_KASIR
 
   return (
-    <aside className="w-52 bg-[#1e1b4b] flex flex-col py-5 px-3 shrink-0">
-      <div className="px-3 mb-7">
-        <div className="text-base font-bold text-indigo-200 tracking-wide">Zomet POS</div>
-        <div className="text-xs text-indigo-500 mt-0.5">Kasir Digital</div>
+    <aside className="w-16 bg-white border-r border-gray-100 flex flex-col items-center py-4 shrink-0">
+      <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center mb-6">
+        <span className="text-white text-sm font-bold">Z</span>
       </div>
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col items-center gap-1 w-full px-2">
         {nav.map(n => (
           <button
             key={n.id}
-            onClick={() => onNavigasi(n.id)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+            onClick={() => onNavigasi(n.id as Halaman)}
+            className={`w-full flex flex-col items-center gap-1 py-2.5 rounded-xl transition-colors ${
               aktif === n.id
-                ? 'bg-indigo-700 text-indigo-100'
-                : 'text-gray-400 hover:bg-indigo-900/50 hover:text-gray-200'
+                ? 'bg-indigo-50 text-indigo-600'
+                : 'text-gray-400 hover:bg-gray-50 hover:text-gray-500'
             }`}
           >
-            <n.icon size={17} />
-            {n.label}
+            <n.icon size={19} />
+            <span className="text-[10px] font-medium">{n.label}</span>
           </button>
         ))}
       </nav>
-
-      <div className="mt-auto px-3">
-        <div className="text-xs text-indigo-600">
-          {new Date().toLocaleDateString('id-ID', { dateStyle: 'medium' })}
-        </div>
-      </div>
     </aside>
   )
 }

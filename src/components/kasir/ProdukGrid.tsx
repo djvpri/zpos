@@ -2,7 +2,7 @@
 
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Search } from 'lucide-react'
+import { Search } from 'react-bootstrap-icons'
 
 const KATEGORI = ['Semua', 'Makanan', 'Minuman', 'Snack', 'Lainnya']
 
@@ -27,6 +27,7 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
           {produk.map(p => (
             <button
               key={p.id}
+              data-testid="product-item"
               onClick={() => onTambah(p)}
               disabled={p.stok === 0}
               className={`text-left p-3 rounded-xl border transition-all ${

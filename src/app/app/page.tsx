@@ -8,7 +8,7 @@ import ProdukPage from '@/components/produk/ProdukPage'
 import LaporanPage from '@/components/laporan/LaporanPage'
 import StaffPage from '@/components/staff/StaffPage'
 import PengaturanPage from '@/components/pengaturan/PengaturanPage'
-import { Receipt, Package, BarChart3, Users, Settings, Lock, LogOut } from 'lucide-react'
+import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import { fmtDate } from '@/lib/utils'
 
@@ -16,10 +16,10 @@ type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan'
 
 const NAV_OWNER = [
   { id: 'kasir' as Halaman, icon: Receipt, label: 'Kasir' },
-  { id: 'produk' as Halaman, icon: Package, label: 'Produk' },
-  { id: 'laporan' as Halaman, icon: BarChart3, label: 'Laporan' },
-  { id: 'staff' as Halaman, icon: Users, label: 'Staff' },
-  { id: 'pengaturan' as Halaman, icon: Settings, label: 'Atur' },
+  { id: 'produk' as Halaman, icon: Box, label: 'Produk' },
+  { id: 'laporan' as Halaman, icon: BarChartLine, label: 'Laporan' },
+  { id: 'staff' as Halaman, icon: People, label: 'Staff' },
+  { id: 'pengaturan' as Halaman, icon: Gear, label: 'Atur' },
 ]
 
 const NAV_KASIR = [
@@ -27,10 +27,10 @@ const NAV_KASIR = [
 ]
 
 export default function AppPage() {
-  const { toko, loading, logout } = useAuth()
+  const { toko, loading, offline, pendingSync, logout } = useAuth()
   const [halaman, setHalaman] = useState<Halaman>('kasir')
 
-  // Redirect kasir yang coba akses halaman owner
+  // Redirect kasir yang coba akses halaman admin
   useEffect(() => {
     if (!loading && toko?.role === 'kasir' && halaman !== 'kasir') {
       setHalaman('kasir')
@@ -51,7 +51,7 @@ export default function AppPage() {
     return (
       <div className="flex flex-col h-screen items-center justify-center bg-gray-50 px-6 text-center">
         <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-5">
-          <Lock size={28} className="text-red-500" />
+          <LockFill size={28} className="text-red-500" />
         </div>
         <h1 className="text-xl font-bold text-gray-900 mb-2">
           {nonaktif ? 'Toko Dinonaktifkan' : 'Langganan Berakhir'}
@@ -71,17 +71,28 @@ export default function AppPage() {
           onClick={logout}
           className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors"
         >
-          <LogOut size={15} /> Keluar
+          <BoxArrowRight size={15} /> Keluar
         </button>
       </div>
     )
   }
 
-  const isOwner = toko?.role === 'owner'
+  const isOwner = toko?.role === 'admin'
   const nav = isOwner ? NAV_OWNER : NAV_KASIR
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex flex-col h-screen overflow-hidden">
+      {(offline || pendingSync > 0) && (
+        <div className="shrink-0 bg-amber-500 text-white text-[11px] font-medium text-center py-1">
+          {offline
+            ? 'Mode offline — pakai sesi tersimpan. '
+            : ''}
+          {pendingSync > 0
+            ? `${pendingSync} transaksi belum tersinkron, akan terkirim otomatis.`
+            : (offline ? 'Data terbaru dari server akan dimuat begitu koneksi kembali.' : '')}
+        </div>
+      )}
+      <div className="flex flex-1 overflow-hidden">
       <div className="hidden md:block">
         <Sidebar aktif={halaman} onNavigasi={setHalaman} role={toko?.role ?? 'kasir'} />
       </div>
@@ -108,6 +119,7 @@ export default function AppPage() {
           </button>
         ))}
       </nav>
+      </div>
     </div>
   )
 }

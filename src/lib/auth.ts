@@ -1,15 +1,17 @@
 import { SignJWT, jwtVerify } from 'jose'
+import sql from './db'
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
 
 export interface TokenPayload {
   userId: number
   tokoId: number
-  nama: string      // nama toko (untuk topbar)
-  userName: string  // nama user yang login
+  nama: string
+  userName: string
   email: string
   plan: string
-  role: 'owner' | 'kasir'
+  role: 'admin' | 'kasir'
+  _roleUpdated?: boolean
 }
 
 export async function signToken(payload: TokenPayload): Promise<string> {
@@ -32,7 +34,22 @@ export async function getTokoFromRequest(request: Request): Promise<TokenPayload
   const cookieHeader = request.headers.get('cookie') ?? ''
   const match = cookieHeader.match(/zpos_token=([^;]+)/)
   if (!match) return null
-  return verifyToken(decodeURIComponent(match[1]))
+  const payload = await verifyToken(decodeURIComponent(match[1]))
+  if (!payload) return null
+
+  // Cek role terbaru dari DB (hindari stale role setelah diubah dari Z One)
+  try {
+    const rows = await sql`SELECT role, aktif FROM "user" WHERE id = ${payload.userId} LIMIT 1`
+    if (!rows.length || !rows[0].aktif) return null
+    if (rows[0].role !== payload.role) {
+      payload.role = rows[0].role as 'admin' | 'kasir'
+      payload._roleUpdated = true
+    }
+  } catch {
+    // Fallback ke token jika DB tidak bisa diakses
+  }
+
+  return payload
 }
 
 // ===== Super-admin (kredensial via env, terpisah dari sesi toko/user) =====
