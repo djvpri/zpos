@@ -14,7 +14,6 @@ export async function GET(req: Request, _ctx: { params: Promise<Record<string, s
     aktif: status.aktif,
     expired: status.expired,
     isDemo: status.isDemo,
-    demoExpiresAt: status.demoExpiresAt,
   }
 
   const res = NextResponse.json(responseData, {

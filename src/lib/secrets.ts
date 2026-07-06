@@ -5,3 +5,12 @@ export function getCrossAppSecret(): string {
   if (!s) throw new Error('CROSS_APP_SECRET belum di-set (samakan dengan Z One).')
   return s
 }
+
+// Secret khusus utk endpoint reset harian demo — TERPISAH dari
+// CROSS_APP_SECRET (bukan dipakai app lain di ekosistem, cukup dikenal
+// oleh cron job Railway sendiri dan endpoint ini).
+export function getDemoResetSecret(): string {
+  const s = process.env.DEMO_RESET_SECRET
+  if (!s) throw new Error('DEMO_RESET_SECRET belum di-set.')
+  return s
+}

@@ -17,7 +17,6 @@ export interface TokoInfo {
   aktif?: boolean
   expired?: boolean
   isDemo?: boolean
-  demoExpiresAt?: string | null
 }
 
 interface AuthContextValue {

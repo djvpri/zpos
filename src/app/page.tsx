@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Cart3, BarChartLine, Box, PhoneFill, People, LightningCharge, CheckLg } from 'react-bootstrap-icons'
-import TombolDemo from '@/components/TombolDemo'
 
 const features = [
   { icon: Cart3, title: 'Kasir Digital', desc: 'Proses transaksi cepat dengan tampilan yang intuitif. Support tunai, QRIS, dan transfer.' },
@@ -79,11 +78,16 @@ export default function LandingPage() {
           <Link href="/register" className="px-7 py-3.5 bg-indigo-600 text-white rounded-2xl font-semibold text-sm hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 text-center">
             Mulai Gratis 30 Hari
           </Link>
-          <TombolDemo className="px-7 py-3.5 bg-white text-indigo-600 border-2 border-indigo-600 rounded-2xl font-semibold text-sm hover:bg-indigo-50 transition-colors text-center disabled:opacity-60" />
+          <Link href="/login" className="px-7 py-3.5 bg-white text-indigo-600 border-2 border-indigo-600 rounded-2xl font-semibold text-sm hover:bg-indigo-50 transition-colors text-center">
+            Coba Demo Sekarang
+          </Link>
           <Link href="/login" className="px-7 py-3.5 bg-gray-100 text-gray-700 rounded-2xl font-semibold text-sm hover:bg-gray-200 transition-colors text-center">
             Sudah punya akun? Masuk
           </Link>
         </div>
+        <p className="text-xs text-gray-400 mt-3">
+          Demo pakai akun <span className="font-mono">demo@zomet.my.id</span> — data direset otomatis tiap hari, dipakai bersama pengunjung lain.
+        </p>
 
         {/* Desktop app preview */}
         <div className="hidden sm:block mt-16 bg-gray-50 rounded-3xl border border-gray-100 p-4 max-w-4xl mx-auto shadow-xl shadow-gray-100">

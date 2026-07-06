@@ -30,7 +30,6 @@ export default function AppPage() {
   const { toko, loading, offline, pendingSync, logout, refresh } = useAuth()
   const [halaman, setHalaman] = useState<Halaman>('kasir')
   const [resetLoading, setResetLoading] = useState(false)
-  const [sisaWaktuDemo, setSisaWaktuDemo] = useState('')
 
   async function resetDemo() {
     if (!confirm('Reset semua data demo ke kondisi awal?')) return
@@ -47,23 +46,6 @@ export default function AppPage() {
       setResetLoading(false)
     }
   }
-
-  // Dihitung di useEffect (bukan langsung saat render) supaya Date.now()
-  // tidak dipanggil di badan komponen — dan sekaligus auto-update tiap
-  // menit tanpa perlu trigger re-render dari sumber lain.
-  useEffect(() => {
-    if (!toko?.demoExpiresAt) { setSisaWaktuDemo(''); return }
-    function hitung() {
-      const sisaMs = new Date(toko!.demoExpiresAt!).getTime() - Date.now()
-      if (sisaMs <= 0) { setSisaWaktuDemo('segera berakhir'); return }
-      const jam = Math.floor(sisaMs / (60 * 60 * 1000))
-      const menit = Math.floor((sisaMs % (60 * 60 * 1000)) / (60 * 1000))
-      setSisaWaktuDemo(jam > 0 ? `${jam}j ${menit}m` : `${menit}m`)
-    }
-    hitung()
-    const interval = setInterval(hitung, 60000)
-    return () => clearInterval(interval)
-  }, [toko?.demoExpiresAt])
 
   // Redirect kasir yang coba akses halaman admin
   useEffect(() => {
@@ -119,7 +101,7 @@ export default function AppPage() {
     <div className="flex flex-col h-screen overflow-hidden">
       {toko?.isDemo && (
         <div className="shrink-0 bg-indigo-600 text-white text-[11px] font-medium text-center py-1.5 flex items-center justify-center gap-3 flex-wrap px-2">
-          <span>🎬 Mode Demo — data ini sementara, berakhir dalam {sisaWaktuDemo}</span>
+          <span>🎬 Mode Demo — data direset otomatis tiap hari. Dipakai bersama pengunjung lain.</span>
           <button
             onClick={resetDemo}
             disabled={resetLoading}
