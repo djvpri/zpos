@@ -1,12 +1,7 @@
-'use client'
+export const dynamic = 'force-dynamic'
 
-import { AuthContext, useAuthProvider } from '@/hooks/useAuth'
+import ClientLayout from './ClientLayout'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const auth = useAuthProvider()
-  return (
-    <AuthContext.Provider value={auth}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <ClientLayout>{children}</ClientLayout>
 }
