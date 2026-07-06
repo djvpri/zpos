@@ -13,6 +13,8 @@ export async function GET(req: Request, _ctx: { params: Promise<Record<string, s
     langganan_sampai: status.langganan_sampai,
     aktif: status.aktif,
     expired: status.expired,
+    isDemo: status.isDemo,
+    demoExpiresAt: status.demoExpiresAt,
   }
 
   const res = NextResponse.json(responseData, {

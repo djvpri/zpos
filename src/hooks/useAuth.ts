@@ -16,6 +16,8 @@ export interface TokoInfo {
   langganan_sampai?: string | null
   aktif?: boolean
   expired?: boolean
+  isDemo?: boolean
+  demoExpiresAt?: string | null
 }
 
 interface AuthContextValue {
