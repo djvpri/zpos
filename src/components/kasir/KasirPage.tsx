@@ -146,7 +146,7 @@ export default function KasirPage() {
       kasir: toko?.userName ?? '',
       created_at: new Date().toISOString(), // waktu jual sesungguhnya, dipakai kalau nanti disinkron belakangan
       items: items.map(it => ({
-        produk_id: it.id,
+        produk_id: it.id > 0 ? it.id : null,  // produk virtual (id negatif) tidak punya baris di tabel produk
         nama_produk: it.nama,
         harga: it.harga,
         qty: it.qty,
@@ -155,7 +155,7 @@ export default function KasirPage() {
     }
 
     const details: DetailTransaksi[] = items.map(it => ({
-      produk_id: it.id,
+      produk_id: it.id > 0 ? it.id : null,  // produk virtual → null, bukan timestamp negatif yg overflow INTEGER
       nama_produk: it.nama,
       harga: it.harga,
       qty: it.qty,
