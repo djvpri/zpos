@@ -99,12 +99,27 @@ export async function seedDataDemo(tokoId: number): Promise<void> {
       for (let i = 0; i < itemTerpilih.length; i++) {
         const p = itemTerpilih[i]
         const qty = qtyPerItem[i]
+        // Disable trigger sementara agar stok tidak terpotong oleh riwayat
+        // transaksi demo — stok akan di-set ulang ke nilai awal setelah loop.
+        await sql`ALTER TABLE detail_transaksi DISABLE TRIGGER trg_kurangi_stok`
         await sql`
           INSERT INTO detail_transaksi (transaksi_id, produk_id, nama_produk, harga, qty, subtotal, toko_id, created_at)
           VALUES (${trx.id}, ${p.id}, ${p.nama}, ${p.harga}, ${qty}, ${p.harga * qty}, ${tokoId}, ${waktu})
         `
+        await sql`ALTER TABLE detail_transaksi ENABLE TRIGGER trg_kurangi_stok`
       }
     }
+  }
+
+  // Setelah semua riwayat transaksi diinsert, kembalikan stok produk ke
+  // nilai awal yang wajar — supaya kasir demo tidak langsung lihat stok
+  // habis/minus saat pertama kali buka halaman Kasir.
+  for (const p of PRODUK_DEMO) {
+    const stokAwal = p.stok
+    await sql`
+      UPDATE produk SET stok = ${stokAwal}
+      WHERE toko_id = ${tokoId} AND nama = ${p.nama}
+    `
   }
 }
 
