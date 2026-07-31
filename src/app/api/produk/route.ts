@@ -59,6 +59,11 @@ export const POST = apiHandler(async (req: Request, body: any) => {
       const [existing] = await sql`SELECT * FROM produk WHERE client_ref = ${body.client_ref} AND toko_id = ${toko.tokoId}`
       if (existing) return NextResponse.json(existing, { status: 409 })
     }
+    // Unique barcode (produk_toko_barcode_unik): barcode sudah dipakai produk
+    // lain dalam toko ini. Beri pesan informatif, bukan internal error 500.
+    if (body.barcode && e.code === '23505') {
+      return NextResponse.json({ error: `Barcode ${body.barcode} sudah dipakai produk lain di toko ini.` }, { status: 409 })
+    }
     throw e
   }
 
