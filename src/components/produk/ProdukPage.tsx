@@ -6,12 +6,13 @@ import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files } from 'react-bootstrap-icons'
+import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, Tags } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
 const ScanBarcodeMassal = dynamic(() => import('./ScanBarcodemassal'), { ssr: false })
 const TambahCepat = dynamic(() => import('./TambahCepat'), { ssr: false })
 const BarcodeLabel = dynamic(() => import('./BarcodeLabel'), { ssr: false })
+const StickerHarga = dynamic(() => import('./StickerHarga'), { ssr: false })
 
 type Tab = 'produk' | 'kategori'
 
@@ -28,6 +29,7 @@ export default function ProdukPage() {
   const [showScanMassal, setShowScanMassal] = useState(false)
   const [showCepat, setShowCepat] = useState(false)
   const [showLabel, setShowLabel] = useState(false)
+  const [showHarga, setShowHarga] = useState(false)
 
   const filtered = produk.filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
 
@@ -119,6 +121,12 @@ export default function ProdukPage() {
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               <UpcScan size={16} /> Label Barcode
+            </button>
+            <button
+              onClick={() => setShowHarga(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            >
+              <Tags size={16} /> Stiker Harga
             </button>
             <button
               data-testid="add-product-btn"
@@ -281,6 +289,7 @@ export default function ProdukPage() {
       {showImport && <ImportProduk onSelesai={fetchProduk} onTutup={() => setShowImport(false)} tambahOffline={tambah} />}
       {showCepat && <TambahCepat onSelesai={() => { setShowCepat(false); fetchProduk() }} onTutup={() => setShowCepat(false)} />}
       {showLabel && <BarcodeLabel produk={produk} onSelesai={() => { setShowLabel(false); fetchProduk() }} onTutup={() => setShowLabel(false)} update={update} />}
+      {showHarga && <StickerHarga produk={produk} onTutup={() => setShowHarga(false)} />}
       {modal && (
         <ProdukModal
           produk={modal === 'tambah' ? null : modal}
