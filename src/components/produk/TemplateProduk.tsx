@@ -12,7 +12,7 @@ interface Props {
 export default function TemplateProduk({ onSelesai, onTutup }: Props) {
   const [terpilih, setTerpilih] = useState<string | null>(null)
   const [step, setStep] = useState<'pilih' | 'konfirmasi' | 'proses' | 'selesai'>('pilih')
-  const [hasil, setHasil] = useState<{ berhasil: number; diupdate: number; gagal: number; errors: string[] } | null>(null)
+  const [hasil, setHasil] = useState<{ berhasil: number; diupdate: number; gagal: number; errors: { baris: number; pesan: string }[] } | null>(null)
 
   const template = PRODUK_TEMPLATES.find(t => t.id === terpilih) || null
 
@@ -30,7 +30,7 @@ export default function TemplateProduk({ onSelesai, onTutup }: Props) {
       setStep('selesai')
       if (data.berhasil > 0) onSelesai()
     } catch {
-      setHasil({ berhasil: 0, diupdate: 0, gagal: template.produk.length, errors: ['Gagal terhubung ke server. Coba lagi.'] })
+      setHasil({ berhasil: 0, diupdate: 0, gagal: template.produk.length, errors: [{ baris: 0, pesan: 'Gagal terhubung ke server. Coba lagi.' }] })
       setStep('selesai')
     }
   }
@@ -110,7 +110,7 @@ export default function TemplateProduk({ onSelesai, onTutup }: Props) {
               {hasil.gagal > 0 && (
                 <div className="mt-3 rounded-xl bg-yellow-50 border border-yellow-100 p-3 text-left">
                   <p className="text-xs font-medium text-yellow-700">{hasil.gagal} gagal:</p>
-                  {hasil.errors.slice(0, 5).map((e, i) => <p key={i} className="text-xs text-yellow-600 break-words">· {e}</p>)}
+                  {hasil.errors.slice(0, 5).map((e, i) => <p key={i} className="text-xs text-yellow-600 break-words">· {e.pesan}</p>)}
                 </div>
               )}
             </div>

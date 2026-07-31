@@ -17,11 +17,15 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
   let berhasil = 0
   let diupdate = 0
   let gagal = 0
-  const errors: string[] = []
+  // Error per-baris: nomor baris di file Excel (+1 utk header), agar user bisa
+  // langsung cari baris yang bermasalah tanpa buka ulang seluruh file.
+  const errors: { baris: number; pesan: string }[] = []
 
-  for (const p of produk) {
+  for (let i = 0; i < produk.length; i++) {
+    const p = produk[i]
+    const baris = i + 2 // baris di Excel: i=0 → baris 2 (baris 1 = header), dan seterusnya
     try {
-      if (!p.nama || !p.harga) { gagal++; errors.push(`Baris tanpa nama/harga dilewati`); continue }
+      if (!p.nama || !p.harga) { gagal++; errors.push({ baris, pesan: 'Nama atau harga kosong' }); continue }
 
       // Cari atau buat kategori
       let kategoriId: number | null = null
@@ -78,9 +82,9 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
       berhasil++
     } catch (e: any) {
       gagal++
-      errors.push(`${p.nama}: ${e.message?.slice(0, 50)}`)
+      errors.push({ baris, pesan: e.message?.slice(0, 100) || 'Kesalahan tak dikenal' })
     }
   }
 
-  return NextResponse.json({ berhasil, diupdate, gagal, errors: errors.slice(0, 5) })
+  return NextResponse.json({ berhasil, diupdate, gagal, errors })
 }

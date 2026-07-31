@@ -16,7 +16,7 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
   const fileRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState<'upload' | 'preview' | 'proses' | 'selesai'>('upload')
   const [produk, setProduk] = useState<ProdukRow[]>([])
-  const [hasil, setHasil] = useState<{ berhasil: number; diupdate: number; gagal: number; errors: string[] } | null>(null)
+  const [hasil, setHasil] = useState<{ berhasil: number; diupdate: number; gagal: number; errors: { baris: number; pesan: string }[] } | null>(null)
   const [error, setError] = useState('')
 
   function downloadTemplate() {
@@ -228,7 +228,21 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
               {hasil.gagal > 0 && (
                 <div className="mt-3 rounded-xl bg-yellow-50 border border-yellow-100 p-3 text-left">
                   <p className="text-xs font-medium text-yellow-700">{hasil.gagal} produk gagal:</p>
-                  {hasil.errors.map((e, i) => <p key={i} className="text-xs text-yellow-600">· {e}</p>)}
+                  <div className="mt-2 max-h-52 overflow-y-auto rounded-lg bg-white/60 border border-yellow-100 divide-y divide-yellow-50">
+                    {hasil.errors.map((e, i) => {
+                      // Baris di file = e.baris; nama ambil dari daftar produk (baris-2 = indeks di array)
+                      const nama = produk[e.baris - 2]?.nama || '?'
+                      return (
+                        <div key={i} className="flex items-start gap-2 px-2 py-1.5">
+                          <span className="flex-shrink-0 mt-0.5 text-[10px] font-bold text-yellow-700 bg-yellow-100 rounded px-1.5 py-0.5">Baris {e.baris}</span>
+                          <span className="text-xs text-yellow-700 break-words">
+                            <span className="font-medium">{nama}</span> — {e.pesan}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <p className="text-[10px] text-yellow-600 mt-1.5">Cek baris yang ditandai di file Excel lalu upload ulang.</p>
                 </div>
               )}
             </div>
