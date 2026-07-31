@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Produk } from '@/types'
+import { fieldKurang } from '@/lib/product-form'
 import { useKategori } from '@/hooks/useKategori'
 import { XLg, Camera, Trash, UpcScan, QrCodeScan, Image as ImageIcon } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
@@ -61,6 +62,8 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
   const [showKamera, setShowKamera] = useState(false)
   // Auto-detect nama produk dari foto (Gemini Flash-Lite). null = idle/bukan error.
   const [deteksiNama, setDeteksiNama] = useState<'deteksi' | 'gagal' | null>(null)
+  // Pesan error validasi simpan (field kurang) — tampil merah di atas tombol.
+  const [er, setEr] = useState('')
 
   // Deteksi nama produk otomatis dari foto (proxy server → Gemini). Bentar,
   // isi field nama; admin tetap bisa edit.
@@ -83,7 +86,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     }
   }
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = (k: string, v: any) => { setEr(''); setForm(f => ({ ...f, [k]: v })) }
 
   const onFotoKamera = (base64: string) => {
     set('foto_url', base64)
@@ -106,7 +109,13 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
   }
 
   const submit = () => {
-    if (!form.nama || !form.harga || !form.kategori_id) return
+    // Validasi eksplisit: beri tahu field mana yang kurang, JANGAN silent
+    // return (sebelumnya membuat pengguna bingung "klik simpan tak bereaksi").
+    const kurang = fieldKurang(form)
+    if (kurang.length > 0) {
+      setEr(`Lengkapi field: ${kurang.join(', ')}`)
+      return
+    }
     onSimpan({
       ...(produk || {}),
       nama: form.nama,
@@ -283,7 +292,12 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        {er && (
+          <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            ⚠️ {er}
+          </p>
+        )}
+        <div className="flex gap-3 mt-4">
           <button onClick={onTutup} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
             Batal
           </button>
