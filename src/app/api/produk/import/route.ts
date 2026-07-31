@@ -9,7 +9,7 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
   const body = await req.json()
   const { produk } = body as { produk: Array<{
     nama: string; harga: number; stok: number; kategori: string;
-    deskripsi?: string; barcode?: string; expired_at?: string; stok_minimum?: number
+    deskripsi?: string; barcode?: string; expired_at?: string; stok_minimum?: number; foto_url?: string
   }> }
 
   if (!produk?.length) return NextResponse.json({ error: 'Data kosong' }, { status: 400 })
@@ -70,7 +70,7 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
         INSERT INTO produk (nama, harga, stok, emoji, deskripsi, barcode, foto_url, kategori_id, toko_id, expired_at, stok_minimum, aktif)
         VALUES (
           ${p.nama}, ${p.harga}, ${p.stok || 0}, ${'📦'},
-          ${p.deskripsi || null}, ${p.barcode?.trim() || null}, ${(p as any).foto_url || null},
+          ${p.deskripsi || null}, ${p.barcode?.trim() || null}, ${p.foto_url || null},
           ${kategoriId}, ${toko.tokoId},
           ${p.expired_at || null}, ${p.stok_minimum || 5}, true
         )
