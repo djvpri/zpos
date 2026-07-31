@@ -63,6 +63,7 @@ DATABASE_URL=postgresql://user:pass@host:5432/railway?sslmode=require
 JWT_SECRET=your-random-secret-min-32-chars
 RESEND_API_KEY=re_xxx          # untuk reset password
 RESEND_FROM=ZPos <noreply@domain>
+GEMINI_API_KEY=AIza...         # opsional: auto-detect nama produk dari foto (model 3.5 Flash-Lite)
 ADMIN_EMAIL=admin@domain.com   # super admin
 ADMIN_PASSWORD=your-password
 ```

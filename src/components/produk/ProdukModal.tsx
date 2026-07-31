@@ -59,11 +59,35 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
   const [uploading, setUploading] = useState(false)
   const [scanBarcode, setScanBarcode] = useState(false)
   const [showKamera, setShowKamera] = useState(false)
+  // Auto-detect nama produk dari foto (Gemini Flash-Lite). null = idle/bukan error.
+  const [deteksiNama, setDeteksiNama] = useState<'deteksi' | 'gagal' | null>(null)
+
+  // Deteksi nama produk otomatis dari foto (proxy server → Gemini). Bentar,
+  // isi field nama; admin tetap bisa edit.
+  const cariNamaDariFoto = async (fotoBase64: string) => {
+    if (!fotoBase64 || !fotoBase64.startsWith('data:image')) return
+    // Kalau admin sudah ketik nama manual, jangan timpa.
+    if (form.nama.trim()) return
+    setDeteksiNama('deteksi')
+    try {
+      const res = await fetch('/api/produk/nama-dari-foto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ foto: fotoBase64 }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (res.ok && d.nama) set('nama', d.nama)
+      else setDeteksiNama('gagal')
+    } catch {
+      setDeteksiNama('gagal')
+    }
+  }
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
   const onFotoKamera = (base64: string) => {
     set('foto_url', base64)
+    cariNamaDariFoto(base64)
   }
 
   const onFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +97,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     try {
       const base64 = await compressImage(file)
       set('foto_url', base64)
+      cariNamaDariFoto(base64)
     } catch {
       alert('Gagal memproses foto')
     }
@@ -129,7 +154,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => set('foto_url', '')}
+                      onClick={() => { set('foto_url', ''); setDeteksiNama(null) }}
                       className="p-2 bg-white rounded-lg text-red-500 hover:bg-red-50"
                     >
                       <Trash size={16} />
@@ -164,7 +189,11 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
           </div>
 
           <div>
-            <label className="text-xs text-gray-500">Nama Produk</label>
+            <label className="text-xs text-gray-500 flex items-center gap-2">
+              Nama Produk
+              {deteksiNama === 'deteksi' && <span className="text-[10px] text-indigo-500 font-medium animate-pulse">Mendeteksi nama dari foto...</span>}
+              {deteksiNama === 'gagal' && <span className="text-[10px] text-amber-500 font-medium">Nama produk tak terdeteksi — ketik manual</span>}
+            </label>
             <input className={inputCls} value={form.nama} onChange={e => set('nama', e.target.value)} placeholder="Nama produk" />
           </div>
           <div>
