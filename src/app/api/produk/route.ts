@@ -4,6 +4,7 @@ import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
 import { embedProduk } from '@/lib/zface-visual'
 import { produkSchema } from '@/lib/validation'
+import { generateProductBarcode } from '@/lib/barcode-code39'
 import { apiHandler } from '@/lib/api-handler'
 import type { Produk } from '@/types'
 
@@ -54,6 +55,14 @@ export const POST = apiHandler(async (req: Request, body: any) => {
       VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId}, ${body.expired_at || null}, ${body.stok_minimum ?? 5}, ${body.client_ref || null}, ${body.harga_grosir ?? null}, ${body.min_qty_grosir ?? null})
       RETURNING *
     `
+
+    // Produk tanpa barcode (baru, buatan lokal): auto-generate barcode internal
+    // unik (2 + id 11 digit + Luhn → 13 digit) supaya tetap bisa discan &
+    // dipakai label harga/barcode. Hanya sekali, id tak berubah lagi.
+    if (!row.barcode) {
+      await sql`UPDATE produk SET barcode = ${generateProductBarcode(row.id)} WHERE id = ${row.id}`
+      ;[row] = await sql`SELECT * FROM produk WHERE id = ${row.id}`
+    }
   } catch (e: any) {
     if (body.client_ref && e.code === '23505') {
       const [existing] = await sql`SELECT * FROM produk WHERE client_ref = ${body.client_ref} AND toko_id = ${toko.tokoId}`
