@@ -42,6 +42,10 @@ export default function KasirPage() {
   const [tab, setTab] = useState<'produk' | 'lain'>('produk')
   const [showScanVisual, setShowScanVisual] = useState(false)
   const [virtualProduk, setVirtualProduk] = useState<Record<number, {id:number;nama:string;harga:number;stok:number;kategori_id:null;barcode:null;foto_url:null}>>({})
+  // Flash-scan: barcode tidak dikenal di katalog → minta harga utk auto-create
+  const [flashScan, setFlashScan] = useState<string | null>(null)
+  const [flashNama, setFlashNama] = useState('')
+  const [flashHarga, setFlashHarga] = useState('')
   const [pesanSimpan, setPesanSimpan] = useState<{ tipe: 'antri' | 'gagal'; teks: string } | null>(null)
 
   const produkFiltered = useMemo(() =>
@@ -106,12 +110,50 @@ export default function KasirPage() {
     // server. Ini juga membuat scan tetap jalan saat offline total, dan
     // lebih cepat + lebih ringan ke server bahkan saat online.
     const p = produk.find(x => x.barcode === code)
-    if (p) tambahKeKeranjang(p)
-    // Kalau tidak ketemu, diam saja (perilaku sama seperti sebelumnya
-    // saat server membalas 404) — kasir bisa cari manual di grid produk.
+    if (p) {
+      tambahKeKeranjang(p)
+    } else {
+      // Barcode tidak dikenal di katalog → flash-scan: minta harga, lalu
+      // auto-create & tambah ke keranjang. Beri nama barcode sebagai default.
+      setFlashNama('')
+      setFlashHarga('')
+      setFlashScan(code)
+    }
   }, [produk])
 
   useBarcodeUsbListener(onBarcodeScan)
+
+  // Flash-scan: buat produk baru dari barcode tak dikenal, lalu tambah ke keranjang.
+  // POST langsung ke /api/produk supaya dapat id server asli (bukan via `tambah`
+  // yang contract-nya "null=sukses"). Offline → tidak dijual sampai sinkron
+  // (produk pending sengaja tidak sellable), konsisten dgn desain _pending.
+  const buatDariFlashScan = async () => {
+    if (!flashScan) return
+    const harga = Number(flashHarga)
+    if (!harga || harga <= 0) return
+    try {
+      const res = await fetch('/api/produk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nama: flashNama.trim() || 'Produk baru',
+          harga,
+          stok: 0,
+          emoji: '📦',
+          kategori_id: null,
+          barcode: flashScan,
+          aktif: true,
+        }),
+      })
+      if (res.ok) {
+        const row = await res.json() as Produk
+        tambahKeKeranjang(row)
+        setFlashScan(null)
+      }
+    } catch {
+      // offline — biarkan modal tetap terbuka, kasir coba lagi saat online
+    }
+  }
 
   const ubahQty = (id: number, delta: number) => {
     const cur = keranjang[id] || 0
@@ -334,6 +376,59 @@ export default function KasirPage() {
       )}
       {showScanVisual && (
         <ScanProdukVisual onPilih={pilihDariVisualScan} onClose={() => setShowScanVisual(false)} />
+      )}
+      {flashScan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <span className="font-semibold text-gray-800">Produk Baru (Barcode Tak Dikenal)</span>
+              <button onClick={() => setFlashScan(null)} className="p-1.5 rounded-full hover:bg-gray-100">
+                <XLg size={16} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2 text-sm font-mono text-gray-600 mb-4">
+              {flashScan}
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500">Nama Produk <span className="text-gray-300">(opsional)</span></label>
+                <input
+                  value={flashNama}
+                  onChange={e => setFlashNama(e.target.value)}
+                  placeholder="Contoh: Snack Baru"
+                  autoFocus
+                  className="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Harga (Rp) *</label>
+                <input
+                  type="number"
+                  value={flashHarga}
+                  onChange={e => setFlashHarga(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') buatDariFlashScan() }}
+                  placeholder="0"
+                  className="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setFlashScan(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
+                Batal
+              </button>
+              <button
+                onClick={buatDariFlashScan}
+                disabled={!Number(flashHarga) || Number(flashHarga) <= 0}
+                className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50"
+              >
+                Buat & Tambah
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-3 text-center">
+              Produk dibuat baru (stok 0) lalu dimasukkan ke keranjang.
+            </p>
+          </div>
+        </div>
       )}
       <StrukModal
         transaksi={struk}
