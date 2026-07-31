@@ -6,10 +6,11 @@ import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan } from 'react-bootstrap-icons'
+import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
 const ScanBarcodeMassal = dynamic(() => import('./ScanBarcodemassal'), { ssr: false })
+const TambahCepat = dynamic(() => import('./TambahCepat'), { ssr: false })
 
 type Tab = 'produk' | 'kategori'
 
@@ -24,6 +25,7 @@ export default function ProdukPage() {
   const [katLoading, setKatLoading] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showScanMassal, setShowScanMassal] = useState(false)
+  const [showCepat, setShowCepat] = useState(false)
 
   const filtered = produk.filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
 
@@ -96,6 +98,12 @@ export default function ProdukPage() {
               className="flex items-center gap-2 px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
             >
               <QrCodeScan size={16} /> Scan Massal
+            </button>
+            <button
+              onClick={() => setShowCepat(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+            >
+              <CursorText size={16} /> Tambah Cepat
             </button>
             <button
               data-testid="add-product-btn"
@@ -250,6 +258,7 @@ export default function ProdukPage() {
 
       {showScanMassal && <ScanBarcodeMassal onSelesai={fetchProduk} onTutup={() => setShowScanMassal(false)} tambahOffline={tambah} />}
       {showImport && <ImportProduk onSelesai={fetchProduk} onTutup={() => setShowImport(false)} tambahOffline={tambah} />}
+      {showCepat && <TambahCepat onSelesai={() => { setShowCepat(false); fetchProduk() }} onTutup={() => setShowCepat(false)} />}
       {modal && (
         <ProdukModal
           produk={modal === 'tambah' ? null : modal}
