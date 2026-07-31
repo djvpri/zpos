@@ -24,7 +24,7 @@ export function useKategori() {
 
   useEffect(() => { load() }, [load])
 
-  const tambah = useCallback(async (nama: string): Promise<boolean> => {
+  const tambah = useCallback(async (nama: string): Promise<Kategori> => {
     const res = await fetch('/api/kategori', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,7 +33,7 @@ export function useKategori() {
     if (res.ok) {
       const row = await res.json()
       setKategori(k => [...k, row])
-      return true
+      return row
     }
     const data = await res.json().catch(() => ({}))
     throw new Error(data.error || `Gagal menambah kategori (${res.status})`)

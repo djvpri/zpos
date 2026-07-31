@@ -41,7 +41,7 @@ function compressImage(file: File, maxSize = 400, quality = 0.75): Promise<strin
 }
 
 export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
-  const { kategori } = useKategori()
+  const { kategori, tambah: tambahKategori } = useKategori()
   const fileRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState({
@@ -64,6 +64,47 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
   const [deteksiNama, setDeteksiNama] = useState<'deteksi' | 'gagal' | null>(null)
   // Pesan error validasi simpan (field kurang) — tampil merah di atas tombol.
   const [er, setEr] = useState('')
+  // Saran kategori dari AI (Gemini). [] = belum ada saran; '-' spinner.
+  const [saranKat, setSaranKat] = useState<string[]>([])
+  const [saranKatLoading, setSaranKatLoading] = useState(false)
+
+  // Minta saran kategori dari Gemini berdasar nama produk yg diketik. Jangan
+  // memanggil AI menghabiskan kuota utk nama kosong/terlalu pendek.
+  const mintaSaranKategori = async () => {
+    const nama = form.nama.trim()
+    if (nama.length < 3) { setEr('Tulis nama produk dulu (min. 3 huruf) untuk dapat saran kategori.'); return }
+    setSaranKatLoading(true); setSaranKat([]); setEr('')
+    try {
+      const res = await fetch('/api/produk/kategori-saran', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (res.ok && d.kategori) setSaranKat([d.kategori])
+      else setEr(d.error || 'Gagal ambil saran kategori.')
+    } catch {
+      setEr('Gagal terhubung ke server untuk saran kategori.')
+    } finally {
+      setSaranKatLoading(false)
+    }
+  }
+
+  // Klik saran → pakai kategori. Kalau kategori belum ada di list, dibuat
+  // dulu (POST /api/kategori) & langsung auto-pilih id barunya. Tak duplikat
+  // (cek list dulu; unique key toko_id+nama di DB juga jaga).
+  const pakaiSaranKat = async (nama: string) => {
+    setEr('')
+    const ada = kategori.find(k => k.nama.toLowerCase() === nama.toLowerCase())
+    if (ada) { set('kategori_id', ada.id); return }
+    try {
+      const bar = await tambahKategori(nama) // Promise<Kategori> → dapat id
+      set('kategori_id', bar.id)
+    } catch (e) {
+      setEr(e instanceof Error ? e.message : 'Gagal buat kategori.')
+    }
+  }
+
 
   // Deteksi nama produk otomatis dari foto (proxy server → Gemini). Bentar,
   // isi field nama; admin tetap bisa edit.
@@ -80,6 +121,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       })
       const d = await res.json().catch(() => ({}))
       if (res.ok && d.nama) set('nama', d.nama)
+      if (res.ok && d.kategori) setSaranKat([d.kategori]) // foto → Gemini kasih nama sekalian kategori
       else setDeteksiNama('gagal')
     } catch {
       setDeteksiNama('gagal')
@@ -273,6 +315,33 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
                 <option key={k.id} value={k.id}>{k.nama}</option>
               ))}
             </select>
+
+            {/* Saran kategori AI — klik untuk bikin/pilih kategori otomatis */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={mintaSaranKategori}
+                className="text-[11px] px-2 py-1 rounded-md border border-violet-200 bg-violet-50 text-violet-600 hover:bg-violet-100 transition-colors"
+              >
+                {saranKatLoading ? 'Mencari…' : '✨ Saran kategori AI'}
+              </button>
+              {saranKat.map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => pakaiSaranKat(s)}
+                  className="text-[11px] px-2 py-1 rounded-md border border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+                  title="Klik untuk pakai (buat kalau belum ada)"
+                >
+                  {s}
+                </button>
+              ))}
+              {saranKat.length > 0 && (
+                <button type="button" onClick={() => { setSaranKat([]); setEr('') }} className="text-[10px] text-gray-400 hover:text-gray-600">
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

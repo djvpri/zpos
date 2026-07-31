@@ -25,5 +25,5 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
     // bukan kegagalan foto. Kalau gagal jaringan → 502 semi-informatif.
     return NextResponse.json({ error: hasil.error, nama: null }, { status: hasil.error.includes('GEMINI_API_KEY') ? 503 : 502 })
   }
-  return NextResponse.json({ nama: hasil.nama })
+  return NextResponse.json({ nama: hasil.nama, kategori: hasil.kategori ?? null })
 }

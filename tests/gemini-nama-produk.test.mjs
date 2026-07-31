@@ -1,7 +1,7 @@
 // Test mandiri utk deteksi nama produk dari foto (Gemini) — run:
 //   node --experimental-strip-types tests/gemini-nama-produk.test.mjs
 import assert from 'node:assert'
-import { deteksiNamaDariFoto } from '../src/lib/gemini-nama-produk.ts'
+import { deteksiNamaDariFoto, saranKategoriDariNama } from '../src/lib/gemini-nama-produk.ts'
 
 let pass = 0
 function ok(desc, cond) { assert.ok(cond, desc); pass++; console.log('  ok -', desc) }
@@ -22,6 +22,17 @@ const oldKey = process.env.GEMINI_API_KEY
 process.env.GEMINI_API_KEY = 'AIzaDUMMY'
 const r2 = await deteksiNamaDariFoto('bukan-data-uri')
 ok('foto non-data-uri + key dummy → return error (tidak throw)', r2.error !== undefined)
+if (oldKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = oldKey
+
+// 3. saranKategoriDariNama: tanpa key → graceful, error menyebut GEMINI_API_KEY
+const r3 = await saranKategoriDariNama('Indomie Goreng')
+ok('kategori tanpa key → kategori null (bukan throw)', r3.kategori === null)
+ok('kategori tanpa key → error menyebut GEMINI_API_KEY', typeof r3.error === 'string' && r3.error.includes('GEMINI_API_KEY'))
+
+// 4. saranKategoriDariNama: nama kosong/error → tak throw (pakai key dummy, fetch gagal)
+process.env.GEMINI_API_KEY = 'AIzaDUMMY'
+const r4 = await saranKategoriDariNama('nasi goreng')
+ok('kategori + key dummy → return error (tidak throw)', r4.error !== undefined)
 if (oldKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = oldKey
 
 console.log(`\nPASS: ${pass} assertion`)
