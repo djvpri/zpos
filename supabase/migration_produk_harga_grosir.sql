@@ -1,5 +1,5 @@
 -- Migrasi: harga grosir & ecer per produk (dual pricing minimarket).
--- Jalankan MANUAL via Supabase SQL Editor / psql (tidak auto-run di build).
+-- Jalankan MANUAL via psql/node postgres.js (tidak auto-run di build).
 --
 -- Menambahkan:
 --   produk.harga_grosir    nullable numeric — harga satuan saat qty grosir aktif

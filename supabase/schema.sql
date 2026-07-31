@@ -1,6 +1,6 @@
 -- =============================================
 -- ZPOS - Zomet POS Database Schema
--- Jalankan di Supabase SQL Editor
+-- Jalankan MANUAL via psql terhadap Postgres (Railway) — nama folder `supabase/` legacy, tetap dipakai
 -- =============================================
 
 -- Tabel Kategori

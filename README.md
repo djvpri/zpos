@@ -11,7 +11,7 @@ Aplikasi kasir digital berbasis web, bagian dari ekosistem Z. Cepat, mobile-frie
 - **PWA**: @ducanh2912/next-pwa
 - **Input Validation**: Zod
 - **E2E Test**: Playwright
-- **Storage**: Supabase (PostgreSQL + migrations)
+- **Storage**: PostgreSQL (Railway)
 
 ## Fitur
 
@@ -51,11 +51,10 @@ cd zpos
 npm install
 ```
 
-### 2. Database (Supabase)
-Buat project di [Supabase](https://supabase.com), lalu:
-- Buka SQL Editor
-- Jalankan `supabase/schema.sql`
-- Jalankan migrasi `supabase/migration_*.sql` berurutan
+### 2. Database (PostgreSQL/Railway)
+Koneksikan ke Postgres (Railway), lalu:
+- Jalankan `supabase/schema.sql` (folder `supabase/` menyimpan file SQL; **nama folder legacy**, koneksi sebenarnya ke Postgres Railway, bukan Supabase)
+- Jalankan migrasi `supabase/migration_*.sql` berurutan secara **manual**
 
 ### 3. Environment
 Salin `.env.example` (atau buat `.env.local`):

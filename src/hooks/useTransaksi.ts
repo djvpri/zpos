@@ -1,13 +1,11 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
 import { Transaksi, DetailTransaksi } from '@/types'
 import { queueTransaksi } from '@/lib/offline-queue'
 
 export function useTransaksi() {
   const [loading, setLoading] = useState(false)
-  const [riwayat, setRiwayat] = useState<Transaksi[]>([])
 
   // simpan() coba kirim langsung dulu. Kalau gagal karena SERVER TERJANGKAU
   // tapi menolak (400/403/dst — mis. langganan habis, data tidak valid),
@@ -16,7 +14,7 @@ export function useTransaksi() {
   // gagal karena request tidak pernah sampai sama sekali (offline), baru
   // masuk antrian lokal — struk tetap bisa dicetak, transaksi otomatis
   // terkirim begitu koneksi kembali.
-  const simpan = async (trx: Transaksi, items: DetailTransaksi[]) => {
+  const simpan = useCallback(async (trx: Transaksi, items: DetailTransaksi[]) => {
     setLoading(true)
     try {
       let res: Response
@@ -44,16 +42,7 @@ export function useTransaksi() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const fetchRiwayat = useCallback(async (limit = 20) => {
-    const { data } = await supabase
-      .from('transaksi')
-      .select('*, detail_transaksi(*)')
-      .order('created_at', { ascending: false })
-      .limit(limit)
-    setRiwayat(data || [])
   }, [])
 
-  return { loading, riwayat, simpan, fetchRiwayat }
+  return { loading, simpan }
 }
