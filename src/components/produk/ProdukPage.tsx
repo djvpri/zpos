@@ -6,13 +6,14 @@ import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, Tags } from 'react-bootstrap-icons'
+import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, Tags, LayoutTextWindow } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
 const ScanBarcodeMassal = dynamic(() => import('./ScanBarcodemassal'), { ssr: false })
 const TambahCepat = dynamic(() => import('./TambahCepat'), { ssr: false })
 const BarcodeLabel = dynamic(() => import('./BarcodeLabel'), { ssr: false })
 const StickerHarga = dynamic(() => import('./StickerHarga'), { ssr: false })
+const TemplateProduk = dynamic(() => import('./TemplateProduk'), { ssr: false })
 
 type Tab = 'produk' | 'kategori'
 
@@ -30,6 +31,7 @@ export default function ProdukPage() {
   const [showCepat, setShowCepat] = useState(false)
   const [showLabel, setShowLabel] = useState(false)
   const [showHarga, setShowHarga] = useState(false)
+  const [showTemplate, setShowTemplate] = useState(false)
 
   const filtered = produk.filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
 
@@ -115,6 +117,12 @@ export default function ProdukPage() {
               className="flex items-center gap-2 px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
             >
               <CursorText size={16} /> Tambah Cepat
+            </button>
+            <button
+              onClick={() => setShowTemplate(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-purple-200 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors"
+            >
+              <LayoutTextWindow size={16} /> Template
             </button>
             <button
               onClick={() => setShowLabel(true)}
@@ -290,6 +298,7 @@ export default function ProdukPage() {
       {showCepat && <TambahCepat onSelesai={() => { setShowCepat(false); fetchProduk() }} onTutup={() => setShowCepat(false)} />}
       {showLabel && <BarcodeLabel produk={produk} onSelesai={() => { setShowLabel(false); fetchProduk() }} onTutup={() => setShowLabel(false)} update={update} />}
       {showHarga && <StickerHarga produk={produk} onTutup={() => setShowHarga(false)} />}
+      {showTemplate && <TemplateProduk onSelesai={() => { setShowTemplate(false); fetchProduk() }} onTutup={() => setShowTemplate(false)} />}
       {modal && (
         <ProdukModal
           produk={modal === 'tambah' ? null : modal}
