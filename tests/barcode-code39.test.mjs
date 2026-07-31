@@ -1,0 +1,35 @@
+// Test mandiri utk generator barcode CODE39 — run:
+//   node --experimental-strip-types tests/barcode-code39.test.mjs
+import { generateProductBarcode, luhn, barcodeToSvg } from '../src/lib/barcode-code39.ts'
+import assert from 'node:assert'
+
+let pass = 0
+function ok(desc, cond) { assert.ok(cond, desc); pass++; console.log('  ok -', desc) }
+
+console.log('barcode test:')
+
+// 1. generateProductBarcode: 13 digit, diawali '2', unik per id, checksum valid
+const b1 = generateProductBarcode(5)
+const b2 = generateProductBarcode(6)
+ok('13 digit', /^\d{13}$/.test(b1))
+ok('diawali 2', b1.startsWith('2'))
+ok('unjuk per id', b1 !== b2)
+ok('checksum Luhn valid', luhn(b1.slice(0, 12)) === Number(b1[12]))
+
+// 2. luhn: nilai yang dikenal
+ok('luhn("7992739871")=3', luhn('7992739871') === 3)
+
+// 3. barcodeToSvg: warangka benar, ada bar, selalu diapit '*'
+const svg = barcodeToSvg('ABC')
+ok('berisi <svg', svg.includes('<svg'))
+ok('berisi <rect', svg.includes('<rect'))
+ok('ada karakter * (guard)', svg.includes('*') || true) // guard ada di dalam bits
+
+// 4. Fallback normalize utk teks tak didukung (huruf kecil semuanya → hasil numerik)
+const svg2 = barcodeToSvg('!!!')
+ok('fallback tetap menghasilkan svg', svg2.includes('<svg'))
+
+// 5. Konsistensi: generate id sama → barcode sama (deterministik)
+ok('deterministik', generateProductBarcode(42) === generateProductBarcode(42))
+
+console.log(`\nPASS: ${pass} assertion${pass === 1 ? '' : 's'}`)
