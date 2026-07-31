@@ -6,7 +6,7 @@ import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan } from 'react-bootstrap-icons'
+import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
 const ScanBarcodeMassal = dynamic(() => import('./ScanBarcodemassal'), { ssr: false })
@@ -44,6 +44,13 @@ export default function ProdukPage() {
       await hapus(id)
       // hapusEmbedding ditangani server-side di api/produk/[id] (DELETE).
     }
+  }
+
+  // Duplikasi cepat: buka modal edit yang prefill dari produk asal, TANPA id
+  // (jadi saat simpan → insert baru) dan barcode dikosongkan (unique barcode
+  // per-toko menolak duplikat). Nama diberi suffix supaya jelas beda produk.
+  const onDuplikat = (p: Produk) => {
+    setModal({ ...p, id: 0 as unknown as number, nama: `${p.nama} (salinan)`, barcode: undefined })
   }
 
   const onTambahKat = async (e: React.FormEvent) => {
@@ -190,6 +197,12 @@ export default function ProdukPage() {
                           onClick={() => setModal(p)}
                           className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors">
                           <PencilSquare size={12} /> Edit
+                        </button>
+                        <button
+                          data-testid="duplicate-product"
+                          onClick={() => onDuplikat(p)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors">
+                          <Files size={12} /> Duplikat
                         </button>
                         <button
                           data-testid="delete-product"
