@@ -84,13 +84,27 @@ export default function ProdukPage() {
         </div>
 
         {tab === 'produk' && (
-          <button
-            data-testid="add-product-btn"
-            onClick={() => setModal('tambah')}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-700 text-white rounded-lg text-sm font-medium hover:bg-indigo-800 transition-colors"
-          >
-            <Plus size={16} /> Tambah Produk
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            >
+              <FileEarmarkSpreadsheet size={16} /> Import
+            </button>
+            <button
+              onClick={() => setShowScanMassal(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+            >
+              <QrCodeScan size={16} /> Scan Massal
+            </button>
+            <button
+              data-testid="add-product-btn"
+              onClick={() => setModal('tambah')}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-700 text-white rounded-lg text-sm font-medium hover:bg-indigo-800 transition-colors"
+            >
+              <Plus size={16} /> Tambah Produk
+            </button>
+          </div>
         )}
       </div>
 
