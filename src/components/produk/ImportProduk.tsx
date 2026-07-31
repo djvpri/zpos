@@ -16,7 +16,7 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
   const fileRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState<'upload' | 'preview' | 'proses' | 'selesai'>('upload')
   const [produk, setProduk] = useState<ProdukRow[]>([])
-  const [hasil, setHasil] = useState<{ berhasil: number; gagal: number; errors: string[] } | null>(null)
+  const [hasil, setHasil] = useState<{ berhasil: number; diupdate: number; gagal: number; errors: string[] } | null>(null)
   const [error, setError] = useState('')
 
   function downloadTemplate() {
@@ -78,7 +78,7 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
         body: JSON.stringify({ produk })
       })
       const data = await res.json()
-      setHasil(data)
+      setHasil({ berhasil: data.berhasil ?? 0, diupdate: data.diupdate ?? 0, gagal: data.gagal ?? 0, errors: data.errors ?? [] })
       setStep('selesai')
       if (data.berhasil > 0) onSelesai()
     } catch {
@@ -100,7 +100,7 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
         })
         if (!gagal) berhasil++
       }
-      setHasil({ berhasil, gagal: produk.length - berhasil, errors: [] })
+      setHasil({ berhasil, diupdate: 0, gagal: produk.length - berhasil, errors: [] })
       setStep('selesai')
       if (berhasil > 0) onSelesai()
     }
@@ -165,6 +165,9 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
                     </span>
                   ))}
                 </div>
+                <p className="text-xs text-amber-600 mt-2">
+                  💡 Kolom <b>barcode</b> dipakai sebagai kunci: produk dengan barcode yang sudah ada akan di-<b>update</b> (harga/stok terbaru), bukan dibuat duplikat.
+                </p>
               </div>
             </div>
           )}
@@ -209,7 +212,19 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
             <div className="py-6 text-center">
               <CheckCircleFill size={40} className="mx-auto mb-3 text-green-500" />
               <p className="text-base font-semibold text-gray-800 mb-1">Import Selesai!</p>
-              <p className="text-sm text-gray-500">{hasil.berhasil} produk berhasil diimport</p>
+              {hasil.berhasil > 0 && (
+                <p className="text-sm text-gray-500">
+                  <span className="font-medium text-green-600">{hasil.berhasil} produk baru</span> berhasil ditambahkan
+                </p>
+              )}
+              {hasil.diupdate > 0 && (
+                <p className="text-sm text-gray-500">
+                  <span className="font-medium text-indigo-600">{hasil.diupdate} produk</span> diperbarui (harga/stok terbaru)
+                </p>
+              )}
+              {hasil.berhasil === 0 && hasil.diupdate === 0 && (
+                <p className="text-sm text-gray-500">Tidak ada produk yang diubah</p>
+              )}
               {hasil.gagal > 0 && (
                 <div className="mt-3 rounded-xl bg-yellow-50 border border-yellow-100 p-3 text-left">
                   <p className="text-xs font-medium text-yellow-700">{hasil.gagal} produk gagal:</p>
