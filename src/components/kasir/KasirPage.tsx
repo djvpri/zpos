@@ -46,6 +46,8 @@ export default function KasirPage() {
   const [flashScan, setFlashScan] = useState<string | null>(null)
   const [flashNama, setFlashNama] = useState('')
   const [flashHarga, setFlashHarga] = useState('')
+  // Autofill nama dari Open Food Facts (kalau barcode terdaftar di sana)
+  const [flashAutoNama, setFlashAutoNama] = useState<'cek' | string | null>(null)
   const [pesanSimpan, setPesanSimpan] = useState<{ tipe: 'antri' | 'gagal'; teks: string } | null>(null)
 
   const produkFiltered = useMemo(() =>
@@ -104,6 +106,25 @@ export default function KasirPage() {
     kurangiStok(p.id, 1)
   }
 
+  // Autofill nama & kategori dari Open Food Facts. Coverage terbatas (mayoritas
+  // produk lokal tak terdaftar) — kalau tak ketemu, dibiarkan kasir isi manual.
+  // Dideklarasikan sebelum onBarcodeScan karena dipanggil di sana.
+  const autofillNama = useCallback(async (code: string) => {
+    setFlashAutoNama('cek')
+    try {
+      const res = await fetch(`/api/produk/barcode-info?barcode=${encodeURIComponent(code)}`)
+      const data = await res.json()
+      if (data?.nama) {
+        setFlashNama(data.nama)
+        setFlashAutoNama(data.nama)
+      } else {
+        setFlashAutoNama(null)
+      }
+    } catch {
+      setFlashAutoNama(null)
+    }
+  }, [])
+
   const onBarcodeScan = useCallback((code: string) => {
     // Cari dari katalog yang sudah dimuat client (produk dari useProduk,
     // yang sekarang ter-cache offline juga) — TIDAK perlu round-trip
@@ -114,12 +135,13 @@ export default function KasirPage() {
       tambahKeKeranjang(p)
     } else {
       // Barcode tidak dikenal di katalog → flash-scan: minta harga, lalu
-      // auto-create & tambah ke keranjang. Beri nama barcode sebagai default.
+      // auto-create & tambah ke keranjang. Coba autofill nama dari OFP.
       setFlashNama('')
       setFlashHarga('')
       setFlashScan(code)
+      autofillNama(code)
     }
-  }, [produk])
+  }, [produk, autofillNama])
 
   useBarcodeUsbListener(onBarcodeScan)
 
@@ -149,6 +171,7 @@ export default function KasirPage() {
         const row = await res.json() as Produk
         tambahKeKeranjang(row)
         setFlashScan(null)
+        setFlashAutoNama(null)
       }
     } catch {
       // offline — biarkan modal tetap terbuka, kasir coba lagi saat online
@@ -399,6 +422,12 @@ export default function KasirPage() {
                   autoFocus
                   className="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400"
                 />
+                {flashAutoNama === 'cek' && (
+                  <p className="text-[10px] text-gray-400 mt-1">Mencari nama di Open Food Facts…</p>
+                )}
+                {typeof flashAutoNama === 'string' && (
+                  <p className="text-[10px] text-green-600 mt-1">✓ Nama ditemukan otomatis. Ubah kalau perlu.</p>
+                )}
               </div>
               <div>
                 <label className="text-xs text-gray-500">Harga (Rp) *</label>
