@@ -15,7 +15,8 @@ export const PUT = apiHandler(async (req: Request, body: any, context) => {
     UPDATE produk
     SET nama = ${body.nama}, harga = ${body.harga}, stok = ${body.stok},
         emoji = ${body.emoji}, deskripsi = ${body.deskripsi || null}, foto_url = ${body.foto_url || null},
-        barcode = ${body.barcode || null}, kategori_id = ${body.kategori_id}
+        barcode = ${body.barcode || null}, kategori_id = ${body.kategori_id},
+        harga_grosir = ${body.harga_grosir ?? null}, min_qty_grosir = ${body.min_qty_grosir ?? null}
     WHERE id = ${Number(id)} AND toko_id = ${toko.tokoId}
     RETURNING *
   `

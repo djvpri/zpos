@@ -52,8 +52,14 @@ export function KeranjangPanel({
           <div key={it.id} className="flex items-center gap-2 py-2.5 border-b border-gray-50 last:border-0">
             <span className="text-xl">{it.emoji}</span>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-800 truncate">{it.nama}</div>
-              <div className="text-xs text-gray-400">{fmt(it.harga)}</div>
+              <div className="text-sm font-medium text-gray-800 truncate">
+                {it.nama}
+                {it._grosir && <span className="ml-1.5 text-[9px] font-bold text-green-700 bg-green-100 rounded px-1.5 py-0.5 align-middle">GROSIR</span>}
+              </div>
+              <div className="text-xs text-gray-400">
+                {it._grosir && it._harga_ecer != null && <span className="line-through mr-1">{fmt(it._harga_ecer)}</span>}
+                {fmt(it.harga)}
+              </div>
             </div>
             <div className="flex items-center gap-1">
               <button

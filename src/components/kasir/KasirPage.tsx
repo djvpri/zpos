@@ -21,6 +21,7 @@ const BarcodeCameraModal = dynamic(
 )
 import { Produk, ItemKeranjang, Transaksi, DetailTransaksi } from '@/types'
 import { hitungPajak, hitungTotal, noTrx } from '@/lib/utils'
+import { hargaEfektif, isGrosir } from '@/lib/dual-pricing'
 
 export default function KasirPage() {
   const { produk, loading, kurangiStok, tambahStok } = useProduk()
@@ -63,7 +64,12 @@ export default function KasirPage() {
         const p = numId < 0
           ? virtualProduk[numId]
           : produk.find(x => x.id === numId)
-        return p ? { ...p, qty } : null
+        if (!p) return null
+        // Dual pricing: harga satuan item = harga efektif berdasar qty keranjang.
+        // Dihitung ulang tiap qty berubah (dep `keranjang`) → naik ke ambang
+        // grosir otomatis pakai harga_grosir, turun balik ke harga ecer.
+        const grosir = isGrosir(p, qty)
+        return { ...p, qty, harga: hargaEfektif(p, qty), _grosir: grosir, _harga_ecer: grosir ? p.harga : undefined }
       })
       .filter(Boolean) as ItemKeranjang[]
   , [keranjang, produk, virtualProduk])

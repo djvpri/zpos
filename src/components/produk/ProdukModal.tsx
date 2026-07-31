@@ -53,6 +53,8 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     kategori_id: produk?.kategori_id || '',
     expired_at: produk?.expired_at?.slice(0,10) || '',
     stok_minimum: produk?.stok_minimum ?? 5,
+    harga_grosir: produk?.harga_grosir ?? '',
+    min_qty_grosir: produk?.min_qty_grosir ?? '',
   })
   const [uploading, setUploading] = useState(false)
   const [scanBarcode, setScanBarcode] = useState(false)
@@ -92,6 +94,8 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       kategori_id: Number(form.kategori_id),
       expired_at: form.expired_at || undefined,
       stok_minimum: Number(form.stok_minimum) || 5,
+      harga_grosir: form.harga_grosir ? Number(form.harga_grosir) : null,
+      min_qty_grosir: form.min_qty_grosir ? Number(form.min_qty_grosir) : null,
       aktif: true,
     })
   }
@@ -206,6 +210,23 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
               <input className={inputCls} type="number" value={form.stok} onChange={e => set('stok', e.target.value)} placeholder="0" />
             </div>
           </div>
+
+          {/* Dual pricing grosir/ecer */}
+          <div className="rounded-xl border border-green-100 bg-green-50/60 p-3 space-y-2">
+            <p className="text-[11px] font-semibold text-green-700">Harga Grosir <span className="font-normal text-green-500">(opsional — jual banyak lebih murah)</span></p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-500">Harga Satuan Grosir (Rp)</label>
+                <input className={inputCls} type="number" value={form.harga_grosir} onChange={e => set('harga_grosir', e.target.value)} placeholder="Mis. 8000" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Min. Jumlah (pcs)</label>
+                <input className={inputCls} type="number" value={form.min_qty_grosir} onChange={e => set('min_qty_grosir', e.target.value)} placeholder="Mis. 6" />
+              </div>
+            </div>
+            <p className="text-[10px] text-green-600">Otomatis pakai harga grosir saat pembelian &ge; min jumlah. Kosongkan = tanpa harga grosir.</p>
+          </div>
+
           <div>
             <label className="text-xs text-gray-500">Kategori</label>
             <select className={inputCls} value={form.kategori_id} onChange={e => set('kategori_id', Number(e.target.value))}>

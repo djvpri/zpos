@@ -36,6 +36,9 @@ export const produkSchema = z.object({
   expired_at: z.string().nullable().optional(),
   stok_minimum: z.number().int().min(0).default(5),
   client_ref: z.string().nullable().optional(),
+  // Dual pricing: nullable, undefined diterima; nilai dibersihkan server (NULL bila kosong).
+  harga_grosir: z.number().positive().nullable().optional(),
+  min_qty_grosir: z.number().int().min(1).nullable().optional(),
 })
 
 export const produkUpdateSchema = produkSchema.partial().extend({

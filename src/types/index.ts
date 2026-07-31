@@ -9,6 +9,11 @@ export interface Produk {
   barcode?: string
   kategori_id: number | null
   aktif: boolean
+  // Dual pricing (grosir & ecer): harga_grosir + min_qty_grosir bernilai NULL/undefined
+  // = produk tidak punya harga grosir (ecer saja). Saat qty di keranjang >= min_qty_grosir,
+  // otomatis memakai harga_grosir sebagai harga satuan.
+  harga_grosir?: number | null
+  min_qty_grosir?: number | null
   expired_at?: string | null
   stok_minimum?: number
   created_at?: string
@@ -27,6 +32,10 @@ export interface Kategori {
 
 export interface ItemKeranjang extends Produk {
   qty: number
+  // Klien-saja: true kalau baris ini memakai harga grosir (dual pricing aktif).
+  _grosir?: boolean
+  // Klien-saja: harga ecer asli (untuk tampilan coret saat grosir aktif).
+  _harga_ecer?: number
 }
 
 export interface Transaksi {

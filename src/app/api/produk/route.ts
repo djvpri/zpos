@@ -50,8 +50,8 @@ export const POST = apiHandler(async (req: Request, body: any) => {
   let row: Produk
   try {
     ;[row] = await sql`
-      INSERT INTO produk (nama, harga, stok, emoji, deskripsi, foto_url, barcode, kategori_id, toko_id, expired_at, stok_minimum, client_ref)
-      VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId}, ${body.expired_at || null}, ${body.stok_minimum ?? 5}, ${body.client_ref || null})
+      INSERT INTO produk (nama, harga, stok, emoji, deskripsi, foto_url, barcode, kategori_id, toko_id, expired_at, stok_minimum, client_ref, harga_grosir, min_qty_grosir)
+      VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId}, ${body.expired_at || null}, ${body.stok_minimum ?? 5}, ${body.client_ref || null}, ${body.harga_grosir ?? null}, ${body.min_qty_grosir ?? null})
       RETURNING *
     `
   } catch (e: any) {
