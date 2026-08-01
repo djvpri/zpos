@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useProduk } from '@/hooks/useProduk'
 import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
+import FotoLightbox from '@/components/produk/FotoLightbox'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
 import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, LayoutTextWindow, Download, CameraFill } from 'react-bootstrap-icons'
@@ -23,6 +24,7 @@ export default function ProdukPage() {
   const { kategori, tambah: tambahKat, hapus: hapusKat } = useKategori()
   const [tab, setTab] = useState<Tab>('produk')
   const [modal, setModal] = useState<'tambah' | Produk | null>(null)
+  const [fotoBesar, setFotoBesar] = useState<Produk | null>(null)
   const [cari, setCari] = useState('')
   const [namaKat, setNamaKat] = useState('')
   const [katError, setKatError] = useState('')
@@ -212,7 +214,14 @@ export default function ProdukPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {p.foto_thumb ? (
-                          <img src={p.foto_thumb} alt={p.nama} className="w-9 h-9 rounded-lg object-cover shrink-0" loading="lazy" />
+                          <button
+                            type="button"
+                            onClick={() => setFotoBesar(p)}
+                            title="Lihat foto besar"
+                            className="shrink-0 cursor-zoom-in"
+                          >
+                            <img src={p.foto_thumb} alt={p.nama} className="w-9 h-9 rounded-lg object-cover" />
+                          </button>
                         ) : (
                           <span className="text-xl w-9 text-center shrink-0">{p.emoji}</span>
                         )}
@@ -347,6 +356,7 @@ export default function ProdukPage() {
           onTutup={() => setModal(null)}
         />
       )}
+      {fotoBesar && <FotoLightbox produk={fotoBesar} onTutup={() => setFotoBesar(null)} />}
     </div>
   )
 }
