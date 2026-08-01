@@ -7,6 +7,7 @@ import { useKategori } from '@/hooks/useKategori'
 interface ProdukRow {
   nama: string; harga: number; stok: number; kategori: string
   deskripsi?: string; barcode?: string; expired_at?: string; stok_minimum?: number
+  harga_grosir?: number; min_qty_grosir?: number
 }
 
 interface Props { onSelesai: () => void; onTutup: () => void; tambahOffline: (p: any) => Promise<{ message: string } | null> }
@@ -21,12 +22,12 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
 
   function downloadTemplate() {
     const ws = XLSX.utils.aoa_to_sheet([
-      ['nama', 'harga', 'stok', 'kategori', 'deskripsi', 'barcode', 'expired_at', 'stok_minimum'],
-      ['Indomie Goreng', 3500, 100, 'Makanan', 'Mie instan goreng', '', '', 10],
-      ['Aqua 600ml', 3000, 50, 'Minuman', '', '', '', 5],
-      ['Teh Botol Sosro', 4000, 80, 'Minuman', '', '', '2025-12-31', 5],
+      ['nama', 'harga', 'stok', 'kategori', 'harga_grosir', 'min_qty_grosir', 'deskripsi', 'barcode', 'expired_at', 'stok_minimum'],
+      ['Indomie Goreng', 3500, 100, 'Makanan', 3200, 10, 'Mie instan goreng', '', '', 10],
+      ['Aqua 600ml', 3000, 50, 'Minuman', '', '', '', '', '', 5],
+      ['Teh Botol Sosro', 4000, 80, 'Minuman', '', '', '', '', '2025-12-31', 5],
     ])
-    ws['!cols'] = [20,10,8,15,20,15,12,12].map(w => ({ wch: w }))
+    ws['!cols'] = [20,10,8,15,12,12,20,15,12,12].map(w => ({ wch: w }))
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Produk')
     XLSX.writeFile(wb, 'template_produk_zpos.xlsx')
@@ -56,6 +57,8 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
             barcode: r.barcode ? String(r.barcode) : undefined,
             expired_at: r.expired_at ? String(r.expired_at).slice(0, 10) : undefined,
             stok_minimum: Number(r.stok_minimum) || 5,
+            harga_grosir: r.harga_grosir ? Number(r.harga_grosir) : undefined,
+            min_qty_grosir: r.min_qty_grosir ? Number(r.min_qty_grosir) : undefined,
           }))
 
         if (parsed.length === 0) { setError('File kosong atau format tidak sesuai template'); return }
@@ -158,7 +161,7 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
               <div className="rounded-xl bg-gray-50 p-3">
                 <p className="text-xs font-medium text-gray-600 mb-1">Format kolom yang didukung:</p>
                 <div className="grid grid-cols-2 gap-1 text-xs text-gray-500">
-                  {['nama *', 'harga *', 'stok', 'kategori', 'deskripsi', 'barcode', 'expired_at', 'stok_minimum'].map(k => (
+                  {['nama *', 'harga *', 'stok', 'kategori', 'harga_grosir', 'min_qty_grosir', 'deskripsi', 'barcode', 'expired_at', 'stok_minimum'].map(k => (
                     <span key={k} className="flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
                       {k}
@@ -166,7 +169,7 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
                   ))}
                 </div>
                 <p className="text-xs text-amber-600 mt-2">
-                  💡 Kolom <b>barcode</b> dipakai sebagai kunci: produk dengan barcode yang sudah ada akan di-<b>update</b> (harga/stok terbaru), bukan dibuat duplikat.
+                  💡 Produk dengan <b>barcode</b> yang sama, <b>atau</b> <b>nama</b> yang sama akan di-<b>update</b> (harga/stok terbaru), bukan duplikat. Nama baru = produk baru.
                 </p>
               </div>
             </div>

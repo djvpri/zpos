@@ -6,7 +6,8 @@ import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, Tags, LayoutTextWindow } from 'react-bootstrap-icons'
+import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, Tags, LayoutTextWindow, Download } from 'react-bootstrap-icons'
+import * as XLSX from 'xlsx'
 import dynamic from 'next/dynamic'
 const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
 const ScanBarcodeMassal = dynamic(() => import('./ScanBarcodemassal'), { ssr: false })
@@ -75,6 +76,26 @@ export default function ProdukPage() {
     await hapusKat(id)
   }
 
+  // Export SEMUA produk ke Excel (bukan cuma yg terfilter). Kolom diset sama
+  // dengan template import + barcode & kategori, jadi file bisa diedit lalu
+  // di-upload balik utk update massal tanpa duplikat (barcode/nama = kunci).
+  function exportExcel() {
+    const rows = [
+      ['nama', 'harga', 'stok', 'kategori', 'harga_grosir', 'min_qty_grosir', 'deskripsi', 'barcode', 'expired_at', 'stok_minimum'],
+      ...produk.map((p: Produk) => [
+        p.nama, p.harga, p.stok,
+        p.kategori?.nama || '',
+        p.harga_grosir ?? '', p.min_qty_grosir ?? '',
+        p.deskripsi ?? '', p.barcode ?? '', p.expired_at ?? '', p.stok_minimum ?? 5,
+      ]),
+    ]
+    const ws = XLSX.utils.aoa_to_sheet(rows)
+    ws['!cols'] = [24,10,8,15,12,12,24,18,12,12].map(w => ({ wch: w }))
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Produk')
+    XLSX.writeFile(wb, 'produk_zpos.xlsx')
+  }
+
   return (
     <div className="p-5">
       {/* Header + Tab */}
@@ -105,6 +126,13 @@ export default function ProdukPage() {
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
             >
               <FileEarmarkSpreadsheet size={16} /> Import
+            </button>
+            <button
+              onClick={exportExcel}
+              disabled={produk.length === 0}
+              className="flex items-center gap-2 px-4 py-2 border border-green-200 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors disabled:opacity-50"
+            >
+              <Download size={16} /> Export
             </button>
             <button
               onClick={() => setShowScanMassal(true)}
