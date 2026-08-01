@@ -78,8 +78,8 @@ export default function ProdukPage() {
   return (
     <div className="p-5">
       {/* Header + Tab */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-fit">
           <button
             onClick={() => setTab('produk')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
@@ -99,7 +99,7 @@ export default function ProdukPage() {
         </div>
 
         {tab === 'produk' && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowImport(true)}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
@@ -164,8 +164,8 @@ export default function ProdukPage() {
             )}
           </div>
 
-          <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-            <table className="w-full">
+          <div className="bg-white border border-gray-100 rounded-xl overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="bg-gray-50 text-xs text-gray-500 font-medium">
                   <th className="text-left px-4 py-3">Produk</th>
