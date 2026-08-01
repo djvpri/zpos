@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { XLg, LayoutTextWindow, CheckCircleFill, ArrowRepeat } from 'react-bootstrap-icons'
+import { XLg, LayoutTextWindow, CheckCircleFill, ArrowRepeat, Lightbulb } from 'react-bootstrap-icons'
 import { PRODUK_TEMPLATES } from '@/lib/produk-templates'
 
 interface Props {
@@ -88,7 +88,7 @@ export default function TemplateProduk({ onSelesai, onTutup }: Props) {
                 </div>
               </div>
               <p className="text-xs text-amber-600 mt-2">
-                💡 Produk yang <b>sama namanya</b> dengan yang sudah ada akan di-update (harga/stok), bukan duplikat (via barcode/nama).
+                <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Produk yang <b>sama namanya</b> dengan yang sudah ada akan di-update (harga/stok), bukan duplikat (via barcode/nama).
               </p>
             </div>
           )}

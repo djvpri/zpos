@@ -8,7 +8,7 @@ import ProdukPage from '@/components/produk/ProdukPage'
 import LaporanPage from '@/components/laporan/LaporanPage'
 import StaffPage from '@/components/staff/StaffPage'
 import PengaturanPage from '@/components/pengaturan/PengaturanPage'
-import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight } from 'react-bootstrap-icons'
+import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight, Film } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import { fmtDate } from '@/lib/utils'
 
@@ -101,7 +101,7 @@ export default function AppPage() {
     <div className="flex flex-col h-screen overflow-hidden">
       {toko?.isDemo && (
         <div className="shrink-0 bg-indigo-600 text-white text-[11px] font-medium text-center py-1.5 flex items-center justify-center gap-3 flex-wrap px-2">
-          <span>🎬 Mode Demo — data direset otomatis tiap hari. Dipakai bersama pengunjung lain.</span>
+          <span><Film size={12} className="inline mr-1 -mt-0.5" />Mode Demo — data direset otomatis tiap hari. Dipakai bersama pengunjung lain.</span>
           <button
             onClick={resetDemo}
             disabled={resetLoading}

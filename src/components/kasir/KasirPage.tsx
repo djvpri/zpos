@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { Search, Cart3, XLg, QrCodeScan, ThreeDots, Camera } from 'react-bootstrap-icons'
+import { Search, Cart3, XLg, QrCodeScan, ThreeDots, Camera, CheckLg } from 'react-bootstrap-icons'
 import PenjualanLain from '@/components/kasir/PenjualanLain'
 import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
@@ -432,7 +432,7 @@ export default function KasirPage() {
                   <p className="text-[10px] text-gray-400 mt-1">Mencari nama di Open Food Facts…</p>
                 )}
                 {typeof flashAutoNama === 'string' && (
-                  <p className="text-[10px] text-green-600 mt-1">✓ Nama ditemukan otomatis. Ubah kalau perlu.</p>
+                  <p className="text-[10px] text-green-600 mt-1"><CheckLg size={11} className="inline mr-1 -mt-0.5" />Nama ditemukan otomatis. Ubah kalau perlu.</p>
                 )}
               </div>
               <div>

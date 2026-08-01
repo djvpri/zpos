@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { XLg, Printer, ArrowRepeat, CheckCircleFill, ExclamationCircle, Tag } from 'react-bootstrap-icons'
+import { XLg, Printer, ArrowRepeat, CheckCircleFill, ExclamationCircle, Tag, Lightbulb } from 'react-bootstrap-icons'
 import { barcodeToSvg, generateProductBarcode } from '@/lib/barcode-code39'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
@@ -148,7 +148,7 @@ export default function LabelCetak({ produk, onSelesai, onTutup, update }: Props
           )}
 
           <div className="text-xs text-gray-400 mt-3">
-            💡 Cetak via browser dialog ke printer label (58mm). Format barcode = CODE39 numerik 13 digit, diawali &#39;2&#39;, unik per produk.
+            <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Cetak via browser dialog ke printer label (58mm). Format barcode = CODE39 numerik 13 digit, diawali &#39;2&#39;, unik per produk.
           </div>
         </div>
 

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
+import { ExclamationOctagonFill } from 'react-bootstrap-icons'
 
 function SsoContent() {
   const router = useRouter()
@@ -49,7 +50,7 @@ function SsoContent() {
           </>
         ) : (
           <>
-            <div className="text-4xl mb-4">❌</div>
+            <ExclamationOctagonFill className="text-red-500 mx-auto mb-4" size={36} />
             <p className="text-red-600 font-medium mb-2">Gagal Login</p>
             <p className="text-gray-500 text-sm mb-4">{msg}</p>
             <a href="https://zone.zomet.my.id" className="text-blue-600 text-sm underline">

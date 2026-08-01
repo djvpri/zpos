@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { XLg, CursorText, CheckCircleFill, ExclamationCircle, ArrowRepeat } from 'react-bootstrap-icons'
+import { XLg, CursorText, CheckCircleFill, ExclamationCircle, ArrowRepeat, Lightbulb } from 'react-bootstrap-icons'
 import { parseText, type Item } from '@/lib/parse-produk-teks'
 
 interface Props {
@@ -84,7 +84,7 @@ export default function TambahCepat({ onSelesai, onTutup }: Props) {
                   <div>nama</div>
                 </div>
                 <p className="text-xs text-amber-600 mt-2">
-                  💡 Produk dengan barcode yang sudah ada akan di-update. Tanpa barcode → dibuat baru.
+                  <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Produk dengan barcode yang sudah ada akan di-update. Tanpa barcode → dibuat baru.
                 </p>
               </div>
 

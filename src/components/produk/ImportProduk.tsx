@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { Upload, Download, XLg, CheckCircleFill, ExclamationCircle, FileEarmarkSpreadsheet, ArrowRepeat } from 'react-bootstrap-icons'
+import { Upload, Download, XLg, CheckCircleFill, ExclamationCircle, FileEarmarkSpreadsheet, ArrowRepeat, Lightbulb } from 'react-bootstrap-icons'
 import * as XLSX from 'xlsx'
 import { useKategori } from '@/hooks/useKategori'
 
@@ -169,7 +169,7 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
                   ))}
                 </div>
                 <p className="text-xs text-amber-600 mt-2">
-                  💡 Produk dengan <b>barcode</b> yang sama, <b>atau</b> <b>nama</b> yang sama akan di-<b>update</b> (harga/stok terbaru), bukan duplikat. Nama baru = produk baru.
+                  <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Produk dengan <b>barcode</b> yang sama, <b>atau</b> <b>nama</b> yang sama akan di-<b>update</b> (harga/stok terbaru), bukan duplikat. Nama baru = produk baru.
                 </p>
               </div>
             </div>

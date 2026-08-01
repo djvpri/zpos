@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Transaksi } from '@/types'
 import { fmt, fmtDateTime } from '@/lib/utils'
-import { Printer, Share, Bluetooth } from 'react-bootstrap-icons'
+import { Printer, Share, Bluetooth, CheckLg } from 'react-bootstrap-icons'
 import { buildEscPos, printViaBluetooth, isBluetoothSupported, selectPrinter, getSavedPrinterName, PrintStatus, StrukData } from '@/lib/thermal-print'
 
 interface TokoInfo {
@@ -157,7 +157,7 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
           {/* Footer */}
           <div className="text-center text-xs text-gray-400 space-y-1">
             {toko?.catatan_struk && <div>{toko.catatan_struk}</div>}
-            <div>★ Terima kasih sudah berbelanja ★</div>
+            <div>* Terima kasih sudah berbelanja *</div>
             <div className="text-gray-300 mt-1">Powered by ZPOS</div>
           </div>
         </div>
@@ -174,12 +174,12 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
                 <Bluetooth size={15} />
                 {btStatus === 'connecting' ? 'Menghubungkan...' :
                  btStatus === 'printing' ? 'Mencetak...' :
-                 btStatus === 'done' ? '✓ Berhasil Dicetak!' :
-                 savedPrinter ? `Cetak ke ${savedPrinter}` : '🖨️ Cetak Bluetooth'}
+                 btStatus === 'done' ? <><CheckLg size={14} className="inline mr-1" />Berhasil Dicetak!</> :
+                 savedPrinter ? `Cetak ke ${savedPrinter}` : 'Cetak Bluetooth'}
               </button>
               <div className="flex items-center justify-between px-1">
                 {savedPrinter
-                  ? <span className="text-[10px] text-slate-400">🔵 Printer: {savedPrinter}</span>
+                  ? <span className="text-[10px] text-slate-400"><Bluetooth size={10} className="inline mr-1 -mt-0.5" />Printer: {savedPrinter}</span>
                   : <span className="text-[10px] text-slate-400">Belum ada printer tersimpan</span>
                 }
                 <button

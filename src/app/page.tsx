@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Cart3, BarChartLine, Box, PhoneFill, People, LightningCharge, CheckLg } from 'react-bootstrap-icons'
+import { Cart3, BarChartLine, Box, PhoneFill, People, LightningCharge, CheckLg, EggFill, CupStraw, DropletHalf, CircleFill, CupHot, EggFried } from 'react-bootstrap-icons'
 
 const features = [
   { icon: Cart3, title: 'Kasir Digital', desc: 'Proses transaksi cepat dengan tampilan yang intuitif. Support tunai, QRIS, dan transfer.' },
@@ -31,6 +31,16 @@ const plans = [
     pro: true,
     items: ['Semua fitur Trial', 'Produk tidak terbatas', 'Laporan lengkap', 'Prioritas support', 'Update fitur terbaru'],
   },
+]
+
+// Produk contoh (mockup kasir di landing) — pakai icon bootstrap, bukan emoji.
+const DEMO_PROD = [
+  { Icon: EggFill, cls: 'text-amber-500' },
+  { Icon: CupStraw, cls: 'text-red-400' },
+  { Icon: DropletHalf, cls: 'text-sky-400' },
+  { Icon: CircleFill, cls: 'text-orange-400' },
+  { Icon: CupHot, cls: 'text-amber-700' },
+  { Icon: EggFried, cls: 'text-yellow-500' },
 ]
 
 export default function LandingPage() {
@@ -113,9 +123,9 @@ export default function LandingPage() {
               </div>
               <div className="p-3 bg-gray-50">
                 <div className="grid grid-cols-3 gap-2">
-                  {['🍳','🍜','🧊','🍊','☕','🍗'].map((e, i) => (
+                  {DEMO_PROD.map(({ Icon, cls }, i) => (
                     <div key={i} className="bg-white rounded-xl p-2 flex flex-col items-center gap-1.5">
-                      <span className="text-xl">{e}</span>
+                      <span className="text-xl"><Icon className={cls} /></span>
                       <div className="w-full h-1.5 bg-gray-100 rounded" />
                       <div className="w-2/3 h-1.5 bg-indigo-100 rounded" />
                     </div>
@@ -152,9 +162,9 @@ export default function LandingPage() {
               </div>
               {/* Product grid */}
               <div className="p-2 bg-gray-50 grid grid-cols-2 gap-1.5">
-                {['🍳','🍜','🧊','🍊','☕','🍗'].map((e, i) => (
+                {DEMO_PROD.map(({ Icon, cls }, i) => (
                   <div key={i} className="bg-white rounded-xl p-2 flex flex-col items-center gap-1">
-                    <span className="text-2xl">{e}</span>
+                    <span className="text-2xl"><Icon className={cls} /></span>
                     <div className="w-full h-1 bg-gray-100 rounded" />
                     <div className="w-2/3 h-1 bg-indigo-100 rounded" />
                   </div>
