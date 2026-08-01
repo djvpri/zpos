@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
 import { Search, ImageFill } from 'react-bootstrap-icons'
 
 const KATEGORI = ['Semua', 'Makanan', 'Minuman', 'Snack', 'Lainnya']
+const LOAD_PER = 15
 
 interface Props {
   produk: Produk[]
@@ -18,6 +19,19 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
   // (payload tak 3MB base64). User bisa nyalakan toggle utk lihat thumbnail
   // (foto_thumb, ~1KB) kalau perlu membedakan barang mirip.
   const [tampilFoto, setTampilFoto] = useState(false)
+  // Load-more: tampilkan 15 dulu, tombol "Tampilkan lebih banyak" menambah 15.
+  const [tampil, setTampil] = useState(LOAD_PER)
+  // Reset saat filter (kategori/search) berubah — bagikan dgn array produk baru.
+  const prevIds = useRef('')
+  useEffect(() => {
+    const ids = produk.map(p => p.id).join(',')
+    if (ids !== prevIds.current) {
+      prevIds.current = ids
+      setTampil(LOAD_PER)
+    }
+  }, [produk])
+
+  const list = produk.slice(0, tampil)
 
   return (
     <div>
@@ -45,7 +59,7 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {produk.map(p => (
+          {list.map(p => (
             <button
               key={p.id}
               data-testid="product-item"
@@ -70,6 +84,16 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
               </div>
             </button>
           ))}
+        </div>
+      )}
+      {!loading && produk.length > tampil && (
+        <div className="flex justify-center py-4">
+          <button
+            onClick={() => setTampil(t => t + LOAD_PER)}
+            className="px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+          >
+            Tampilkan lebih banyak ({tampil} dari {produk.length})
+          </button>
         </div>
       )}
     </div>
