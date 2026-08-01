@@ -8,6 +8,7 @@ interface Lisensi {
   plan: string
   expires_at: string | null
   cost: string | null
+  cost_yearly: string | null
   rek_bank: string | null
   rek_nama: string | null
   rek_no: string | null
@@ -85,15 +86,46 @@ export default function LisensiPage() {
             )}
           </div>
 
-          {/* Cara perpanjang */}
+          {/* Cara perpanjang — dua pilihan: bulanan & tahunan (hemat) */}
           {data.cost && (
             <div className="bg-white border border-gray-100 rounded-2xl p-5 mb-5">
               <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <CashCoin size={16} className="text-indigo-600" /> Biaya Perpanjangan
+                <CashCoin size={16} className="text-indigo-600" /> Pilihan Perpanjangan
               </h2>
-              <div className="flex items-baseline gap-2 mb-4">
-                <span className="text-3xl font-bold text-gray-900">{fmt(Number(data.cost))}</span>
-                <span className="text-xs text-gray-400">/ periode langganan</span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                {/* Bulanan */}
+                <div className="border border-gray-200 rounded-xl p-4">
+                  <div className="text-xs text-gray-500 font-medium mb-2">Per Bulan</div>
+                  <div className="text-2xl font-bold text-gray-900 mb-1">{fmt(Number(data.cost))}</div>
+                  <div className="text-xs text-gray-400">Cocok utk cicil bulanan</div>
+                </div>
+
+                {/* Tahunan — kartu hemat */}
+                {(() => {
+                  const bulanan = Number(data.cost)
+                  const tahunan = data.cost_yearly ? Number(data.cost_yearly) : NaN
+                  const valid = !Number.isNaN(bulanan) && bulanan > 0 && !Number.isNaN(tahunan) && tahunan > 0
+                  const hemat = valid ? bulanan * 12 - tahunan : NaN
+                  return (
+                    <div className="relative border-2 border-green-500 rounded-xl p-4 bg-green-50/50">
+                      {valid && hemat > 0 && (
+                        <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-green-600 text-white text-[10px] font-bold rounded-full">
+                          HEMAT {fmt(hemat)}
+                        </span>
+                      )}
+                      <div className="text-xs text-green-700 font-medium mb-2">Per Tahun</div>
+                      <div className="text-2xl font-bold text-gray-900 mb-1">{valid ? fmt(tahunan) : '—'}</div>
+                      {valid && (
+                        <div className="text-[11px] text-gray-400">
+                          {hemat > 0
+                            ? <>Setara {fmt(Math.round(tahunan / 12))}/bulan — <span className="text-green-600 font-medium">hemat {fmt(hemat)}/tahun</span></>
+                            : <>Setara {fmt(Math.round(tahunan / 12))}/bulan</>}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
 
               {(data.rek_bank || data.rek_no || data.rek_nama) && (

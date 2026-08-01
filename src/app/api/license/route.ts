@@ -17,13 +17,14 @@ export async function GET(req: Request) {
 
     // Ambil biaya & rekening dari Z One. Gagal -> null field (UI tampil
     // "belum diatur"/fallback cache), jangan gagalkan seluruh endpoint.
-    let license = { cost: null, rek_bank: null, rek_nama: null, rek_no: null, whatsapp: null }
+    let license = { cost: null, cost_yearly: null, rek_bank: null, rek_nama: null, rek_no: null, whatsapp: null }
     try {
       const res = await fetch(`${ZONE_URL}/api/settings`, { cache: 'no-store' })
       if (res.ok) {
         const s = (await res.json()).settings || {}
         license = {
           cost: s.license_cost || null,
+          cost_yearly: s.license_cost_yearly || null,
           rek_bank: s.license_rek_bank || null,
           rek_nama: s.license_rek_nama || null,
           rek_no: s.license_rek_no || null,
