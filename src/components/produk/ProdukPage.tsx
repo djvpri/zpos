@@ -7,7 +7,7 @@ import { ProdukModal } from '@/components/produk/ProdukModal'
 import FotoLightbox from '@/components/produk/FotoLightbox'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, LayoutTextWindow, Download, CameraFill } from 'react-bootstrap-icons'
+import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, LayoutTextWindow, Download, CameraFill, ImageFill } from 'react-bootstrap-icons'
 import * as XLSX from 'xlsx'
 import dynamic from 'next/dynamic'
 const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
@@ -25,6 +25,8 @@ export default function ProdukPage() {
   const [tab, setTab] = useState<Tab>('produk')
   const [modal, setModal] = useState<'tambah' | Produk | null>(null)
   const [fotoBesar, setFotoBesar] = useState<Produk | null>(null)
+  // Default TANPA foto (senada dgn kasir) — user nyalakan toggle utk lihat thumb.
+  const [tampilFoto, setTampilFoto] = useState(false)
   const [cari, setCari] = useState('')
   const [namaKat, setNamaKat] = useState('')
   const [katError, setKatError] = useState('')
@@ -140,6 +142,16 @@ export default function ProdukPage() {
               <Download size={16} /> Export
             </button>
             <button
+              onClick={() => setTampilFoto(v => !v)}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${
+                tampilFoto
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <ImageFill size={16} /> Foto
+            </button>
+            <button
               onClick={() => setShowFoto(true)}
               className="flex items-center gap-2 px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
             >
@@ -213,7 +225,7 @@ export default function ProdukPage() {
                   <tr key={p.id} className={`border-t border-gray-50 ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        {p.foto_thumb ? (
+                        {tampilFoto && (p.foto_thumb ? (
                           <button
                             type="button"
                             onClick={() => setFotoBesar(p)}
@@ -222,8 +234,13 @@ export default function ProdukPage() {
                           >
                             <img src={p.foto_thumb} alt={p.nama} className="w-9 h-9 rounded-lg object-cover" />
                           </button>
-                        ) : (
+                        ) : p.emoji ? (
                           <span className="text-xl w-9 text-center shrink-0">{p.emoji}</span>
+                        ) : (
+                          <span className="text-gray-300 w-9 text-center shrink-0"><ImageFill size={20} /></span>
+                        ))}
+                        {!tampilFoto && (
+                          <span className="text-gray-200 w-9 text-center shrink-0"><ImageFill size={20} /></span>
                         )}
                         <div>
                           <div className="text-sm font-medium text-gray-800">{p.nama}</div>
