@@ -18,6 +18,7 @@ export default function LisensiPage() {
   const [data, setData] = useState<Lisensi | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [sisaHari, setSisaHari] = useState<number | null>(null)
 
   useEffect(() => {
     fetch('/api/license')
@@ -25,14 +26,15 @@ export default function LisensiPage() {
       .then(d => {
         if (d.error) { setError(d.error); return }
         setData(d)
+        // Date.now di sini (effect) boleh — impure, tapi render beresin.
+        setSisaHari(d.expires_at
+          ? Math.ceil((new Date(d.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+          : null)
       })
       .catch(() => setError('Gagal memuat data lisensi'))
       .finally(() => setLoading(false))
   }, [])
 
-  const sisaHari = data?.expires_at
-    ? Math.ceil((new Date(data.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : null
   const nearEnd = data?.expires_at && sisaHari !== null && sisaHari <= 14
 
   return (
