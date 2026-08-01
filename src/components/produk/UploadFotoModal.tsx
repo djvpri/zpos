@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { XLg, CameraFill, CheckCircleFill, XCircleFill, HourglassSplit, CloudArrowUp } from 'react-bootstrap-icons'
 import { compressImage } from '@/lib/compress-image'
 
@@ -23,8 +23,31 @@ export default function UploadFotoModal({ onClose }: { onClose: () => void }) {
   const [running, setRunning] = useState(false)
   const [selesai, setSelesai] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-  // Jaga race condition antrian biar lompatan index tidak double-proses
-  const idxRef = useRef(0)
+  // Ref barang-antrian yg SELALU mutakhir — hindari stale closure & race pada
+  // auto-start (useEffect). Loop baca versi terbaru, bukan snapshot render.
+  const itemsRef = useRef<ItemAntrian[]>([])
+  itemsRef.current = items
+
+  const update = (id: string, patch: Partial<ItemAntrian>) => {
+    setItems(prev => prev.map(x => x.id === id ? { ...x, ...patch } : x))
+  }
+
+  // Auto-proses: begitu ada foto baru & running=true, jalankan loop antrian.
+  // useEffect mengatasi state async — `mulai` tak perlu dipanggil dari handler.
+  useEffect(() => {
+    if (!running) return
+    ;(async () => {
+      // loop sampai tak ada item 'menunggu'/'dikompres'/'diproses' tersisa
+      for (;;) {
+        const antri = itemsRef.current
+        const next = antri.find(i => i.status === 'menunggu' || i.status === 'dikompres')
+        if (!next) break
+        await prosesSatu(next)
+      }
+      setRunning(false)
+      setSelesai(true)
+    })()
+  }, [running]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const tambahFile = async (files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -35,9 +58,9 @@ export default function UploadFotoModal({ onClose }: { onClose: () => void }) {
       baru.push({ id: `${Date.now()}-${Math.random()}`, file: f, preview, status: 'menunggu' })
     }
     setItems(prev => [...prev, ...baru])
-    // reset state lama
+    // auto-start antrian — jika belum berjalan, mulai sekarang
     setSelesai(false)
-    setRunning(true)
+    setRunning(r => r || true)
   }
 
   // Proses antrian: 1-per-1 (konkurensi 1) — request kecil, stabil rate-limit Gemini
@@ -71,22 +94,11 @@ export default function UploadFotoModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const update = (id: string, patch: Partial<ItemAntrian>) => {
-    setItems(prev => prev.map(x => x.id === id ? { ...x, ...patch } : x))
-  }
-
-  const mulai = async () => {
+  // Handler klik manual — tetap dipakai tombol 'Proses N foto'
+  const mulai = () => {
     if (running) return
-    setRunning(true)
     setSelesai(false)
-    idxRef.current = 0
-    const antri = items
-    for (let i = 0; i < antri.length; i++) {
-      if (antri[i].status === 'sukses' || antri[i].status === 'gagal') continue
-      await prosesSatu(antri[i])
-    }
-    setRunning(false)
-    setSelesai(true)
+    setRunning(true)
   }
 
   const sukses = items.filter(i => i.status === 'sukses').length
