@@ -264,7 +264,7 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
                 {hasil.map((h, i) => (
                   <button key={i} onClick={() => pilihProduk(h)}
                     className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition hover:shadow-sm ${i === 0 && h.status === 'tinggi' ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'}`}>
-                    {h.foto_url && <img src={h.foto_url} alt={h.nama} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" />}
+                    {(() => { const f = h.foto_thumb || h.foto_url; return f ? <img src={f} alt={h.nama} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" /> : null })()}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900 truncate">{h.nama}</span>

@@ -50,8 +50,8 @@ export function KeranjangPanel({
           </div>
         ) : items.map(it => (
           <div key={it.id} className="flex items-center gap-2 py-2.5 border-b border-gray-50 last:border-0">
-            {it.foto_url
-              ? <img src={it.foto_url} alt={it.nama} className="h-9 w-9 rounded-md object-cover flex-shrink-0" loading="lazy" />
+            {it.foto_thumb || it.foto_url
+              ? <img src={it.foto_thumb || it.foto_url} alt={it.nama} className="h-9 w-9 rounded-md object-cover flex-shrink-0" loading="lazy" />
               : <span className="text-xl">{it.emoji}</span>}
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-gray-800 truncate">

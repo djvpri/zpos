@@ -7,6 +7,7 @@ export interface HasilCari {
   nama: string
   harga: number
   foto_url: string | null
+  foto_thumb?: string | null
   confidence: number
   status: 'tinggi' | 'sedang' | 'rendah'
 }
