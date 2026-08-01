@@ -69,7 +69,7 @@ export interface Staff {
   id: number
   nama: string
   email: string
-  role: 'kasir'
+  role: 'admin' | 'kasir'
   aktif: boolean
   created_at: string
 }

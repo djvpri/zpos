@@ -1,19 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PersonPlus, Trash, XLg } from 'react-bootstrap-icons'
+import { XLg, Trash3, Shield } from 'react-bootstrap-icons'
 import { Staff } from '@/types'
 
+// Kelola kasir & admin satu toko. User TIDAK dibuat di sini — akun dibuat
+// lewat Z One (/manage, control panel ekosistem), lalu diatur hak & statusnya
+// dari halaman ini (atau dari Z One, dua-duanya tercatat di tabel user ZPos).
 export default function StaffPage() {
   const [staff, setStaff] = useState<Staff[]>([])
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState({ nama: '', email: '', password: '' })
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   const load = async () => {
-    setLoading(true)
     const res = await fetch('/api/staff')
     if (res.ok) setStaff(await res.json())
     setLoading(false)
@@ -21,31 +20,42 @@ export default function StaffPage() {
 
   useEffect(() => { load() }, [])
 
-  const hapus = async (id: number) => {
-    if (!confirm('Hapus kasir ini?')) return
-    await fetch(`/api/staff/${id}`, { method: 'DELETE' })
-    setStaff(s => s.filter(u => u.id !== id))
-  }
-
-  const tambah = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setError('')
-    const res = await fetch('/api/staff', {
-      method: 'POST',
+  const ubahRole = async (u: Staff) => {
+    const next = u.role === 'admin' ? 'kasir' : 'admin'
+    if (!confirm(`Ubah role ${u.nama} menjadi ${next === 'admin' ? 'Admin' : 'Kasir'}?`)) return
+    const res = await fetch(`/api/staff/${u.id}`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ role: next }),
     })
     if (res.ok) {
-      const user = await res.json()
-      setStaff(s => [...s, user])
-      setShowModal(false)
-      setForm({ nama: '', email: '', password: '' })
+      setStaff(s => s.map(x => x.id === u.id ? { ...x, role: next } : x))
     } else {
-      const data = await res.json()
-      setError(data.error || 'Gagal menambah kasir')
+      const d = await res.json()
+      setError(d.error || 'Gagal ubah role')
     }
-    setSaving(false)
+  }
+
+  const toggleAktif = async (u: Staff) => {
+    const next = !u.aktif
+    if (!confirm(next ? `Aktifkan lagi ${u.nama}?` : `Nonaktifkan ${u.nama}? User tidak bisa login, tapi histori transaksi aman.`)) return
+    const res = await fetch(`/api/staff/${u.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aktif: next }),
+    })
+    if (res.ok) {
+      setStaff(s => s.map(x => x.id === u.id ? { ...x, aktif: next } : x))
+    } else {
+      const d = await res.json()
+      setError(d.error || 'Gagal ubah status')
+    }
+  }
+
+  const hapus = async (u: Staff) => {
+    if (!confirm(`Nonaktifkan ${u.nama}?`)) return
+    await fetch(`/api/staff/${u.id}`, { method: 'DELETE' })
+    setStaff(s => s.map(x => x.id === u.id ? { ...x, aktif: false } : x))
   }
 
   return (
@@ -53,103 +63,62 @@ export default function StaffPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Kelola Kasir</h2>
-          <p className="text-sm text-gray-400 mt-0.5">Tambah dan kelola akun kasir toko Anda</p>
+          <p className="text-sm text-gray-400 mt-0.5">Atur role & status akun. Buat akun baru lewat Z One.</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors"
-        >
-          <PersonPlus size={16} />
-          <span className="hidden sm:inline">Tambah Kasir</span>
-        </button>
       </div>
+
+      {error && (
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 mb-4">
+          <span className="text-sm text-red-600">{error}</span>
+          <button onClick={() => setError('')} className="text-red-400 hover:text-red-600"><XLg size={14} /></button>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-12 text-gray-400 text-sm">Memuat...</div>
       ) : staff.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-            <PersonPlus size={24} className="text-gray-400" />
+            <Shield size={24} className="text-gray-400" />
           </div>
-          <p className="text-gray-500 font-medium">Belum ada kasir</p>
-          <p className="text-gray-400 text-sm mt-1">Tambah akun kasir untuk staff toko Anda</p>
+          <p className="text-gray-500 font-medium">Belum ada akun</p>
+          <p className="text-gray-400 text-sm mt-1">Buat akun kasir/admin lewat Z One</p>
         </div>
       ) : (
         <div className="space-y-2">
-          {staff.map(s => (
-            <div key={s.id} className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 px-4 py-3.5">
-              <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                <span className="text-indigo-600 text-sm font-bold">{s.nama[0].toUpperCase()}</span>
+          {staff.map(u => (
+            <div key={u.id} className={`flex items-center gap-3 bg-white rounded-2xl border border-gray-100 px-4 py-3.5 ${!u.aktif ? 'opacity-50' : ''}`}>
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${u.role === 'admin' ? 'bg-amber-100' : 'bg-indigo-100'}`}>
+                <span className={`text-sm font-bold ${u.role === 'admin' ? 'text-amber-600' : 'text-indigo-600'}`}>{u.nama[0].toUpperCase()}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-800 truncate">{s.nama}</div>
-                <div className="text-xs text-gray-400 truncate">{s.email}</div>
+                <div className="text-sm font-medium text-gray-800 truncate">{u.nama}</div>
+                <div className="text-xs text-gray-400 truncate">{u.email}{!u.aktif && ' · nonaktif'}</div>
               </div>
-              <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded-full shrink-0">
-                Kasir
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${u.role === 'admin' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                {u.role === 'admin' ? 'Admin' : 'Kasir'}
               </span>
-              <button
-                onClick={() => hapus(s.id)}
-                className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <Trash size={15} />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => ubahRole(u)}
+                  title={u.role === 'admin' ? 'Turunkan jadi Kasir' : 'Jadikan Admin'}
+                  className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                >
+                  <Shield size={15} />
+                </button>
+                <button
+                  onClick={() => toggleAktif(u)}
+                  title={u.aktif ? 'Nonaktifkan' : 'Aktifkan'}
+                  className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${u.aktif ? 'text-gray-400 hover:text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                >
+                  {u.aktif ? 'Nonaktif' : 'Aktifkan'}
+                </button>
+                <button onClick={() => hapus(u)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                  <Trash3 size={15} />
+                </button>
+              </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-semibold text-gray-900">Tambah Kasir</h3>
-              <button onClick={() => { setShowModal(false); setError('') }} className="p-1 text-gray-400 hover:text-gray-600">
-                <XLg size={18} />
-              </button>
-            </div>
-            <form onSubmit={tambah} className="space-y-4">
-              {error && (
-                <div className="bg-red-50 text-red-600 text-sm px-3 py-2.5 rounded-xl">{error}</div>
-              )}
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">Nama</label>
-                <input
-                  required
-                  value={form.nama}
-                  onChange={e => setForm(f => ({ ...f, nama: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition-colors"
-                  placeholder="Nama kasir"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">Email</label>
-                <input
-                  type="email" required
-                  value={form.email}
-                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition-colors"
-                  placeholder="kasir@email.com"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">Password</label>
-                <input
-                  type="password" required minLength={6}
-                  value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition-colors"
-                  placeholder="Min. 6 karakter"
-                />
-              </div>
-              <button
-                type="submit" disabled={saving}
-                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-colors disabled:opacity-60"
-              >
-                {saving ? 'Menyimpan...' : 'Tambah Kasir'}
-              </button>
-            </form>
-          </div>
         </div>
       )}
     </div>

@@ -82,21 +82,6 @@ export const shiftSchema = z.object({
   shift_id: z.number().int().positive().optional(),
 })
 
-// ===== Staff =====
-export const staffSchema = z.object({
-  nama: z.string().min(1, 'Nama wajib diisi'),
-  email: z.string().email('Email tidak valid'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
-})
-
-export const staffUpdateSchema = z.object({
-  id: z.number().int().positive(),
-  nama: z.string().min(1).optional(),
-  email: z.string().email().optional(),
-  password: z.string().min(6).optional(),
-  aktif: z.boolean().optional(),
-})
-
 // ===== Pengaturan =====
 export const pengaturanSchema = z.object({
   pajak_persen: z.number().min(0).max(100).optional(),
