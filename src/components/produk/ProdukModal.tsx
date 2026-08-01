@@ -61,7 +61,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
   const [scanBarcode, setScanBarcode] = useState(false)
   const [showKamera, setShowKamera] = useState(false)
   // Auto-detect nama produk dari foto (Gemini Flash-Lite). null = idle/bukan error.
-  const [deteksiNama, setDeteksiNama] = useState<'deteksi' | 'gagal' | null>(null)
+  const [deteksiNama, setDeteksiNama] = useState<'deteksi' | 'gagal' | 'tanpa_teks' | null>(null)
   // Pesan error validasi simpan (field kurang) — tampil merah di atas tombol.
   const [er, setEr] = useState('')
   // Saran kategori dari AI (Gemini). [] = belum ada saran; '-' spinner.
@@ -122,7 +122,13 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       const d = await res.json().catch(() => ({}))
       if (res.ok && d.nama) set('nama', d.nama)
       if (res.ok && d.kategori) setSaranKat([d.kategori]) // foto → Gemini kasih nama sekalian kategori
-      else setDeteksiNama('gagal')
+      if (res.ok && d.adaTeks === false) {
+        setDeteksiNama('tanpa_teks') // tak ada label → nama dari penampakan (konfirmasi manual)
+      } else if (res.ok && d.nama) {
+        setDeteksiNama(null) // ada teks & dapat nama → sukses, tak perlu pesan
+      } else {
+        setDeteksiNama('gagal')
+      }
     } catch {
       setDeteksiNama('gagal')
     }
@@ -244,6 +250,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
               Nama Produk
               {deteksiNama === 'deteksi' && <span className="text-[10px] text-indigo-500 font-medium animate-pulse">Mendeteksi nama dari foto...</span>}
               {deteksiNama === 'gagal' && <span className="text-[10px] text-amber-500 font-medium">Nama produk tak terdeteksi — ketik manual</span>}
+              {deteksiNama === 'tanpa_teks' && <span className="text-[10px] text-teal-600 font-medium">Nama dari penampakan (tanpa label) — periksa/edit</span>}
             </label>
             <input className={inputCls} value={form.nama} onChange={e => set('nama', e.target.value)} placeholder="Nama produk" />
           </div>

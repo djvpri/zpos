@@ -12,6 +12,7 @@ const MODEL = 'gemini-3.5-flash-lite'
 export interface HasilNamaFoto {
   nama: string | null    // null = tak bisa dideteksi
   kategori?: string | null // kategori yang disarankan (opsional, dari foto yang sama)
+  adaTeks?: boolean      // apakah foto punya teks/label yang terlihat (dari Gemini)
   error?: string         // error internal (key belum diset, timeout, dll)
 }
 
@@ -35,7 +36,7 @@ export async function deteksiNamaDariFoto(
       body: JSON.stringify({
         contents: [{
           parts: [
-            { text: 'Lihat foto produk minimarket Indonesia. Balas JSON: {"nama": "nama produk di kemasan", "kategori": "kategori produk ini dalam 1-3 kata, misal Makanan/Minuman/Snack/Kebutuhan Harian. Kosongkan jika tidak tahu"}. Jangan tambahkan apa pun selain JSON.' },
+            { text: 'Lihat foto produk minimarket Indonesia. Sebutkan nama produk ini dengan benar dan singkat. Kalau ada teks/label di kemasan, gunakan itu sebagai nama. Kalau TIDAK ada teks sama sekali (misal telur, sayur, buah, produk curah), gambarkan dari penampakan sesingkat mungkin (misal "Telur ayam", "Roti tawar", "Cabai merah"). Balas JSON: {"nama": "nama produk", "kategori": "kategori produk ini dalam 1-3 kata, misal Makanan/Minuman/Snack/Kebutuhan Harian/Sayur dan Buah. Kosongkan jika tidak tahu", "ada_teks": true atau false jika label/teks terlihat di foto}. Jangan tambahkan apa pun selain JSON.' },
             { inline_data: { mime_type: 'image/jpeg', data: fotoBase64.replace(/^data:.*?;base64,/, '') } },
           ],
         }],
@@ -55,7 +56,8 @@ export async function deteksiNamaDariFoto(
       const parsed = JSON.parse(teks)
       const nama = typeof parsed?.nama === 'string' ? parsed.nama.trim() : ''
       const kategori = typeof parsed?.kategori === 'string' ? parsed.kategori.trim() || null : null
-      return { nama: nama || null, kategori: kategori || null }
+      const adaTeks = typeof parsed?.ada_teks === 'boolean' ? parsed.ada_teks : undefined
+      return { nama: nama || null, kategori: kategori || null, adaTeks }
     } catch {
       return { nama: teks ? teks.trim() : null }
     }
