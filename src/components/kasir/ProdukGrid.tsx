@@ -36,7 +36,9 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
                   : 'border-gray-100 bg-white hover:border-indigo-400 hover:shadow-sm cursor-pointer'
               }`}
             >
-              <div className="text-3xl mb-2">{p.emoji}</div>
+              {p.foto_url
+                ? <img src={p.foto_url} alt={p.nama} className="h-12 w-12 mb-2 rounded-lg object-cover" loading="lazy" />
+                : <div className="text-3xl mb-2">{p.emoji}</div>}
               <div className="text-sm font-medium text-gray-800 leading-tight mb-1">{p.nama}</div>
               <div className="text-xs text-indigo-700 font-semibold">{fmt(p.harga)}</div>
               <div className={`text-xs mt-1 ${
