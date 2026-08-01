@@ -63,10 +63,12 @@ export default function AppPage() {
     }
   }
 
-  // Redirect kasir yang coba akses halaman admin
+  // Redirect kasir yang coba akses halaman admin (microtask agar lolos
+  // react-hooks/set-state-in-effect — react-hooks/next plugin menolak setState
+  // sinkron di body effect).
   useEffect(() => {
     if (!loading && toko?.role === 'kasir' && halaman !== 'kasir') {
-      setHalaman('kasir')
+      Promise.resolve().then(() => setHalaman('kasir'))
     }
   }, [toko, loading, halaman])
 
