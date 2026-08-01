@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, _ctx: { params: Promise<Record<stri
 
     if (!user) {
       return NextResponse.json({
-        error: `Akun ${email} belum terdaftar di ZPOS. Hubungi admin ZPOS untuk menambahkan akun.`,
+        error: `Email ${email} sudah dikenali Z One, tapi belum terdaftar sebagai user di ZPOS. Minta admin menambahkannya lewat Z One → Kelola App → ZPOS (pilih toko terlebih dahulu).`,
         code: 'USER_NOT_FOUND',
       }, { status: 404 })
     }
