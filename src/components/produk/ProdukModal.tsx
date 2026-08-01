@@ -159,21 +159,23 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
   const submit = () => {
     // Validasi eksplisit: beri tahu field mana yang kurang, JANGAN silent
     // return (sebelumnya membuat pengguna bingung "klik simpan tak bereaksi").
+    // Mode cepat: hanya NAMA wajib. Harga default 1 & kategori opsional.
     const kurang = fieldKurang(form)
     if (kurang.length > 0) {
       setEr(`Lengkapi field: ${kurang.join(', ')}`)
       return
     }
+    const kategoriId = Number(form.kategori_id) || null
     onSimpan({
       ...(produk || {}),
       nama: form.nama,
-      harga: Number(form.harga),
+      harga: Number(form.harga) || 1,
       stok: Number(form.stok) || 0,
       emoji: produk?.emoji || '📦',
       deskripsi: form.deskripsi.trim() || undefined,
       foto_url: form.foto_url || undefined,
       barcode: form.barcode.trim() || undefined,
-      kategori_id: Number(form.kategori_id),
+      kategori_id: kategoriId,
       expired_at: form.expired_at || undefined,
       stok_minimum: Number(form.stok_minimum) || 5,
       harga_grosir: form.harga_grosir ? Number(form.harga_grosir) : null,

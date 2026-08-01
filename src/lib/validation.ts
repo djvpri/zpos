@@ -31,7 +31,7 @@ export const produkSchema = z.object({
   deskripsi: z.string().nullable().optional(),
   foto_url: z.string().nullable().optional(),
   barcode: z.string().nullable().optional(),
-  kategori_id: z.number().int().positive('Kategori wajib dipilih'),
+  kategori_id: z.number().int().positive('Kategori wajib dipilih').nullable(),
   toko_id: z.number().int().positive().optional(),
   expired_at: z.string().nullable().optional(),
   stok_minimum: z.number().int().min(0).default(5),
