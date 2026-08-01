@@ -9,7 +9,7 @@ import LaporanPage from '@/components/laporan/LaporanPage'
 import StaffPage from '@/components/staff/StaffPage'
 import PengaturanPage from '@/components/pengaturan/PengaturanPage'
 import LisensiPage from '@/components/lisensi/LisensiPage'
-import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight, Film, CardChecklist } from 'react-bootstrap-icons'
+import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import { fmtDate } from '@/lib/utils'
 
@@ -32,6 +32,20 @@ export default function AppPage() {
   const { toko, loading, offline, pendingSync, logout, refresh } = useAuth()
   const [halaman, setHalaman] = useState<Halaman>('kasir')
   const [resetLoading, setResetLoading] = useState(false)
+  // Banner peringatan lisensi — sisa hari dihitung SEKALI di effect via
+  // microtask (bukan sync) biar lolos react-hooks/set-state-in-effect; dan
+  // Date.now di-eksekusi async supaya render tetap murni (lih. LisensiPage).
+  const [sisaHari, setSisaHari] = useState<number | null>(null)
+
+  useEffect(() => {
+    const expires = toko?.langganan_sampai
+    if (!expires) return
+    Promise.resolve().then(() => {
+      setSisaHari(Math.ceil((new Date(expires).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    })
+  }, [toko?.langganan_sampai])
+  // Tampilkan banner kalau masih aktif (sisa >0) dan ≤5 hari lagi.
+  const warnLisensi = sisaHari !== null && sisaHari > 0 && sisaHari <= 5 && toko?.aktif !== false && !toko?.expired
 
   async function resetDemo() {
     if (!confirm('Reset semua data demo ke kondisi awal?')) return
@@ -101,6 +115,16 @@ export default function AppPage() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
+      {warnLisensi && (
+        <button
+          onClick={() => setHalaman('lisensi')}
+          className="shrink-0 bg-amber-500 text-white text-[11px] font-medium text-center py-1.5 flex items-center justify-center gap-2 px-2 hover:bg-amber-600 transition-colors"
+        >
+          <ExclamationTriangle size={12} className="inline" />
+          <span>Lisensi berakhir dalam {sisaHari} hari — segera perpanjang sebelum akses terkunci.</span>
+          <span className="underline font-semibold">Lihat detail</span>
+        </button>
+      )}
       {toko?.isDemo && (
         <div className="shrink-0 bg-indigo-600 text-white text-[11px] font-medium text-center py-1.5 flex items-center justify-center gap-3 flex-wrap px-2">
           <span><Film size={12} className="inline mr-1 -mt-0.5" />Mode Demo — data direset otomatis tiap hari. Dipakai bersama pengunjung lain.</span>
