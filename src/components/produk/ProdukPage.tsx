@@ -33,8 +33,11 @@ export default function ProdukPage() {
   const [showCepat, setShowCepat] = useState(false)
   const [showLabel, setShowLabel] = useState(false)
   const [showTemplate, setShowTemplate] = useState(false)
+  // Load-more: tampilkan 15 produk dulu, tombol "Tampilkan lebih banyak" menambah 15.
+  const [tampil, setTampil] = useState(15)
 
   const filtered = produk.filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
+  const tampilkanList = filtered.slice(0, tampil)
 
   const onSimpan = async (p: Partial<Produk>) => {
     if (p.id) await update(p.id, p)
@@ -181,12 +184,12 @@ export default function ProdukPage() {
           <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-4 py-2.5 mb-4">
             <Search size={16} className="text-gray-400" />
             <input
-              value={cari} onChange={e => setCari(e.target.value)}
+              value={cari} onChange={e => { setCari(e.target.value); setTampil(15) }}
               placeholder="Cari produk..."
               className="flex-1 bg-transparent outline-none text-sm"
             />
             {cari && (
-              <button onClick={() => setCari('')} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => { setCari(''); setTampil(15) }} className="text-gray-400 hover:text-gray-600">
                 <XLg size={14} />
               </button>
             )}
@@ -204,12 +207,12 @@ export default function ProdukPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p, i) => (
+                {tampilkanList.map((p, i) => (
                   <tr key={p.id} className={`border-t border-gray-50 ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        {p.foto_url ? (
-                          <img src={p.foto_url} alt={p.nama} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                        {p.foto_thumb ? (
+                          <img src={p.foto_thumb} alt={p.nama} className="w-9 h-9 rounded-lg object-cover shrink-0" loading="lazy" />
                         ) : (
                           <span className="text-xl w-9 text-center shrink-0">{p.emoji}</span>
                         )}
@@ -268,6 +271,16 @@ export default function ProdukPage() {
                 )}
               </tbody>
             </table>
+            {filtered.length > tampil && (
+              <div className="flex justify-center py-4">
+                <button
+                  onClick={() => setTampil(t => t + 15)}
+                  className="px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+                >
+                  Tampilkan lebih banyak ({tampil} dari {filtered.length})
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}

@@ -22,6 +22,14 @@ export async function GET(req: Request, _ctx: { params: Promise<Record<string, s
     WHERE p.aktif = true AND p.toko_id = ${toko.tokoId}
     ORDER BY p.nama
   `
+  // List produk berat TIDAK mengirim foto_url besar (hingga ~100KB × puluhan
+  // produk). Kirim thumbnail kecil (foto_thumb ~1KB) untuk preview; foto_url
+  // penuh diambil per-produk saat modal edit (GET /api/produk/:id). Kalaupun
+  // belum ada thumbnail, biarkan null — UI pakai emoji fallback.
+  for (const r of rows) {
+    r.foto_url = null
+    r.foto_thumb = r.foto_thumb || null
+  }
   return NextResponse.json(rows)
 }
 

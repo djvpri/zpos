@@ -5,6 +5,24 @@ import { embedProduk, hapusEmbedding } from '@/lib/zface-visual'
 import { produkUpdateSchema } from '@/lib/validation'
 import { apiHandler } from '@/lib/api-handler'
 
+// GET satu produk LENGKAP (termasuk foto_url besar). Dipakai modal edit —
+// list produk sengaja TIDAK mengirim foto_url (lihat GET /api/produk) supaya
+// payload ringan; baru diambil di sini saat benar-benar perlu.
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const toko = await getTokoFromRequest(req)
+  if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { id } = await params
+  const [row] = await sql`
+    SELECT p.*, json_build_object('nama', k.nama) AS kategori
+    FROM produk p
+    LEFT JOIN kategori k ON k.id = p.kategori_id
+    WHERE p.id = ${Number(id)} AND p.toko_id = ${toko.tokoId} AND p.aktif = true
+  `
+  if (!row) return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 })
+  return NextResponse.json(row)
+}
+
 export const PUT = apiHandler(async (req: Request, body: any, context) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

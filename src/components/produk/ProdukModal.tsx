@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Produk } from '@/types'
 import { fieldKurang } from '@/lib/product-form'
 import { useKategori } from '@/hooks/useKategori'
@@ -57,6 +57,17 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     harga_grosir: produk?.harga_grosir ?? '',
     min_qty_grosir: produk?.min_qty_grosir ?? '',
   })
+  // Saat edit: list produk TIDAK menyertakan foto_url besar (lihat GET /api/produk),
+  // jadi ambil foto penuh dari endpoint per-produk untuk preview di modal.
+  useEffect(() => {
+    if (!produk?.id) return
+    let aktif = true
+    fetch(`/api/produk/${produk.id}`, { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (aktif && data?.foto_url) set('foto_url', data.foto_url) })
+      .catch(() => {})
+    return () => { aktif = false }
+  }, [produk?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   const [uploading, setUploading] = useState(false)
   const [scanBarcode, setScanBarcode] = useState(false)
   const [showKamera, setShowKamera] = useState(false)
