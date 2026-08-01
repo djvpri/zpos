@@ -66,7 +66,7 @@ export default function LabelCetak({ produk, onSelesai, onTutup, update }: Props
       return `
       <div class="ctk-label">
         ${tampilNama ? `<div class="ctk-nama">${escapeHtml(p.nama)}</div>` : ''}
-        ${tampilNama ? `<div class="ctk-harga">Rp${fmt(p.harga)}</div>` : ''}
+        ${tampilNama ? `<div class="ctk-harga">${fmt(p.harga)}</div>` : ''}
         ${gunakanBarcode ? `<div class="ctk-svg">${svg}</div><div class="ctk-bc">${escapeHtml(p.barcode!)}</div>` : ''}
       </div>`
     }).join('')
@@ -128,7 +128,7 @@ export default function LabelCetak({ produk, onSelesai, onTutup, update }: Props
                   {terpilih[p.id] && <CheckCircleFill size={14} className="text-white m-auto" />}
                 </span>
                 <span className="truncate flex-1">{p.nama}</span>
-                <span className="text-[10px] text-gray-400 flex-shrink-0">Rp{fmt(p.harga)}</span>
+                <span className="text-[10px] text-gray-400 flex-shrink-0">{fmt(p.harga)}</span>
                 {!p.barcode && <span className="text-[9px] text-amber-600 flex-shrink-0">tanpa bc</span>}
               </button>
             ))}
