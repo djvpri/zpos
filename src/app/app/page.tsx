@@ -8,17 +8,19 @@ import ProdukPage from '@/components/produk/ProdukPage'
 import LaporanPage from '@/components/laporan/LaporanPage'
 import StaffPage from '@/components/staff/StaffPage'
 import PengaturanPage from '@/components/pengaturan/PengaturanPage'
-import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight, Film } from 'react-bootstrap-icons'
+import LisensiPage from '@/components/lisensi/LisensiPage'
+import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight, Film, CardChecklist } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import { fmtDate } from '@/lib/utils'
 
-type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan'
+type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan' | 'lisensi'
 
 const NAV_OWNER = [
   { id: 'kasir' as Halaman, icon: Receipt, label: 'Kasir' },
   { id: 'produk' as Halaman, icon: Box, label: 'Produk' },
   { id: 'laporan' as Halaman, icon: BarChartLine, label: 'Laporan' },
   { id: 'staff' as Halaman, icon: People, label: 'Staff' },
+  { id: 'lisensi' as Halaman, icon: CardChecklist, label: 'Lisensi' },
   { id: 'pengaturan' as Halaman, icon: Gear, label: 'Atur' },
 ]
 
@@ -133,6 +135,7 @@ export default function AppPage() {
           {halaman === 'produk' && isOwner && <ProdukPage />}
           {halaman === 'laporan' && isOwner && <LaporanPage />}
           {halaman === 'staff' && isOwner && <StaffPage />}
+          {halaman === 'lisensi' && isOwner && <LisensiPage />}
           {halaman === 'pengaturan' && isOwner && <PengaturanPage />}
         </main>
       </div>
