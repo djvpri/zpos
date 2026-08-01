@@ -5,6 +5,7 @@ import { statusToko } from '@/lib/guard'
 import { deteksiNamaDariFoto } from '@/lib/gemini-nama-produk'
 import { generateProductBarcode } from '@/lib/barcode-code39'
 import { embedProduk } from '@/lib/zface-visual'
+import { namaUnikDari } from '@/lib/nama-unik'
 
 const LIMIT_PRODUK_TRIAL = 100
 
@@ -68,12 +69,22 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
     }
   }
 
+  // 2b) Dedup NAMA: kalau nama Gemini sudah dipakai oleh produk lain di toko ini
+  // (barang mirip beda2 tipis, mis. sepatu ukuran 39/42), append angka unik
+  // supaya tiap foto menjadi produk terpisah tanpa duplikat nama (lihat lib/nama-unik).
+  let namaSimpan = nama
+  const [{ count: cocok }] = await sql`SELECT count(*)::int AS count FROM produk WHERE toko_id = ${auth.tokoId} AND nama LIKE ${nama + '%'}`
+  if (cocok > 0) {
+    const dipakai = await sql`SELECT nama FROM produk WHERE toko_id = ${auth.tokoId}`
+    namaSimpan = namaUnikDari(nama, new Set(dipakai.map((r: any) => r.nama)))
+  }
+
   // 3) Insert produk mode cepat (harga 1, stok 0, foto tersimpan)
   let row
   try {
     ;[row] = await sql`
       INSERT INTO produk (nama, harga, stok, foto_url, kategori_id, toko_id, stok_minimum, client_ref)
-      VALUES (${nama}, 1, 0, ${foto}, ${kategoriId}, ${auth.tokoId}, 5, null)
+      VALUES (${namaSimpan}, 1, 0, ${foto}, ${kategoriId}, ${auth.tokoId}, 5, null)
       RETURNING *
     `
     // Auto-barcode internal (sama seperti POST /api/produk)
