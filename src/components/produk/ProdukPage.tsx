@@ -6,10 +6,11 @@ import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, Tags, LayoutTextWindow, Download } from 'react-bootstrap-icons'
+import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, Tags, LayoutTextWindow, Download, CameraFill } from 'react-bootstrap-icons'
 import * as XLSX from 'xlsx'
 import dynamic from 'next/dynamic'
 const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
+const UploadFotoProduk = dynamic(() => import('./UploadFotoModal'), { ssr: false })
 const ScanBarcodeMassal = dynamic(() => import('./ScanBarcodemassal'), { ssr: false })
 const TambahCepat = dynamic(() => import('./TambahCepat'), { ssr: false })
 const BarcodeLabel = dynamic(() => import('./BarcodeLabel'), { ssr: false })
@@ -28,6 +29,7 @@ export default function ProdukPage() {
   const [katError, setKatError] = useState('')
   const [katLoading, setKatLoading] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [showFoto, setShowFoto] = useState(false)
   const [showScanMassal, setShowScanMassal] = useState(false)
   const [showCepat, setShowCepat] = useState(false)
   const [showLabel, setShowLabel] = useState(false)
@@ -133,6 +135,12 @@ export default function ProdukPage() {
               className="flex items-center gap-2 px-4 py-2 border border-green-200 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors disabled:opacity-50"
             >
               <Download size={16} /> Export
+            </button>
+            <button
+              onClick={() => setShowFoto(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+            >
+              <CameraFill size={16} /> Upload Foto
             </button>
             <button
               onClick={() => setShowScanMassal(true)}
@@ -323,6 +331,7 @@ export default function ProdukPage() {
 
       {showScanMassal && <ScanBarcodeMassal onSelesai={fetchProduk} onTutup={() => setShowScanMassal(false)} tambahOffline={tambah} />}
       {showImport && <ImportProduk onSelesai={fetchProduk} onTutup={() => setShowImport(false)} tambahOffline={tambah} />}
+      {showFoto && <UploadFotoProduk onClose={() => { setShowFoto(false); fetchProduk() }} />}
       {showCepat && <TambahCepat onSelesai={() => { setShowCepat(false); fetchProduk() }} onTutup={() => setShowCepat(false)} />}
       {showLabel && <BarcodeLabel produk={produk} onSelesai={() => { setShowLabel(false); fetchProduk() }} onTutup={() => setShowLabel(false)} update={update} />}
       {showHarga && <StickerHarga produk={produk} onTutup={() => setShowHarga(false)} />}
