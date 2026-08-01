@@ -5,6 +5,7 @@ import { statusToko } from '@/lib/guard'
 import { deteksiNamaDariFoto } from '@/lib/gemini-nama-produk'
 import { generateProductBarcode } from '@/lib/barcode-code39'
 import { embedProduk } from '@/lib/zface-visual'
+import { buatThumbnail } from '@/lib/thumbnail'
 import { namaUnikDari } from '@/lib/nama-unik'
 
 const LIMIT_PRODUK_TRIAL = 100
@@ -97,8 +98,11 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
     return NextResponse.json({ ok: false, alasan: 'insert_gagal', error: 'Gagal menyimpan produk.' })
   }
 
-  // 4) Embed untuk deteksi visual (non-blocking, jangan menggagalkan response)
+  // 4) Thumbnail kecil utk grid kasir (non-blocking) + embed deteksi visual
   if (row.foto_url) {
+    buatThumbnail(row.foto_url).then(thumb => {
+      if (thumb) sql`UPDATE produk SET foto_thumb = ${thumb} WHERE id = ${row.id}`.catch(() => {})
+    }).catch(() => {})
     embedProduk({ produkId: row.id, nama: row.nama, harga: row.harga, fotoBase64: row.foto_url, tokoId: row.toko_id }).catch(() => {})
   }
 

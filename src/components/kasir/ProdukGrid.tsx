@@ -1,8 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Search } from 'react-bootstrap-icons'
+import { Search, ImageFill } from 'react-bootstrap-icons'
 
 const KATEGORI = ['Semua', 'Makanan', 'Minuman', 'Snack', 'Lainnya']
 
@@ -13,8 +14,28 @@ interface Props {
 }
 
 export function ProdukGrid({ produk, loading, onTambah }: Props) {
+  // Default TANPA foto (list nama-harga-stok) supaya kasir ringan seketika
+  // (payload tak 3MB base64). User bisa nyalakan toggle utk lihat thumbnail
+  // (foto_thumb, ~1KB) kalau perlu membedakan barang mirip.
+  const [tampilFoto, setTampilFoto] = useState(false)
+
   return (
     <div>
+      <div className="flex items-center justify-end gap-2 mb-3">
+        <button
+          type="button"
+          onClick={() => setTampilFoto(v => !v)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+            tampilFoto
+              ? 'bg-indigo-600 text-white border-indigo-600'
+              : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300'
+          }`}
+        >
+          <ImageFill size={14} />
+          Foto
+        </button>
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center h-64 text-gray-400">Memuat produk...</div>
       ) : produk.length === 0 ? (
@@ -36,9 +57,10 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
                   : 'border-gray-100 bg-white hover:border-indigo-400 hover:shadow-sm cursor-pointer'
               }`}
             >
-              {p.foto_url
-                ? <img src={p.foto_url} alt={p.nama} className="h-12 w-12 mb-2 rounded-lg object-cover" loading="lazy" />
-                : <div className="text-3xl mb-2">{p.emoji}</div>}
+              {tampilFoto && (p.foto_thumb || p.foto_url) && (
+                <img src={p.foto_thumb || p.foto_url} alt={p.nama} className="h-12 w-12 mb-2 rounded-lg object-cover" loading="lazy" />
+              )}
+              {tampilFoto && !p.foto_thumb && !p.foto_url && <div className="text-3xl mb-2">{p.emoji}</div>}
               <div className="text-sm font-medium text-gray-800 leading-tight mb-1">{p.nama}</div>
               <div className="text-xs text-indigo-700 font-semibold">{fmt(p.harga)}</div>
               <div className={`text-xs mt-1 ${

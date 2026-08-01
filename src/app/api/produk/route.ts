@@ -3,6 +3,7 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
 import { embedProduk } from '@/lib/zface-visual'
+import { buatThumbnail } from '@/lib/thumbnail'
 import { produkSchema } from '@/lib/validation'
 import { generateProductBarcode } from '@/lib/barcode-code39'
 import { apiHandler } from '@/lib/api-handler'
@@ -77,6 +78,13 @@ export const POST = apiHandler(async (req: Request, body: any) => {
   }
 
   if (row.foto_url) {
+    // Thumbnail kecil utk grid kasir (simpan ke foto_thumb), non-blocking —
+    // kalau sharp gagal di sini kita tetap simpan produk & thumbnail di-update
+    // nanti. foto_url besar TETAP disimpan utk detail/print.
+    buatThumbnail(row.foto_url).then(thumb => {
+      if (thumb) sql`UPDATE produk SET foto_thumb = ${thumb} WHERE id = ${row.id}`.catch(() => {})
+    }).catch(() => {})
+
     embedProduk({
       produkId: row.id,
       nama: row.nama,
