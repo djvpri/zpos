@@ -82,6 +82,11 @@ export const POST = apiHandler(async (req: Request, body: any) => {
     if (body.barcode && e.code === '23505') {
       return NextResponse.json({ error: `Barcode ${body.barcode} sudah dipakai produk lain di toko ini.` }, { status: 409 })
     }
+    // Unique nama (produk_toko_nama_unik): nama sudah dipakai produk mana pun
+    // (aktif/nonaktif) dalam toko ini, case-insensitive. Tolak dgn pesan jelas.
+    if (e.code === '23505') {
+      return NextResponse.json({ error: `Nama "${body.nama}" sudah dipakai produk lain di toko ini.` }, { status: 409 })
+    }
     throw e
   }
 
