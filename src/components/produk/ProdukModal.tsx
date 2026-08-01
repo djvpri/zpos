@@ -64,7 +64,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     let aktif = true
     fetch(`/api/produk/${produk.id}`, { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
-      .then(data => { if (aktif && data?.foto_url) set('foto_url', data.foto_url) })
+      .then(data => { if (aktif && data?.foto_url) setForm(f => ({ ...f, foto_url: data.foto_url })) })
       .catch(() => {})
     return () => { aktif = false }
   }, [produk?.id]) // eslint-disable-line react-hooks/exhaustive-deps
