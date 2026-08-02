@@ -18,10 +18,19 @@ export async function GET(
   if (!toko) return NextResponse.json({ error: 'toko-tidak-ditemukan' }, { status: 404 })
 
   const produk = await sql`
-    SELECT id, nama, harga, emoji, deskripsi, stok, foto_thumb, foto_url
-    FROM produk
-    WHERE toko_id = ${toko.id} AND aktif = true AND harga > 0
-    ORDER BY nama ASC
+    SELECT p.id, p.nama, p.harga, p.emoji, p.deskripsi, p.stok, p.foto_thumb, k.nama AS kategori
+    FROM produk p
+    LEFT JOIN kategori k ON k.id = p.kategori_id
+    WHERE p.toko_id = ${toko.id} AND p.aktif = true AND p.harga > 0
+    ORDER BY p.nama ASC
+  `
+
+  const kategori = await sql`
+    SELECT DISTINCT k.nama
+    FROM produk p
+    JOIN kategori k ON k.id = p.kategori_id
+    WHERE p.toko_id = ${toko.id} AND p.aktif = true AND p.harga > 0
+    ORDER BY k.nama ASC
   `
 
   return NextResponse.json({
@@ -30,6 +39,7 @@ export async function GET(
       subdomain: toko.subdomain,
       wa: toko.wa_toko_online || null,
     },
+    kategori: kategori.map((k) => k.nama).filter(Boolean),
     produk,
   })
 }

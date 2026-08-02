@@ -25,10 +25,19 @@ export default async function TokoOnlinePage({
   }
 
   const produk = await sql`
-    SELECT id, nama, harga, emoji, deskripsi, stok, foto_thumb
-    FROM produk
-    WHERE toko_id = ${toko.id} AND aktif = true AND harga > 0
-    ORDER BY nama ASC
+    SELECT p.id, p.nama, p.harga, p.emoji, p.deskripsi, p.stok, p.foto_thumb, k.nama AS kategori
+    FROM produk p
+    LEFT JOIN kategori k ON k.id = p.kategori_id
+    WHERE p.toko_id = ${toko.id} AND p.aktif = true AND p.harga > 0
+    ORDER BY p.nama ASC
+  `
+
+  const kategoriListe = await sql`
+    SELECT DISTINCT k.nama
+    FROM produk p
+    JOIN kategori k ON k.id = p.kategori_id
+    WHERE p.toko_id = ${toko.id} AND p.aktif = true AND p.harga > 0
+    ORDER BY k.nama ASC
   `
 
   const items = produk.map((p) => ({
@@ -39,6 +48,7 @@ export default async function TokoOnlinePage({
     deskripsi: p.deskripsi ?? undefined,
     stok: Number(p.stok),
     foto: p.foto_thumb ?? null,
+    kategori: p.kategori ?? undefined,
   }))
 
   return (
@@ -46,6 +56,7 @@ export default async function TokoOnlinePage({
       namaToko={toko.nama}
       waToko={toko.wa_toko_online}
       produk={items}
+      kategori={kategoriListe.map((k) => k.nama).filter(Boolean)}
     />
   )
 }
