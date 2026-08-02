@@ -31,14 +31,26 @@ export const PUT = apiHandler(async (req: Request, body: z.infer<typeof produkUp
 
   const params = await context.params
   const id = String(params.id)
+
+  // ProdukUpdateSchema bersifat partial — client bisa kirim cuma {harga} (edit
+  // cepat inline). JANGAN timpa field absen ke NULL (nama NOT NULL → crash).
+  // Ambil row existing, gabung field dari body, lalu SET lengkap.
+  const [existing] = await sql`SELECT * FROM produk WHERE id = ${Number(id)} AND toko_id = ${toko.tokoId}`
+  if (!existing) return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 })
+
+  const merged = {
+    ...existing,
+    ...Object.fromEntries(Object.entries(body).filter(([, v]) => v !== undefined)),
+  }
+
   let row: Produk
   try {
     ;[row] = await sql`
       UPDATE produk
-      SET nama = ${body.nama ?? null}, harga = ${body.harga ?? null}, stok = ${body.stok ?? null},
-          emoji = ${body.emoji ?? null}, deskripsi = ${body.deskripsi || null}, foto_url = ${body.foto_url || null},
-          barcode = ${body.barcode || null}, kategori_id = ${body.kategori_id ?? null},
-          harga_grosir = ${body.harga_grosir ?? null}, min_qty_grosir = ${body.min_qty_grosir ?? null}
+      SET nama = ${merged.nama}, harga = ${merged.harga}, stok = ${merged.stok},
+          emoji = ${merged.emoji ?? null}, deskripsi = ${merged.deskripsi || null}, foto_url = ${merged.foto_url || null},
+          barcode = ${merged.barcode || null}, kategori_id = ${merged.kategori_id ?? null},
+          harga_grosir = ${merged.harga_grosir ?? null}, min_qty_grosir = ${merged.min_qty_grosir ?? null}
       WHERE id = ${Number(id)} AND toko_id = ${toko.tokoId}
       RETURNING *
     `
