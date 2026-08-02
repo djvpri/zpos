@@ -41,6 +41,7 @@ export function TokoOnlineClient({
   const [view, setView] = useState<'katalog' | 'keranjang' | 'checkout'>('katalog')
   const [katAktif, setKatAktif] = useState<string>('Semua')
   const [cari, setCari] = useState('')
+  const [tampil, setTampil] = useState(15)
   const [detailId, setDetailId] = useState<number | null>(null)
   const [pemesan, setPemesan] = useState({ nama: '', alamat: '', catatan: '' })
 
@@ -56,6 +57,8 @@ export function TokoOnlineClient({
     if (katAktif !== 'Semua') list = list.filter((p) => p.kategori === katAktif)
     return list
   }, [produk, katAktif, cari])
+
+  const daftarTampil = daftarFilter.slice(0, tampil)
 
   const tambah = (p: ProdukPublik, qty = 1) => {
     setCart((c) => {
@@ -119,7 +122,7 @@ export function TokoOnlineClient({
             <Search className="text-gray-400" />
             <input
               value={cari}
-              onChange={(e) => setCari(e.target.value)}
+              onChange={(e) => { setCari(e.target.value); setTampil(15) }}
               placeholder="Cari produk..."
               className="flex-1 bg-transparent focus:outline-none text-sm"
             />
@@ -132,7 +135,7 @@ export function TokoOnlineClient({
               {['Semua', ...kategori].map((k) => (
                 <button
                   key={k}
-                  onClick={() => setKatAktif(k)}
+                  onClick={() => { setKatAktif(k); setTampil(15) }}
                   className={`snap-start shrink-0 text-xs font-semibold px-3.5 py-1.5 rounded-full transition ${
                     katAktif === k
                       ? 'bg-emerald-600 text-white shadow'
@@ -157,7 +160,7 @@ export function TokoOnlineClient({
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-                {daftarFilter.map((p) => {
+                {daftarTampil.map((p) => {
                   const habis = p.stok <= 0
                   return (
                     <button
@@ -196,6 +199,16 @@ export function TokoOnlineClient({
                     </button>
                   )
                 })}
+              </div>
+            )}
+            {daftarFilter.length > tampil && (
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => setTampil((t) => t + 15)}
+                  className="px-6 py-2.5 bg-white text-emerald-700 font-semibold rounded-full border-2 border-emerald-200 hover:bg-emerald-50 transition"
+                >
+                  Tampilkan lebih banyak ({daftarTampil.length} dari {daftarFilter.length})
+                </button>
               </div>
             )}
           </>
