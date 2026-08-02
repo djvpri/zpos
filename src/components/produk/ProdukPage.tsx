@@ -16,6 +16,10 @@ const ScanBarcodeMassal = dynamic(() => import('./ScanBarcodemassal'), { ssr: fa
 const TambahCepat = dynamic(() => import('./TambahCepat'), { ssr: false })
 const LabelCetak = dynamic(() => import('./LabelCetak'), { ssr: false })
 const TemplateProduk = dynamic(() => import('./TemplateProduk'), { ssr: false })
+const BarcodeCameraModal = dynamic(
+  () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
+  { ssr: false }
+)
 
 type Tab = 'produk' | 'kategori'
 
@@ -39,9 +43,29 @@ export default function ProdukPage() {
   const [showTemplate, setShowTemplate] = useState(false)
   // Load-more: tampilkan 15 produk dulu, tombol "Tampilkan lebih banyak" menambah 15.
   const [tampil, setTampil] = useState(15)
+  // Edit cepat inline: frame sel mana yang sedang diedit + nilai sementara.
+  const [editing, setEditing] = useState<{ id: number; field: 'harga' | 'stok'; val: string } | null>(null)
+  // Edit cepat: scan barcode via kamera utk produk ini.
+  const [scanBar, setScanBar] = useState<Produk | null>(null)
 
   const filtered = produk.filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
   const tampilkanList = filtered.slice(0, tampil)
+
+  const startEdit = (p: Produk, field: 'harga' | 'stok') =>
+    setEditing({ id: p.id, field, val: String(p[field]) })
+
+  // Simpan hasil edit inline: validasi angka >= 0, kirim ke server (update
+  // sudah handle offline + _pending). Nol stok tak masuk akal utk harga,
+  // tapi stok 0 sah. Blur tanpa ketik nilai valid = batal.
+  const simpanEdit = async (field: 'harga' | 'stok') => {
+    if (!editing) return
+    const val = Math.floor(Number(editing.val))
+    setEditing(null)
+    if (!Number.isFinite(val) || val < 0) return
+    // Harga 0 ditolak (produk tak dijual bebas); biarkan stok 0.
+    if (field === 'harga' && val === 0) return
+    await update(editing.id, { [field]: val } as Partial<Produk>)
+  }
 
   const onSimpan = async (p: Partial<Produk>) => {
     if (p.id) await update(p.id, p)
@@ -256,16 +280,63 @@ export default function ProdukPage() {
                         {(p.kategori as { nama: string } | undefined)?.nama || '—'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{fmt(p.harga)}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-sm font-medium ${
-                        p.stok === 0 ? 'text-red-500' :
-                        p.stok < 5 ? 'text-red-400' :
-                        p.stok < 10 ? 'text-amber-500' : 'text-green-700'
-                      }`}>{p.stok}</span>
+                      {editing?.id === p.id && editing.field === 'harga' ? (
+                        <input
+                          autoFocus
+                          type="number"
+                          min={0}
+                          value={editing.val}
+                          onChange={e => setEditing(s => s && { ...s, val: e.target.value })}
+                          onBlur={() => simpanEdit('harga')}
+                          onKeyDown={e => { if (e.key === 'Enter') simpanEdit('harga'); if (e.key === 'Escape') setEditing(null) }}
+                          className="w-24 border border-indigo-300 rounded-lg px-2 py-1 text-sm focus:outline-none"
+                        />
+                      ) : (
+                        <button
+                          onClick={() => startEdit(p, 'harga')}
+                          title="Klik utk edit harga"
+                          className="text-sm text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded px-1.5 py-1 -ml-1.5 transition-colors"
+                        >
+                          {fmt(p.harga)}
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {editing?.id === p.id && editing.field === 'stok' ? (
+                        <input
+                          autoFocus
+                          type="number"
+                          min={0}
+                          value={editing.val}
+                          onChange={e => setEditing(s => s && { ...s, val: e.target.value })}
+                          onBlur={() => simpanEdit('stok')}
+                          onKeyDown={e => { if (e.key === 'Enter') simpanEdit('stok'); if (e.key === 'Escape') setEditing(null) }}
+                          className="w-20 border border-indigo-300 rounded-lg px-2 py-1 text-sm focus:outline-none"
+                        />
+                      ) : (
+                        <button
+                          onClick={() => startEdit(p, 'stok')}
+                          title="Klik utk edit stok"
+                          className={`text-sm font-medium rounded px-1.5 py-1 -ml-1.5 hover:bg-indigo-50 transition-colors ${
+                            p.stok === 0 ? 'text-red-500 hover:text-red-600' :
+                            p.stok < 5 ? 'text-red-400 hover:text-red-500' :
+                            p.stok < 10 ? 'text-amber-500 hover:text-amber-600' : 'text-green-700 hover:text-green-800'
+                          }`}
+                        >
+                          {p.stok}
+                        </button>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
+                        <button
+                          onClick={() => setScanBar(p)}
+                          title="Scan barcode kemasan"
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
+                        >
+                          <QrCodeScan size={12} /> Barcode
+                        </button>
                         <button
                           data-testid="edit-product"
                           onClick={() => setModal(p)}
@@ -375,6 +446,12 @@ export default function ProdukPage() {
         />
       )}
       {fotoBesar && <FotoLightbox produk={fotoBesar} onTutup={() => setFotoBesar(null)} />}
+      {scanBar && (
+        <BarcodeCameraModal
+          onScan={code => { update(scanBar.id, { barcode: code }); setScanBar(null) }}
+          onTutup={() => setScanBar(null)}
+        />
+      )}
     </div>
   )
 }
