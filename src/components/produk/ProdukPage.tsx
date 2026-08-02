@@ -46,8 +46,10 @@ export default function ProdukPage() {
   const [showTemplate, setShowTemplate] = useState(false)
   // Load-more: tampilkan 15 produk dulu, tombol "Tampilkan lebih banyak" menambah 15.
   const [tampil, setTampil] = useState(15)
-  // Edit cepat inline: frame sel mana yang sedang diedit + nilai sementara.
-  const [editing, setEditing] = useState<{ id: number; field: 'harga' | 'stok'; val: string } | null>(null)
+  // Edit cepat inline: id + field sel yang sedang diedit. Nilai dibaca
+  // langsung dari input DOM saat commit (uncontrolled) — meniadakan race
+  // controlled+onBlur yang bikin input number macet tak bisa diketik.
+  const [editing, setEditing] = useState<{ id: number; field: 'harga' | 'stok' } | null>(null)
   // Edit cepat: scan barcode via kamera utk produk ini.
   const [scanBar, setScanBar] = useState<Produk | null>(null)
 
@@ -55,19 +57,16 @@ export default function ProdukPage() {
   const tampilkanList = filtered.slice(0, tampil)
 
   const startEdit = (p: Produk, field: 'harga' | 'stok') =>
-    setEditing({ id: p.id, field, val: String(p[field]) })
+    setEditing({ id: p.id, field })
 
-  // Simpan hasil edit inline: validasi angka >= 0, kirim ke server (update
-  // sudah handle offline + _pending). Nol stok tak masuk akal utk harga,
-  // tapi stok 0 sah. Blur tanpa ketik nilai valid = batal.
-  const simpanEdit = async (field: 'harga' | 'stok') => {
-    if (!editing) return
-    const val = Math.floor(Number(editing.val))
+  // Commit inline edit: baca nilai dari input DOM, validasi >= 0, kirim via
+  // update() (handle offline + _pending). Harga tolak 0, stok 0 dibolehkan.
+  const commitEdit = (id: number, field: 'harga' | 'stok', raw: string) => {
+    const val = Math.floor(Number(raw))
     setEditing(null)
     if (!Number.isFinite(val) || val < 0) return
-    // Harga 0 ditolak (produk tak dijual bebas); biarkan stok 0.
     if (field === 'harga' && val === 0) return
-    await update(editing.id, { [field]: val } as Partial<Produk>)
+    update(id, { [field]: val } as Partial<Produk>)
   }
 
   const onSimpan = async (p: Partial<Produk>) => {
@@ -302,12 +301,12 @@ export default function ProdukPage() {
                       {editing?.id === p.id && editing.field === 'harga' ? (
                         <input
                           autoFocus
-                          type="number"
-                          min={0}
-                          value={editing.val}
-                          onChange={e => setEditing(s => s && { ...s, val: e.target.value })}
-                          onBlur={() => simpanEdit('harga')}
-                          onKeyDown={e => { if (e.key === 'Enter') simpanEdit('harga'); if (e.key === 'Escape') setEditing(null) }}
+                          key="harga"
+                          type="text"
+                          inputMode="numeric"
+                          defaultValue={String(p.harga)}
+                          onBlur={e => commitEdit(p.id, 'harga', e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitEdit(p.id, 'harga', (e.target as HTMLInputElement).value) }; if (e.key === 'Escape') setEditing(null) }}
                           className="w-24 border border-indigo-300 rounded-lg px-2 py-1 text-sm focus:outline-none"
                         />
                       ) : (
@@ -324,12 +323,12 @@ export default function ProdukPage() {
                       {editing?.id === p.id && editing.field === 'stok' ? (
                         <input
                           autoFocus
-                          type="number"
-                          min={0}
-                          value={editing.val}
-                          onChange={e => setEditing(s => s && { ...s, val: e.target.value })}
-                          onBlur={() => simpanEdit('stok')}
-                          onKeyDown={e => { if (e.key === 'Enter') simpanEdit('stok'); if (e.key === 'Escape') setEditing(null) }}
+                          key="stok"
+                          type="text"
+                          inputMode="numeric"
+                          defaultValue={String(p.stok)}
+                          onBlur={e => commitEdit(p.id, 'stok', e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitEdit(p.id, 'stok', (e.target as HTMLInputElement).value) }; if (e.key === 'Escape') setEditing(null) }}
                           className="w-20 border border-indigo-300 rounded-lg px-2 py-1 text-sm focus:outline-none"
                         />
                       ) : (
