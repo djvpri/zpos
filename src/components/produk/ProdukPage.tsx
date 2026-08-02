@@ -35,6 +35,8 @@ export default function ProdukPage() {
   const [ukuranThumb, setUkuranThumb] = useState<'kecil' | 'sedang' | 'besar'>('kecil')
   const ukuranThumbCls = ukuranThumb === 'kecil' ? 'w-9 h-9' : ukuranThumb === 'sedang' ? 'w-14 h-14' : 'w-20 h-20'
   const [cari, setCari] = useState('')
+  // Urut daftar produk: 'nama' (alfabet, default) atau 'terbaru' (waktu upload = created_at desc).
+  const [sortBy, setSortBy] = useState<'nama' | 'terbaru'>('nama')
   const [namaKat, setNamaKat] = useState('')
   const [katError, setKatError] = useState('')
   const [katLoading, setKatLoading] = useState(false)
@@ -53,7 +55,13 @@ export default function ProdukPage() {
   // Edit cepat: scan barcode via kamera utk produk ini.
   const [scanBar, setScanBar] = useState<Produk | null>(null)
 
-  const filtered = produk.filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
+  const filtered = produk
+    .filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
+    .sort((a, b) =>
+      sortBy === 'terbaru'
+        ? new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
+        : a.nama.localeCompare(b.nama)
+    )
   const tampilkanList = filtered.slice(0, tampil)
 
   const startEdit = (p: Produk, field: 'harga' | 'stok') =>
@@ -249,6 +257,19 @@ export default function ProdukPage() {
                 <XLg size={14} />
               </button>
             )}
+            <div className="flex items-center gap-1 bg-white rounded-lg p-0.5 shrink-0">
+              {(['nama', 'terbaru'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => { setSortBy(s); setTampil(15) }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                    sortBy === s ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {s === 'nama' ? 'Nama' : 'Terbaru'}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="bg-white border border-gray-100 rounded-xl overflow-hidden overflow-x-auto">
