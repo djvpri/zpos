@@ -61,12 +61,13 @@ export default function ProdukPage() {
 
   // Commit inline edit: baca nilai dari input DOM, validasi >= 0, kirim via
   // update() (handle offline + _pending). Harga tolak 0, stok 0 dibolehkan.
+  // id WAJIB disertakan — produkUpdateSchema (validation.ts) mengharuskan id.
   const commitEdit = (id: number, field: 'harga' | 'stok', raw: string) => {
     const val = Math.floor(Number(raw))
     setEditing(null)
     if (!Number.isFinite(val) || val < 0) return
     if (field === 'harga' && val === 0) return
-    update(id, { [field]: val } as Partial<Produk>)
+    update(id, { id, [field]: val } as Partial<Produk>)
   }
 
   const onSimpan = async (p: Partial<Produk>) => {
