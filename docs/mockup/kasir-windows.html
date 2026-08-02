@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ZPos Kasir — Mockup Tauri</title>
+<link rel="stylesheet" href="bi/bootstrap-icons.css" />
 <style>
   * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', system-ui, sans-serif; }
   body { background:#eef1f6; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; }
@@ -21,6 +22,7 @@
   .conn.off .dot { background:#ef4444; }
   .hdr .right { margin-left:auto; display:flex; align-items:center; gap:10px; font-size:13px; opacity:.9; }
   .hdr .ic { width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,.1); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .hdr .ic i { font-size:17px; line-height:1; }
   .hdr .ic:hover { background:rgba(255,255,255,.2); }
   .body { display:grid; grid-template-columns:1fr 340px; min-height:540px; }
   /* Kiri: produk */
@@ -28,7 +30,7 @@
   .search { position:relative; }
   .search input { width:100%; padding:11px 14px 11px 38px; border:1.5px solid #e2e6ee; border-radius:10px; font-size:14px; outline:none; }
   .search input:focus { border-color:#4f7cff; }
-  .search::before { content:'🔍'; position:absolute; left:12px; top:50%; translate:0 -50%; font-size:14px; filter:grayscale(1); }
+  .search::before { content:''; position:absolute; left:12px; top:50%; translate:0 -50%; font-size:14px; color:#9aa3b5; display:flex; }
   .cats { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; }
   .cat { flex-shrink:0; padding:6px 12px; border-radius:999px; background:#f1f3f8; font-size:12px; color:#5a6577; cursor:pointer; border:1px solid transparent; }
   .cat.on { background:#4f7cff; color:#fff; }
@@ -37,7 +39,8 @@
   .card { border:1px solid #edf0f5; border-radius:12px; padding:10px 8px; text-align:center; cursor:pointer; transition:.12s; background:#fff; }
   .card:hover { border-color:#4f7cff; box-shadow:0 4px 14px rgba(79,124,255,.12); transform:translateY(-1px); }
   .card:active { transform:scale(.97); }
-  .card .ph { font-size:34px; margin-bottom:6px; }
+  .card .ph { font-size:28px; margin-bottom:6px; color:#1e2f4d; }
+  .card .ph i { font-size:28px; }
   .card .nm { font-size:11px; color:#3b4658; font-weight:600; line-height:1.2; min-height:26px; }
   .card .pr { font-size:12px; color:#167430; font-weight:700; margin-top:4px; }
   .card.low .stk { color:#ef4444; }
@@ -62,7 +65,8 @@
   .row { display:flex; justify-content:space-between; font-size:13px; color:#5a6577; padding:2px 0; }
   .row.total { font-size:18px; font-weight:800; color:#1e2f4d; padding-top:6px; border-top:1px solid #eef0f4; margin-top:6px; }
   .paybtns { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 16px; }
-  .paybtns button { padding:10px 0; border-radius:10px; border:1.5px solid #dde3ee; background:#fff; font-size:13px; font-weight:600; color:#3b4658; cursor:pointer; transition:.12s; }
+  .paybtns button { padding:10px 0; border-radius:10px; border:1.5px solid #dde3ee; background:#fff; font-size:13px; font-weight:600; color:#3b4658; cursor:pointer; transition:.12s; display:flex; align-items:center; justify-content:center; gap:5px; }
+  .paybtns button i { font-size:14px; }
   .paybtns button:hover { border-color:#4f7cff; color:#4f7cff; }
   .paybtns button.on { background:#4f7cff; color:#fff; border-color:#4f7cff; }
   .pay { margin:12px 16px 16px; padding:15px; border-radius:12px; background:linear-gradient(135deg,#123, #1b4a66); color:#fff; font-size:15px; font-weight:700; border:none; cursor:pointer; text-align:center; transition:.15s; }
@@ -92,18 +96,18 @@
     <div class="conn off" id="conn"><span class="dot"></span><span id="connTxt">Offline</span></div>
     <div class="right">
       <span id="clock">—</span>
-      <div class="ic" title="Kosongkan">🗑</div>
-      <div class="ic" title="Pengaturan">⚙</div>
+      <div class="ic" title="Kosongkan"><i class="bi bi-trash3"></i></div>
+      <div class="ic" title="Pengaturan"><i class="bi bi-gear"></i></div>
     </div>
   </div>
 
   <div class="body">
     <!-- Kiri -->
     <div class="left">
-      <div class="search"><input id="q" placeholder="Cari produk..." oninput="render()" /></div>
+      <div class="search"><i class="bi bi-search" style="position:absolute;left:12px;top:50%;translate:0 -50%;color:#9aa3b5"></i><input id="q" placeholder="Cari produk..." oninput="render()" /></div>
       <div class="cats" id="cats"></div>
       <div class="grid" id="grid"></div>
-      <div class="foot-left"><span>⛓ Sepenuhnya offline</span><span>Katalog tersimpan lokal</span></div>
+      <div class="foot-left"><span><i class="bi bi-link-45deg"></i> Sepenuhnya offline</span><span>Katalog tersimpan lokal</span></div>
     </div>
 
     <!-- Kanan -->
@@ -116,13 +120,13 @@
         <div class="row total"><span>TOTAL</span><span id="total">Rp0</span></div>
       </div>
       <div class="paybtns">
-        <button id="mTunai" class="on">💵 Tunai</button>
-        <button id="mQris">📱 QRIS</button>
-        <button id="mTrf">🏦 Transfer</button>
+        <button id="mTunai" class="on"><i class="bi bi-cash-coin"></i> Tunai</button>
+        <button id="mQris"><i class="bi bi-qr-code"></i> QRIS</button>
+        <button id="mTrf"><i class="bi bi-bank"></i> Transfer</button>
       </div>
       <button class="pay" onclick="bayar()">BAYAR</button>
       <div class="offq" id="offq"><span class="n" id="offqN">0</span> transaksi offline belum tersinkron
-        <span style="margin-left:auto;font-size:11px;opacity:.7" onclick="simulate('online')">▶ simulasikan online</span></div>
+        <span style="margin-left:auto;font-size:11px;opacity:.7" onclick="simulate('online')"><i class="bi bi-wifi"></i> simulasikan online</span></div>
     </div>
   </div>
 </div></div>
@@ -130,7 +134,7 @@
 <!-- Overlay transaksi sukses -->
 <div class="ov" id="ov">
   <div class="ovcard">
-    <div class="big">🛒</div>
+    <div class="big"><i class="bi bi-cart-check" style="font-size:40px;color:#167430"></i></div>
     <h3>Transaksi selesai!</h3>
     <p id="ovTxt">Terjual offline, masuk antrian.</p>
     <button onclick="closeOv()">OK</button>
@@ -142,10 +146,10 @@
 
 <script>
   const PRODUK = [
-    {n:'Nasi Goreng',e:'🍚',p:15000,s:40},{n:'Nasi Ayam',e:'🍗',p:18000,s:25},{n:'Es Teh',e:'🧋',p:5000,s:120},
-    {n:'Es Jeruk',e:'🍊',p:7000,s:60},{n:'Kopi Susu',e:'☕',p:12000,s:15},{n:'Kentang',e:'🍟',p:10000,s:3},
-    {n:'Donat',e:'🍩',p:8000,s:50},{n:'Roti Bakar',e:'🍞',p:9000,s:12},{n:'Sosis',e:'🌭',p:15000,s:30},
-    {n:'Pudding',e:'🍮',p:6000,s:0},{n:'Es Krim',e:'🍨',p:11000,s:22},{n:'Air Mineral',e:'💧',p:4000,s:200},
+    {n:'Nasi Goreng',e:'bi-egg-fried',p:15000,s:40},{n:'Nasi Ayam',e:'bi-fire',p:18000,s:25},{n:'Es Teh',e:'bi-cup-hot',p:5000,s:120},
+    {n:'Es Jeruk',e:'bi-cup-straw',p:7000,s:60},{n:'Kopi Susu',e:'bi-cup',p:12000,s:15},{n:'Kentang',e:'bi-basket',p:10000,s:3},
+    {n:'Donat',e:'bi-circle-half',p:8000,s:50},{n:'Roti Bakar',e:'bi-sun',p:9000,s:12},{n:'Sosis',e:'bi-egg',p:15000,s:30},
+    {n:'Pudding',e:'bi-box',p:6000,s:0},{n:'Es Krim',e:'bi-thermometer-snow',p:11000,s:22},{n:'Air Mineral',e:'bi-droplet',p:4000,s:200},
   ];
   let cart = [];
   let metode = 'Tunai';
@@ -166,7 +170,7 @@
     const g=document.getElementById('grid');
     g.innerHTML=PRODUK.filter(p=>p.n.toLowerCase().includes(q)).map((p,i)=>
       `<div class="card ${p.s<5?'low':''}" onclick="add(${i})">
-        <div class="ph">${p.e}</div><div class="nm">${p.n}</div>
+        <div class="ph"><i class="bi ${p.e}"></i></div><div class="nm">${p.n}</div>
         <div class="pr">${fmt(p.p)}</div><div class="stk">stok ${p.s}</div>
       </div>`).join('');
   }
@@ -198,7 +202,7 @@
     if(offline) offQtn++; else offQtn=0;
     document.getElementById('offqN').textContent=offQtn;
     document.getElementById('ovTxt').innerHTML = offline
-      ? `Rp<b>${document.getElementById('total').textContent.replace('Rp','')}</b> tersimpan lokal → antrian.<br>Auto-sinkron saat online.`
+      ? `Rp<b>${document.getElementById('total').textContent.replace('Rp','')}</b> tersimpan lokal ke antrian.<br>Auto-sinkron saat online.`
       : 'Terbayar <b>'+metode+'</b>. Terkirim ke server.';
     document.getElementById('ov').classList.add('show');
     clearCart();
@@ -207,7 +211,7 @@
   function toast(t){ const e=document.getElementById('toast'); e.textContent=t; e.classList.add('show'); setTimeout(()=>e.classList.remove('show'),1800); }
   function simulate(mode){
     offline = mode!=='online';
-    if(mode==='online' && offQtn>0){ toast('🔄 Sinkron: '+offQtn+' transaksi terkirim ✔'); offQtn=0; }
+    if(mode==='online' && offQtn>0){ toast('Sinkron: '+offQtn+' transaksi terkirim'); offQtn=0; }
     document.getElementById('offqN').textContent=offQtn;
     status(); renderCart();
   }
