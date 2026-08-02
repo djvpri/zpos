@@ -37,6 +37,26 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
     setTerpilih(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
+  // Daftar produk yang bisa dicetak (ekslusi pending)
+  const selectable = produk.filter(p => !p._pending)
+
+  // Tombol toggle: kalau SEMUA terpilih → "Kosongkan", kalau ada yang
+  // belum → "Pilih Semua". Default modal buka dengan semua terpilih, jadi
+  // kasir yang cuma mau cetak sebagian mulai dengan Kosongkan dulu.
+  const semuaTerpilih = selectable.length > 0 && selectable.every(p => terpilih[p.id])
+
+  function toggleSemua() {
+    if (semuaTerpilih) {
+      const kosong: Record<number, boolean> = {}
+      selectable.forEach(p => { kosong[p.id] = false })
+      setTerpilih(kosong)
+    } else {
+      const penuh: Record<number, boolean> = {}
+      selectable.forEach(p => { penuh[p.id] = true })
+      setTerpilih(penuh)
+    }
+  }
+
   // Assign barcode ke produk terpilih yang belum punya (kalau mode pakai barcode)
   async function assignDanCetak() {
     if (!selectedList.length) { setError('Pilih minimal satu produk.'); return }
@@ -105,11 +125,20 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
             ))}
           </div>
 
-          <p className="text-sm text-gray-600 mb-3">
-            {tanpaBarcode.length > 0
-              ? `${tanpaBarcode.length} produk belum punya barcode — akan digenerate otomatis saat cetak.`
-              : 'Semua produk sudah punya barcode. Centang untuk cetak label.'}
-          </p>
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <p className="text-sm text-gray-600">
+              {tanpaBarcode.length > 0
+                ? `${tanpaBarcode.length} produk belum punya barcode — akan digenerate otomatis saat cetak.`
+                : 'Semua produk sudah punya barcode. Centang untuk cetak label.'}
+            </p>
+            <button
+              onClick={toggleSemua}
+              className="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline disabled:opacity-50 disabled:no-underline"
+              disabled={selectable.length === 0}
+            >
+              {semuaTerpilih ? 'Kosongkan semua' : 'Pilih semua'}
+            </button>
+          </div>
 
           {selectedList.length === 0 && (
             <div className="text-center py-10 text-gray-300 text-sm">Belum ada produk dipilih</div>
