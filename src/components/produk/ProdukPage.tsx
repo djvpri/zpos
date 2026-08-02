@@ -35,8 +35,9 @@ export default function ProdukPage() {
   const [ukuranThumb, setUkuranThumb] = useState<'kecil' | 'sedang' | 'besar'>('kecil')
   const ukuranThumbCls = ukuranThumb === 'kecil' ? 'w-9 h-9' : ukuranThumb === 'sedang' ? 'w-14 h-14' : 'w-20 h-20'
   const [cari, setCari] = useState('')
-  // Urut daftar produk: 'nama' (alfabet, default) atau 'terbaru' (waktu upload = created_at desc).
-  const [sortBy, setSortBy] = useState<'nama' | 'terbaru'>('nama')
+  // Urut daftar produk: 'nama' (alfabet, default), 'terbaru' atau 'terlama'
+  // (waktu upload = created_at).
+  const [sortBy, setSortBy] = useState<'nama' | 'terbaru' | 'terlama'>('nama')
   const [namaKat, setNamaKat] = useState('')
   const [katError, setKatError] = useState('')
   const [katLoading, setKatLoading] = useState(false)
@@ -57,11 +58,12 @@ export default function ProdukPage() {
 
   const filtered = produk
     .filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
-    .sort((a, b) =>
-      sortBy === 'terbaru'
-        ? new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
-        : a.nama.localeCompare(b.nama)
-    )
+    .sort((a, b) => {
+      if (sortBy === 'nama') return a.nama.localeCompare(b.nama)
+      const ta = new Date(a.created_at ?? 0).getTime()
+      const tb = new Date(b.created_at ?? 0).getTime()
+      return sortBy === 'terbaru' ? tb - ta : ta - tb
+    })
   const tampilkanList = filtered.slice(0, tampil)
 
   const startEdit = (p: Produk, field: 'harga' | 'stok') =>
@@ -258,7 +260,7 @@ export default function ProdukPage() {
               </button>
             )}
             <div className="flex items-center gap-1 bg-white rounded-lg p-0.5 shrink-0">
-              {(['nama', 'terbaru'] as const).map(s => (
+              {([['nama', 'Nama'], ['terbaru', 'Terbaru'], ['terlama', 'Terlama']] as const).map(([s, lbl]) => (
                 <button
                   key={s}
                   onClick={() => { setSortBy(s); setTampil(15) }}
@@ -266,7 +268,7 @@ export default function ProdukPage() {
                     sortBy === s ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  {s === 'nama' ? 'Nama' : 'Terbaru'}
+                  {lbl}
                 </button>
               ))}
             </div>
@@ -280,6 +282,7 @@ export default function ProdukPage() {
                   <th className="text-left px-4 py-3">Kategori</th>
                   <th className="text-left px-4 py-3">Harga</th>
                   <th className="text-left px-4 py-3">Stok</th>
+                  <th className="text-left px-4 py-3">Upload</th>
                   <th className="text-left px-4 py-3">Aksi</th>
                 </tr>
               </thead>
@@ -367,6 +370,11 @@ export default function ProdukPage() {
                         </button>
                       )}
                     </td>
+                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                      {p.created_at
+                        ? new Date(p.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+                        : '—'}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button
@@ -400,7 +408,7 @@ export default function ProdukPage() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="text-center py-12 text-gray-300">
+                    <td colSpan={6} className="text-center py-12 text-gray-300">
                       <Box size={36} className="mx-auto mb-2 opacity-40" />
                       <span className="text-sm">Tidak ada produk</span>
                     </td>
