@@ -3,14 +3,24 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi, Shift } from '@/types'
-import { GraphUpArrow, Receipt, Bag, Percent, Ban } from 'react-bootstrap-icons'
+import { GraphUpArrow, Receipt, Bag, Percent, Ban, Download, ArrowClockwise } from 'react-bootstrap-icons'
 import { cacheGet, cacheSet } from '@/lib/offline-cache'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 const fmtDT = (d: string) => `${fmtDate(d)} ${fmtTime(d)}`
 
+interface BonRow {
+  id: number
+  nama: string | null
+  produk_json: Record<string, number>
+  total: number
+  selesai: boolean
+  created_at: string
+  dibayar_at: string | null
+}
+
 export default function LaporanPage() {
-  const [tab, setTab] = useState<'ringkasan' | 'shift'>('ringkasan')
+  const [tab, setTab] = useState<'ringkasan' | 'shift' | 'bon'>('ringkasan')
 
   // --- Ringkasan ---
   const [laporan, setLaporan] = useState<LaporanHarian[]>([])
@@ -22,6 +32,11 @@ export default function LaporanPage() {
   const [shifts, setShifts] = useState<Shift[]>([])
   const [loadingShift, setLoadingShift] = useState(false)
   const [shiftLoaded, setShiftLoaded] = useState(false)
+
+  // --- Bon gantung ---
+  const [bon, setBon] = useState<BonRow[]>([])
+  const [loadingBon, setLoadingBon] = useState(false)
+  const [bonLoaded, setBonLoaded] = useState(false)
 
   const loadRingkasan = useCallback(async () => {
     try {
@@ -65,8 +80,48 @@ export default function LaporanPage() {
     setShiftLoaded(true)
   }, [shiftLoaded])
 
+  const loadBonus = useCallback(async () => {
+    if (bonLoaded) return
+    setLoadingBon(true)
+    try {
+      const res = await fetch('/api/bon')
+      if (!res.ok) throw new Error('gagal')
+      const data = await res.json()
+      setBon(data)
+      cacheSet('bon', data).catch(() => {})
+    } catch {
+      const cached = await cacheGet<BonRow[]>('bon').catch(() => null)
+      if (cached) setBon(cached)
+    }
+    setLoadingBon(false)
+    setBonLoaded(true)
+  }, [bonLoaded])
+
+  // Export daftar bon utk file CSV (Excel-compatible: BOM + pemisah ;).
+  const exportBonCSV = () => {
+    const esc = (v: string | number | null | undefined) => {
+      const s = v == null ? '' : String(v)
+      return `"${s.replace(/"/g, '""')}"`
+    }
+    const head = ['ID', 'Member', 'Jumlah Item', 'Total (Rp)', 'Status', 'Dibuat', 'Dibayar']
+    const rows = bon.map(b => [
+      b.id, b.nama || '-',
+      Object.values(b.produk_json).reduce((s, n) => s + n, 0),
+      b.total, b.selesai ? 'Selesai' : 'Belum Dibayar',
+      b.created_at ? fmtDT(b.created_at) : '', b.dibayar_at ? fmtDT(b.dibayar_at) : '',
+    ])
+    const csv = '\uFEFF' + [head, ...rows].map(r => r.map(esc).join(';')).join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `bon-gantung-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   useEffect(() => { Promise.resolve().then(() => loadRingkasan()) }, [loadRingkasan])
   useEffect(() => { if (tab === 'shift') Promise.resolve().then(() => loadShift()) }, [tab, loadShift])
+  useEffect(() => { if (tab === 'bon') Promise.resolve().then(() => loadBonus()) }, [tab, loadBonus])
 
   const batalkan = async (id?: number) => {
     if (!id || !confirm('Batalkan transaksi ini? Stok akan dikembalikan.')) return
@@ -99,12 +154,12 @@ export default function LaporanPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-800">Laporan</h2>
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
-          {(['ringkasan', 'shift'] as const).map(t => (
+          {(['ringkasan', 'shift', 'bon'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors ${
                 tab === t ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}>
-              {t === 'ringkasan' ? 'Ringkasan' : 'Shift'}
+              {t === 'ringkasan' ? 'Ringkasan' : t === 'shift' ? 'Shift' : 'Bon'}
             </button>
           ))}
         </div>
@@ -297,6 +352,66 @@ export default function LaporanPage() {
                   </table>
                 </div>
               </>
+      )}
+      {/* ===== TAB BON ===== */}
+      {tab === 'bon' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">Daftar bon gantung ({bon.length} total). Klik <b className="text-gray-700">Export CSV</b> untuk unduh.</p>
+            <div className="flex gap-2">
+              <button onClick={() => { setBonLoaded(false); loadBonus() }}
+                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 transition-colors">
+                <ArrowClockwise size={13} /> Muat ulang
+              </button>
+              <button onClick={exportBonCSV} disabled={bon.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+                <Download size={13} /> Export CSV
+              </button>
+            </div>
+          </div>
+
+          {loadingBon
+            ? <div className="flex items-center justify-center h-40 text-gray-400">Memuat bon...</div>
+            : bon.length === 0
+              ? <div className="flex items-center justify-center h-40 text-gray-400">Belum ada bon gantung</div>
+              : (
+                <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr className="text-xs text-gray-400">
+                          <th className="text-left px-4 py-3">Member</th>
+                          <th className="text-right px-4 py-3">Item</th>
+                          <th className="text-right px-4 py-3">Total</th>
+                          <th className="text-center px-4 py-3">Status</th>
+                          <th className="text-left px-4 py-3">Dibuat</th>
+                          <th className="text-left px-4 py-3">Dibayar</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bon.map(b => {
+                          const item = Object.values(b.produk_json).reduce((s, n) => s + n, 0)
+                          return (
+                            <tr key={b.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
+                              <td className="px-4 py-3 font-medium text-gray-800">{b.nama || `Bon #${b.id}`}</td>
+                              <td className="px-4 py-3 text-right text-gray-500">{item}x</td>
+                              <td className="px-4 py-3 text-right font-semibold text-gray-900">{fmt(b.total)}</td>
+                              <td className="px-4 py-3 text-center">
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${b.selesai ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                  {b.selesai ? 'Selesai' : 'Belum Dibayar'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-gray-500 text-xs">{b.created_at ? fmtDT(b.created_at) : '-'}</td>
+                              <td className="px-4 py-3 text-gray-500 text-xs">{b.dibayar_at ? fmtDT(b.dibayar_at) : '-'}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+        </div>
       )}
     </div>
   )
