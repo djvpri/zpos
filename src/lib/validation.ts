@@ -99,3 +99,22 @@ export const adminLoginSchema = z.object({
 export const adminMemberSchema = z.object({
   email: z.string().email(),
 })
+
+// ===== Member / Kategori Member =====
+export const kategoriMemberSchema = z.object({
+  nama: z.string().min(1, 'Nama kategori wajib diisi'),
+  diskon_persen: z.number().min(0).max(100).default(0),
+})
+
+export const memberSchema = z.object({
+  nama: z.string().min(1, 'Nama member wajib diisi'),
+  telepon: z.string().nullable().optional(),
+  kategori_member_id: z.number().int().positive().nullable(),
+})
+
+export const hargaMemberSchema = z.object({
+  produk_id: z.number().int().positive(),
+  kategori_member_id: z.number().int().positive(),
+  harga: z.number().int().positive('Harga harus lebih dari 0'),
+  toko_id: z.number().int().positive().optional(),
+})

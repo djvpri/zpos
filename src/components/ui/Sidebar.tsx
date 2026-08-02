@@ -1,10 +1,11 @@
 'use client'
 
-import { Receipt, Box, BarChartLine, People, Gear, CardChecklist, Shop } from 'react-bootstrap-icons'
+import { Receipt, Box, BarChartLine, People, PersonBadge, Gear, CardChecklist, Shop } from 'react-bootstrap-icons'
 
 const NAV_OWNER = [
   { id: 'kasir', icon: Receipt, label: 'Kasir' },
   { id: 'produk', icon: Box, label: 'Produk' },
+  { id: 'member', icon: PersonBadge, label: 'Member' },
   { id: 'laporan', icon: BarChartLine, label: 'Laporan' },
   { id: 'staff', icon: People, label: 'Staff' },
   { id: 'lisensi', icon: CardChecklist, label: 'Lisensi' },
@@ -16,7 +17,7 @@ const NAV_KASIR = [
   { id: 'kasir', icon: Receipt, label: 'Kasir' },
 ] as const
 
-type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online'
+type Halaman = 'kasir' | 'produk' | 'member' | 'laporan' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online'
 
 interface Props {
   aktif: Halaman

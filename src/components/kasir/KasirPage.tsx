@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { Search, Cart3, XLg, QrCodeScan, ThreeDots, Camera, CheckLg } from 'react-bootstrap-icons'
+import { Search, Cart3, XLg, QrCodeScan, ThreeDots, Camera, CheckLg, PersonBadge } from 'react-bootstrap-icons'
 import PenjualanLain from '@/components/kasir/PenjualanLain'
 import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
@@ -19,9 +19,10 @@ const BarcodeCameraModal = dynamic(
   () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
   { ssr: false }
 )
-import { Produk, ItemKeranjang, Transaksi, DetailTransaksi } from '@/types'
+import { Produk, ItemKeranjang, Transaksi, DetailTransaksi, Member } from '@/types'
 import { hitungPajak, hitungTotal, noTrx } from '@/lib/utils'
 import { hargaEfektif, isGrosir } from '@/lib/dual-pricing'
+import { useMember, useHargaMember } from '@/hooks/useMember'
 
 type ProdukVirtual = { id: number; nama: string; harga: number; stok: number; kategori_id: null; barcode: null; foto_url: null }
 
@@ -31,6 +32,8 @@ export default function KasirPage() {
   const { kategori } = useKategori()
   const { toko, syncNow } = useAuth()
   const { pajakPersen, alamat, telepon, catatan_struk } = usePengaturan()
+  const { anggota } = useMember()
+  const { getHarga } = useHargaMember()
 
   const [katId, setKatId] = useState<number | null>(null)
   const [cari, setCari] = useState('')
@@ -51,6 +54,11 @@ export default function KasirPage() {
   // Autofill nama dari Open Food Facts (kalau barcode terdaftar di sana)
   const [flashAutoNama, setFlashAutoNama] = useState<'cek' | string | null>(null)
   const [pesanSimpan, setPesanSimpan] = useState<{ tipe: 'antri' | 'gagal'; teks: string } | null>(null)
+  // Member aktif: saat kasir memilih member, `memberMap` berisi produk_id →
+  // harga member (proyeksi kategori). Item yg ada di map memakai harga itu.
+  const [memberAktif, setMemberAktif] = useState<Member | null>(null)
+  const [memberMap, setMemberMap] = useState<Record<number, number>>({})
+  const [mlistTerbuka, setMlistTerbuka] = useState(false)
 
   const produkFiltered = useMemo(() =>
     produk.filter(p =>
@@ -66,6 +74,13 @@ export default function KasirPage() {
           ? virtualProduk[numId]
           : produk.find(x => x.id === numId)
         if (!p) return null
+        // Harga member menang penuh apabila produk ada di memberMap (harga
+        // khusus kategori member yang sedang aktif). Tanpa member, dual pricing
+        // grosir normal.
+        const hargaMember = memberAktif ? memberMap[p.id] : undefined
+        if (hargaMember !== undefined && hargaMember > 0) {
+          return { ...p, qty, harga: hargaMember, _grosir: false, _member: true, _harga_ecer: p.harga }
+        }
         // Dual pricing: harga satuan item = harga efektif berdasar qty keranjang.
         // Dihitung ulang tiap qty berubah (dep `keranjang`) → naik ke ambang
         // grosir otomatis pakai harga_grosir, turun balik ke harga ecer.
@@ -73,7 +88,7 @@ export default function KasirPage() {
         return { ...p, qty, harga: hargaEfektif(p, qty), _grosir: grosir, _harga_ecer: grosir ? p.harga : undefined }
       })
       .filter(Boolean) as ItemKeranjang[]
-  , [keranjang, produk, virtualProduk])
+  , [keranjang, produk, virtualProduk, memberAktif, memberMap])
 
   const subtotal = items.reduce((s, i) => s + i.harga * i.qty, 0)
   const disc = Math.min(diskon, subtotal)
@@ -272,12 +287,58 @@ export default function KasirPage() {
     </div>
   )
 
+  // Pilih member utk transaksi saat ini → muat harga khusus kategorinya.
+  async function pilihMember(m: Member | null) {
+    setMemberAktif(m)
+    if (!m || !m.kategori_member_id) { setMemberMap({}); return }  // tanpa kategori → harga normal
+    const map = await getHarga(m.kategori_member_id)  // produk_id → harga member
+    setMemberMap(map)
+  }
+
   const keranjangProps = {
     items, diskon: disc, bayar, metode,
     subtotal, pajak, pajakPersen, total, kembali, kurang,
     onUbahQty: ubahQty, onDiskon: setDiskon, onBayar: setBayar,
     onMetode: setMetode, onBayarSekarang: bayarSekarang,
   }
+
+  // Member activator: pill kecil utk memilih/melepas member transaksi. Memakai
+  // daftar anggota (useMember, ter-cache offline). Tersedia di desktop & mobile.
+  const memberPicker = (
+    <div className="relative">
+      <div className="flex items-center gap-2">
+        <button onClick={() => setMlistTerbuka(o => !o)}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+            memberAktif ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+          }`}>
+          <PersonBadge size={13} className={memberAktif ? 'text-emerald-600' : ''} />
+          {memberAktif ? memberAktif.nama : 'Member'}
+        </button>
+        {memberAktif && (
+          <button onClick={() => pilihMember(null)} title="Lepas member"
+            className="p-1 text-gray-400 hover:text-red-500"><XLg size={12} /></button>
+        )}
+      </div>
+      {mlistTerbuka && (
+        <div className="absolute left-0 top-9 z-30 w-56 rounded-xl border border-gray-100 bg-white shadow-lg overflow-hidden">
+          <div className="max-h-60 overflow-y-auto">
+            {anggota.length === 0 && (
+              <div className="px-3 py-4 text-center text-xs text-gray-400">Belum ada member.<br />Buat di menu Member.</div>
+            )}
+            {anggota.map(m => (
+              <button key={m.id} onClick={() => { pilihMember(m); setMlistTerbuka(false) }}
+                className={`w-full flex items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                  memberAktif?.id === m.id ? 'bg-emerald-50' : ''
+                }`}>
+                <span className="text-gray-700">{m.nama}</span>
+                <span className="text-[10px] text-gray-400">{m.telepon || ''}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 
   return (
     <>
@@ -318,7 +379,10 @@ export default function KasirPage() {
                   <Camera size={18} />
                 </button>
               </div>
-              {filterChips}
+              <div className="flex items-center gap-2">
+                {memberPicker}
+                <div className="flex-1">{filterChips}</div>
+              </div>
               <div className="flex-1 overflow-y-auto">
                 <ProdukGrid produk={produkFiltered} loading={loading} onTambah={tambahKeKeranjang} />
               </div>
@@ -345,6 +409,7 @@ export default function KasirPage() {
             <Camera size={18} />
           </button>
         </div>
+        <div className="flex items-center gap-2">{memberPicker}</div>
         <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
           <button onClick={() => setTab('produk')}
             className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors ${tab === 'produk' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>

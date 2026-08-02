@@ -58,9 +58,11 @@ export function KeranjangPanel({
               <div className="text-sm font-medium text-gray-800 truncate">
                 {it.nama}
                 {it._grosir && <span className="ml-1.5 text-[9px] font-bold text-green-700 bg-green-100 rounded px-1.5 py-0.5 align-middle">GROSIR</span>}
+                {it._member && <span className="ml-1.5 text-[9px] font-bold text-emerald-700 bg-emerald-100 rounded px-1.5 py-0.5 align-middle">MEMBER</span>}
               </div>
               <div className="text-xs text-gray-400">
                 {it._grosir && it._harga_ecer != null && <span className="line-through mr-1">{fmt(it._harga_ecer)}</span>}
+                {it._member && it._harga_ecer != null && <span className="line-through mr-1">{fmt(it._harga_ecer)}</span>}
                 {fmt(it.harga)}
               </div>
             </div>

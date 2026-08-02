@@ -37,6 +37,8 @@ export interface ItemKeranjang extends Produk {
   _grosir?: boolean
   // Klien-saja: harga ecer asli (untuk tampilan coret saat grosir aktif).
   _harga_ecer?: number
+  // Klien-saja: true kalau memakai harga khusus member (bukan grosir).
+  _member?: boolean
 }
 
 export interface Transaksi {
@@ -103,4 +105,32 @@ export interface ProdukTerlaris {
   emoji: string
   total_qty: number
   total_penjualan: number
+}
+
+// ---- Member / Kategori Member (harga khusus per barang) ----
+
+export interface KategoriMember {
+  id: number
+  nama: string
+  diskon_persen: number
+  created_at?: string
+}
+
+export interface Member {
+  id: number
+  nama: string
+  telepon?: string | null
+  kategori_member_id: number | null
+  created_at?: string
+  // join
+  kategori_member?: KategoriMember | null
+}
+
+export interface HargaMember {
+  id: number
+  produk_id: number
+  kategori_member_id: number
+  harga: number
+  // join kategori
+  kategori_nama?: string
 }

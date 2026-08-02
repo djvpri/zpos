@@ -7,18 +7,20 @@ import KasirPage from '@/components/kasir/KasirPage'
 import ProdukPage from '@/components/produk/ProdukPage'
 import LaporanPage from '@/components/laporan/LaporanPage'
 import StaffPage from '@/components/staff/StaffPage'
+import MemberPage from '@/components/member/MemberPage'
 import PengaturanPage from '@/components/pengaturan/PengaturanPage'
 import LisensiPage from '@/components/lisensi/LisensiPage'
 import TokoOnlinePage from '@/components/toko-online/TokoOnlinePage'
-import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle, Shop } from 'react-bootstrap-icons'
+import { Receipt, Box, BarChartLine, People, PersonBadge, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle, Shop } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import { fmtDate } from '@/lib/utils'
 
-type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online'
+type Halaman = 'kasir' | 'produk' | 'member' | 'laporan' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online'
 
 const NAV_OWNER = [
   { id: 'kasir' as Halaman, icon: Receipt, label: 'Kasir' },
   { id: 'produk' as Halaman, icon: Box, label: 'Produk' },
+  { id: 'member' as Halaman, icon: PersonBadge, label: 'Member' },
   { id: 'laporan' as Halaman, icon: BarChartLine, label: 'Laporan' },
   { id: 'staff' as Halaman, icon: People, label: 'Staff' },
   { id: 'lisensi' as Halaman, icon: CardChecklist, label: 'Lisensi' },
@@ -161,6 +163,7 @@ export default function AppPage() {
         <main className="flex-1 overflow-auto pb-16 md:pb-0">
           {halaman === 'kasir' && <KasirPage />}
           {halaman === 'produk' && isOwner && <ProdukPage />}
+          {halaman === 'member' && isOwner && <MemberPage />}
           {halaman === 'laporan' && isOwner && <LaporanPage />}
           {halaman === 'staff' && isOwner && <StaffPage />}
           {halaman === 'lisensi' && isOwner && <LisensiPage />}

@@ -7,6 +7,7 @@ import NotifikasiPanel from './NotifikasiPanel'
 const LABEL: Record<string, string> = {
   kasir: 'Kasir',
   produk: 'Manajemen Produk',
+  member: 'Member & Harga Khusus',
   laporan: 'Laporan Penjualan',
   staff: 'Kelola Staff',
   pengaturan: 'Pengaturan',
