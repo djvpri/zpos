@@ -327,6 +327,9 @@ export default function KasirPage() {
     subtotal, pajak, pajakPersen, total, kembali, kurang,
     onUbahQty: ubahQty, onDiskon: setDiskon, onBayar: setBayar,
     onMetode: setMetode, onBayarSekarang: bayarSekarang,
+    onGantung: () => setShowSimpanBon(true),
+    onListBon: () => { setShowListBon(true); reloadBon() },
+    bonAktif: bon.filter(x => !x.selesai).length,
   }
 
   // Member activator: pill kecil utk memilih/melepas member transaksi. Memakai

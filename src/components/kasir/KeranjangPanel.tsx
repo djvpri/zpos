@@ -2,7 +2,7 @@
 
 import { ItemKeranjang } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Cart3, Bag, CreditCardFill } from 'react-bootstrap-icons'
+import { Cart3, Bag, CreditCardFill, BookmarkPlus, ListUl } from 'react-bootstrap-icons'
 
 interface Props {
   items: ItemKeranjang[]
@@ -19,11 +19,14 @@ interface Props {
   onBayar: (v: string) => void
   onMetode: (m: 'Tunai' | 'QRIS' | 'Transfer') => void
   onBayarSekarang: () => void
+  onGantung: () => void
+  onListBon: () => void
+  bonAktif: number
 }
 
 export function KeranjangPanel({
   items, diskon, bayar, metode, subtotal, pajak, total, kembali, kurang,
-  onUbahQty, onDiskon, onBayar, onMetode, onBayarSekarang
+  onUbahQty, onDiskon, onBayar, onMetode, onBayarSekarang, onGantung, onListBon, bonAktif
 }: Props) {
   const totalItem = items.reduce((s, i) => s + i.qty, 0)
   const bisa = items.length > 0 && (metode !== 'Tunai' || kurang <= 0)
@@ -150,6 +153,27 @@ export function KeranjangPanel({
             )}
           </div>
         )}
+
+        {/* Quick: bon gantung (simpan keranjang) + daftar bon */}
+        <div className="grid grid-cols-2 gap-1.5">
+          <button onClick={onGantung}
+            disabled={items.length === 0}
+            className={`py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 transition-colors ${
+              items.length === 0 ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+            }`}>
+            <BookmarkPlus size={15} /> Gantung
+          </button>
+          <button onClick={onListBon}
+            className={`relative py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 transition-colors ${
+              bonAktif > 0 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}>
+            <ListUl size={15} />
+            {bonAktif > 0 && (
+              <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[9px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center font-bold">{bonAktif}</span>
+            )}
+            Bon
+          </button>
+        </div>
 
         <button
           onClick={onBayarSekarang}
