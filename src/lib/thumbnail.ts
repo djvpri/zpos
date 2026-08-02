@@ -1,14 +1,15 @@
-// SERVER-ONLY — thumbnail kecil (base64 WEBP ~48px) dari foto produk, dipakai
+// SERVER-ONLY — thumbnail kecil (base64 WEBP ~128px) dari foto produk, dipakai
 // utk grid kasir supaya payload API ringan (foto besar hingga ~100KB TIDAK
-// dikirim semua di list; thumbnail ~1-3KB saja). Pakai sharp (bundled Next).
-// Gagal → null (kasir fallback ke nama/emoji), jangan pernah mengagalkan flow.
+// dikirim semua di list; thumbnail ~1-3KB saja). Ukuran 128px: cukup utk
+// "besar" (80px) di tabel manajemen produk tetap tajam. Gagal → null (kasir
+// fallback ke nama/emoji), jangan pernah mengagalkan flow.
 import * as sharpMod from 'sharp'
 // sharp export default (CJS). Di ESM `import * as` mengikatnya ke .default;
 // di bundler (Next) bisa langsung. Normalisasi di sini.
 type SharpModule = typeof sharpMod & { default?: typeof import('sharp') }
 const sharp = (sharpMod as SharpModule).default ?? sharpMod
 
-export async function buatThumbnail(fotoUrl: string, size = 48): Promise<string | null> {
+export async function buatThumbnail(fotoUrl: string, size = 128): Promise<string | null> {
   try {
     const base64 = String(fotoUrl).replace(/^data:image\/[a-zA-Z+]+;base64,/, '')
     const buf = Buffer.from(base64, 'base64')
