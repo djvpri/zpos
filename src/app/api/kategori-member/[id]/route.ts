@@ -11,7 +11,7 @@ export const PUT = apiHandler(async (req: Request, body: { nama: string; diskon_
   if (toko.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const id = Number((await context.params).id)
-  const diskon = Math.max(0, Math.min(100, body.diskon_persen ?? 0))
+  const diskon = body.diskon_persen ?? 0
   const [row] = await sql`
     UPDATE kategori_member SET nama = ${body.nama.trim()}, diskon_persen = ${diskon}
     WHERE id = ${id} AND toko_id = ${toko.tokoId} RETURNING id, nama, diskon_persen

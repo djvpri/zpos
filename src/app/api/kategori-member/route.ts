@@ -18,7 +18,7 @@ export const POST = apiHandler(async (req: Request, body: { nama: string; diskon
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (toko.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const diskon = Math.max(0, Math.min(100, body.diskon_persen ?? 0))
+  const diskon = body.diskon_persen ?? 0
   try {
     const [row] = await sql`
       INSERT INTO kategori_member (nama, diskon_persen, toko_id)
