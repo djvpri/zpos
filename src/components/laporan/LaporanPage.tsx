@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi, Shift } from '@/types'
-import { GraphUpArrow, Receipt, Bag, Percent, Ban, Download, ArrowClockwise } from 'react-bootstrap-icons'
+import { GraphUpArrow, Receipt, Bag, Percent, Ban, Download, ArrowClockwise, Trophy } from 'react-bootstrap-icons'
 import { cacheGet, cacheSet } from '@/lib/offline-cache'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
@@ -192,7 +192,7 @@ export default function LaporanPage() {
                         {terlaris.map((p, i) => (
                           <div key={p.id} className="flex items-center gap-3">
                             <span className="text-xs text-gray-300 w-4">{i + 1}</span>
-                            <span className="text-lg">{p.emoji}</span>
+                            <span className="text-amber-500"><Trophy size={16} /></span>
                             <div className="flex-1">
                               <div className="text-sm font-medium text-gray-700">{p.nama}</div>
                               <div className="text-xs text-gray-400">{p.total_qty}x terjual</div>
