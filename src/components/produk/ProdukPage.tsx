@@ -31,6 +31,9 @@ export default function ProdukPage() {
   const [fotoBesar, setFotoBesar] = useState<Produk | null>(null)
   // Default TANPA foto (senada dgn kasir) — user nyalakan toggle utk lihat thumb.
   const [tampilFoto, setTampilFoto] = useState(false)
+  // Ukuran tampil thumbnail di tabel: kecil/sedang/besar (cuma CSS, tak ubah file).
+  const [ukuranThumb, setUkuranThumb] = useState<'kecil' | 'sedang' | 'besar'>('kecil')
+  const ukuranThumbCls = ukuranThumb === 'kecil' ? 'w-9 h-9' : ukuranThumb === 'sedang' ? 'w-14 h-14' : 'w-20 h-20'
   const [cari, setCari] = useState('')
   const [namaKat, setNamaKat] = useState('')
   const [katError, setKatError] = useState('')
@@ -175,6 +178,21 @@ export default function ProdukPage() {
             >
               <ImageFill size={16} /> Foto
             </button>
+            {tampilFoto && (
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                {(['kecil', 'sedang', 'besar'] as const).map(u => (
+                  <button
+                    key={u}
+                    onClick={() => setUkuranThumb(u)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors ${
+                      ukuranThumb === u ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
+            )}
             <button
               onClick={() => setShowFoto(true)}
               className="flex items-center gap-2 px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
@@ -257,7 +275,7 @@ export default function ProdukPage() {
                             className="shrink-0 cursor-zoom-in"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element -- foto thumb/data URI dinamis */}
-                            <img src={p.foto_thumb} alt={p.nama} className="w-9 h-9 rounded-lg object-cover" />
+                            <img src={p.foto_thumb} alt={p.nama} className={`${ukuranThumbCls} rounded-lg object-cover`} />
                           </button>
                         ) : p.emoji ? (
                           <span className="text-xl w-9 text-center shrink-0">{p.emoji}</span>
