@@ -9,11 +9,12 @@ import LaporanPage from '@/components/laporan/LaporanPage'
 import StaffPage from '@/components/staff/StaffPage'
 import PengaturanPage from '@/components/pengaturan/PengaturanPage'
 import LisensiPage from '@/components/lisensi/LisensiPage'
-import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle } from 'react-bootstrap-icons'
+import TokoOnlinePage from '@/components/toko-online/TokoOnlinePage'
+import { Receipt, Box, BarChartLine, People, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle, Shop } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import { fmtDate } from '@/lib/utils'
 
-type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan' | 'lisensi'
+type Halaman = 'kasir' | 'produk' | 'laporan' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online'
 
 const NAV_OWNER = [
   { id: 'kasir' as Halaman, icon: Receipt, label: 'Kasir' },
@@ -21,6 +22,7 @@ const NAV_OWNER = [
   { id: 'laporan' as Halaman, icon: BarChartLine, label: 'Laporan' },
   { id: 'staff' as Halaman, icon: People, label: 'Staff' },
   { id: 'lisensi' as Halaman, icon: CardChecklist, label: 'Lisensi' },
+  { id: 'toko-online' as Halaman, icon: Shop, label: 'Toko Online' },
   { id: 'pengaturan' as Halaman, icon: Gear, label: 'Atur' },
 ]
 
@@ -162,6 +164,7 @@ export default function AppPage() {
           {halaman === 'laporan' && isOwner && <LaporanPage />}
           {halaman === 'staff' && isOwner && <StaffPage />}
           {halaman === 'lisensi' && isOwner && <LisensiPage />}
+          {halaman === 'toko-online' && isOwner && <TokoOnlinePage />}
           {halaman === 'pengaturan' && isOwner && <PengaturanPage />}
         </main>
       </div>
