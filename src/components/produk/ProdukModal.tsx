@@ -67,7 +67,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       .then(data => { if (aktif && data?.foto_url) setForm(f => ({ ...f, foto_url: data.foto_url })) })
       .catch(() => {})
     return () => { aktif = false }
-  }, [produk?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [produk?.id])  
   const [uploading, setUploading] = useState(false)
   const [scanBarcode, setScanBarcode] = useState(false)
   const [showKamera, setShowKamera] = useState(false)
@@ -145,7 +145,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     }
   }
 
-  const set = (k: string, v: any) => { setEr(''); setForm(f => ({ ...f, [k]: v })) }
+  const set = (k: string, v: string | number) => { setEr(''); setForm(f => ({ ...f, [k]: v })) }
 
   const onFotoKamera = (base64: string) => {
     set('foto_url', base64)
@@ -213,6 +213,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
             <div className="mt-1">
               {form.foto_url ? (
                 <div className="relative w-full h-40 rounded-xl overflow-hidden border border-gray-200 group">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- foto data URI dinamis */}
                   <img src={form.foto_url} alt="foto" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                     <button

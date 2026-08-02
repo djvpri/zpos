@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShieldCheck, Plus, Trash2, BoxArrowRight, Gear, Check2Circle, XCircle, Hourglass } from 'react-bootstrap-icons'
 
@@ -31,7 +31,7 @@ export default function DemoConfigPage() {
   const [newUrl, setNewUrl] = useState('')
   const [newSecret, setNewSecret] = useState('')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch('/api/admin/demo-config')
@@ -41,15 +41,15 @@ export default function DemoConfigPage() {
       } else if (res.status === 401) {
         router.push('/admin/login')
       }
-    } catch (err) {
+    } catch {
       setError('Failed to load configuration')
     }
     setLoading(false)
-  }
+  }, [router])
 
   useEffect(() => {
-    load()
-  }, [])
+    Promise.resolve().then(load)
+  }, [load])
 
   const addApp = () => {
     if (!newUrl.trim() || !newSecret.trim()) {
@@ -96,7 +96,7 @@ export default function DemoConfigPage() {
         const data = await res.json()
         setError(data.error || 'Failed to save configuration')
       }
-    } catch (err) {
+    } catch {
       setError('Error saving configuration')
     }
     setSaving(false)
@@ -127,7 +127,7 @@ export default function DemoConfigPage() {
       } else {
         setError('Failed to test apps')
       }
-    } catch (err) {
+    } catch {
       setError('Error testing apps')
     }
     setTesting(false)

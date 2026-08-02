@@ -1,8 +1,9 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { XLg, QrCodeScan, Trash, CheckLg, ArrowRepeat, Box, ExclamationCircle, Bag } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 import { useKategori } from '@/hooks/useKategori'
+import { Produk } from '@/types'
 
 const BarcodeCameraModal = dynamic(
   () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
@@ -22,7 +23,7 @@ interface ProdukScan {
 interface Props {
   onSelesai: () => void
   onTutup: () => void
-  tambahOffline: (p: any) => Promise<{ message: string } | null>
+  tambahOffline: (p: Omit<Produk, 'id' | 'created_at' | 'updated_at'>) => Promise<{ message: string } | null>
 }
 
 async function lookupBarcode(barcode: string): Promise<Partial<ProdukScan> | null> {
@@ -74,7 +75,7 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }:
     setProduk(prev => prev.filter(p => p.barcode !== barcode))
   }
 
-  function update(barcode: string, field: keyof ProdukScan, value: any) {
+  function update(barcode: string, field: keyof ProdukScan, value: ProdukScan[keyof ProdukScan]) {
     setProduk(prev => prev.map(p => p.barcode === barcode ? { ...p, [field]: value } : p))
   }
 
@@ -179,7 +180,8 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }:
                     {/* Foto */}
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-white border border-gray-200 flex-shrink-0 flex items-center justify-center">
                       {p.foto_url
-                        ? <img src={p.foto_url} alt="" className="w-full h-full object-cover" />
+                        ? // eslint-disable-next-line @next/next/no-img-element -- foto URL eksternal/dinamis
+                          <img src={p.foto_url} alt="" className="w-full h-full object-cover" />
                         : <Box size={18} className="text-gray-300" />
                       }
                     </div>

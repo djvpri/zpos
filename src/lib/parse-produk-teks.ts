@@ -36,7 +36,7 @@ export function parseLine(line: string): Item | null {
   const tokens = s.split(/\s+/).filter(Boolean)
   let harga = 0
   let stok = 0
-  let namaParts: string[] = []
+  const namaParts: string[] = []
 
   for (const t of tokens) {
     const clean = t.replace(/[.,]/g, '')

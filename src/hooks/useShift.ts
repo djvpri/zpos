@@ -24,7 +24,9 @@ export function useShift() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    Promise.resolve().then(load)
+  }, [load])
 
   const buka = async (modalAwal: number): Promise<{ error?: string }> => {
     let res: Response

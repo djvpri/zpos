@@ -4,10 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { QrCodeScan, XLg } from 'react-bootstrap-icons'
 import { useZxing } from 'react-zxing'
 
-interface Props {
-  onScan: (barcode: string) => void
-}
-
 export function BarcodeCameraModal({ onScan, onTutup }: { onScan: (b: string) => void; onTutup: () => void }) {
   const [last, setLast] = useState('')
 

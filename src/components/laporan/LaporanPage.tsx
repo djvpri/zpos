@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi, Shift } from '@/types'
-import { GraphUpArrow, Receipt, Bag, Percent, Ban, ClockFill } from 'react-bootstrap-icons'
+import { GraphUpArrow, Receipt, Bag, Percent, Ban } from 'react-bootstrap-icons'
 import { cacheGet, cacheSet } from '@/lib/offline-cache'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
@@ -65,8 +65,8 @@ export default function LaporanPage() {
     setShiftLoaded(true)
   }, [shiftLoaded])
 
-  useEffect(() => { loadRingkasan() }, [loadRingkasan])
-  useEffect(() => { if (tab === 'shift') loadShift() }, [tab, loadShift])
+  useEffect(() => { Promise.resolve().then(() => loadRingkasan()) }, [loadRingkasan])
+  useEffect(() => { if (tab === 'shift') Promise.resolve().then(() => loadShift()) }, [tab, loadShift])
 
   const batalkan = async (id?: number) => {
     if (!id || !confirm('Batalkan transaksi ini? Stok akan dikembalikan.')) return

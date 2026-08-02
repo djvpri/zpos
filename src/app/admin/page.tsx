@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShieldCheck, PersonPlus, XLg, BoxArrowRight, Shop, Gear } from 'react-bootstrap-icons'
 import { fmtDate } from '@/lib/utils'
@@ -28,14 +28,16 @@ export default function AdminPage() {
   const [error, setError] = useState('')
   const [kelola, setKelola] = useState<Member | null>(null)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     const res = await fetch('/api/admin/members')
     if (res.ok) setMembers(await res.json())
     setLoading(false)
-  }
+  }, [])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    Promise.resolve().then(load)
+  }, [load])
 
   const logout = async () => {
     await fetch('/api/admin/logout', { method: 'POST' })

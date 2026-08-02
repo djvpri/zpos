@@ -13,8 +13,10 @@ function SsoContent() {
 
   useEffect(() => {
     if (!token) {
-      setStatus('error')
-      setMsg('Token tidak ditemukan. Buka ZPOS lewat Z One lagi.')
+      Promise.resolve().then(() => {
+        setStatus('error')
+        setMsg('Token tidak ditemukan. Buka ZPOS lewat Z One lagi.')
+      })
       return
     }
 

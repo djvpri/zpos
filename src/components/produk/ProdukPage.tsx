@@ -45,7 +45,7 @@ export default function ProdukPage() {
 
   const onSimpan = async (p: Partial<Produk>) => {
     if (p.id) await update(p.id, p)
-    else await tambah(p as any)
+    else await tambah(p as Omit<Produk, 'id' | 'created_at' | 'updated_at'>)
     setModal(null)
     // Embed ke ZFace sekarang ditangani server-side di api/produk (POST/PUT),
     // otomatis kalau ada foto — tidak perlu panggilan terpisah dari client lagi.
@@ -72,8 +72,8 @@ export default function ProdukPage() {
     try {
       await tambahKat(namaKat)
       setNamaKat('')
-    } catch (err: any) {
-      setKatError(err.message)
+    } catch (err: unknown) {
+      setKatError((err as { message?: string }).message || 'Gagal menambah kategori')
     }
     setKatLoading(false)
   }
@@ -232,6 +232,7 @@ export default function ProdukPage() {
                             title="Lihat foto besar"
                             className="shrink-0 cursor-zoom-in"
                           >
+                            {/* eslint-disable-next-line @next/next/no-img-element -- foto thumb/data URI dinamis */}
                             <img src={p.foto_thumb} alt={p.nama} className="w-9 h-9 rounded-lg object-cover" />
                           </button>
                         ) : p.emoji ? (
@@ -252,7 +253,7 @@ export default function ProdukPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
-                        {(p.kategori as any)?.nama || '—'}
+                        {(p.kategori as { nama: string } | undefined)?.nama || '—'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700">{fmt(p.harga)}</td>

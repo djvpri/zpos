@@ -5,7 +5,8 @@
 import * as sharpMod from 'sharp'
 // sharp export default (CJS). Di ESM `import * as` mengikatnya ke .default;
 // di bundler (Next) bisa langsung. Normalisasi di sini.
-const sharp = (sharpMod as any).default ?? sharpMod
+type SharpModule = typeof sharpMod & { default?: typeof import('sharp') }
+const sharp = (sharpMod as SharpModule).default ?? sharpMod
 
 export async function buatThumbnail(fotoUrl: string, size = 48): Promise<string | null> {
   try {

@@ -14,7 +14,7 @@ export default function ResetPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    setToken(params.get('token') ?? '')
+    Promise.resolve().then(() => setToken(params.get('token') ?? ''))
   }, [])
 
   const submit = async (e: React.FormEvent) => {

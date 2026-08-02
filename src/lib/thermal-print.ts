@@ -18,7 +18,6 @@ const LF  = '\x0A'
 const INIT         = ESC + '@'           // Initialize printer
 const ALIGN_LEFT   = ESC + 'a\x00'      // Align left
 const ALIGN_CENTER = ESC + 'a\x01'      // Align center
-const ALIGN_RIGHT  = ESC + 'a\x02'      // Align right
 const BOLD_ON      = ESC + 'E\x01'      // Bold on
 const BOLD_OFF     = ESC + 'E\x00'      // Bold off
 const DOUBLE_ON    = GS  + '!\x11'      // Double width + height
@@ -29,10 +28,6 @@ const COL = 32 // 58mm printer = 32 chars per line
 
 function padRight(str: string, len: number): string {
   return str.length >= len ? str.slice(0, len) : str + ' '.repeat(len - str.length)
-}
-
-function padLeft(str: string, len: number): string {
-  return str.length >= len ? str.slice(-len) : ' '.repeat(len - str.length) + str
 }
 
 function twoCol(left: string, right: string, width = COL): string {
@@ -243,11 +238,12 @@ export async function printViaBluetooth(
     await sleep(500)
     server.disconnect()
     return true
-  } catch (err: any) {
-    if (err.name === 'NotFoundError' || err.message?.includes('cancelled')) {
+  } catch (err: unknown) {
+    const e = err as { name?: string; message?: string }
+    if (e.name === 'NotFoundError' || e.message?.includes('cancelled')) {
       set('idle')
     } else {
-      set('error', `Gagal print: ${err.message || err}`)
+      set('error', `Gagal print: ${e.message || String(err)}`)
     }
     return false
   }

@@ -125,14 +125,23 @@ export default function NotifikasiPanel() {
   )
 }
 
-function Section({ icon, title, count, color, expanded, onToggle, children }: any) {
-  const colors: any = {
-    red: 'bg-red-50 border-red-100',
-    orange: 'bg-orange-50 border-orange-100',
-    yellow: 'bg-yellow-50 border-yellow-100',
-  }
+const COLOR_MAP: Record<string, string> = {
+  red: 'bg-red-50 border-red-100',
+  orange: 'bg-orange-50 border-orange-100',
+  yellow: 'bg-yellow-50 border-yellow-100',
+}
+
+function Section({ icon, title, count, color, expanded, onToggle, children }: {
+  icon: React.ReactNode
+  title: string
+  count: number
+  color: keyof typeof COLOR_MAP
+  expanded: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
   return (
-    <div className={`rounded-xl border ${colors[color]} overflow-hidden`}>
+    <div className={`rounded-xl border ${COLOR_MAP[color]} overflow-hidden`}>
       <button onClick={onToggle} className="w-full flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2">
           {icon}
@@ -150,7 +159,8 @@ function ProdukRow({ produk, badge }: { produk: Produk; badge: React.ReactNode }
   return (
     <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-gray-100">
       {produk.foto_url
-        ? <img src={produk.foto_url} alt="" className="w-8 h-8 rounded-md object-cover flex-shrink-0" />
+        ? // eslint-disable-next-line @next/next/no-img-element -- foto URL/data URI dinamis
+          <img src={produk.foto_url} alt="" className="w-8 h-8 rounded-md object-cover flex-shrink-0" />
         : <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0 text-sm">📦</div>
       }
       <div className="flex-1 min-w-0">

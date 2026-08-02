@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import { Upload, Download, XLg, CheckCircleFill, ExclamationCircle, FileEarmarkSpreadsheet, ArrowRepeat, Lightbulb } from 'react-bootstrap-icons'
 import * as XLSX from 'xlsx'
 import { useKategori } from '@/hooks/useKategori'
+import { Produk } from '@/types'
 
 interface ProdukRow {
   nama: string; harga: number; stok: number; kategori: string
@@ -10,7 +11,7 @@ interface ProdukRow {
   harga_grosir?: number; min_qty_grosir?: number
 }
 
-interface Props { onSelesai: () => void; onTutup: () => void; tambahOffline: (p: any) => Promise<{ message: string } | null> }
+interface Props { onSelesai: () => void; onTutup: () => void; tambahOffline: (p: Omit<Produk, 'id' | 'created_at' | 'updated_at'>) => Promise<{ message: string } | null> }
 
 export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Props) {
   const { kategori: daftarKategori } = useKategori()
@@ -44,11 +45,11 @@ export default function ImportProduk({ onSelesai, onTutup, tambahOffline }: Prop
         const data = new Uint8Array(ev.target?.result as ArrayBuffer)
         const wb = XLSX.read(data, { type: 'array' })
         const ws = wb.Sheets[wb.SheetNames[0]]
-        const rows = XLSX.utils.sheet_to_json<any>(ws)
+        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws)
 
         const parsed: ProdukRow[] = rows
-          .filter((r: any) => r.nama && r.harga)
-          .map((r: any) => ({
+          .filter((r) => r.nama && r.harga)
+          .map((r) => ({
             nama: String(r.nama || '').trim(),
             harga: Number(r.harga) || 0,
             stok: Number(r.stok) || 0,

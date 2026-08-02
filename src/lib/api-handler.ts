@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { ZodError, ZodSchema } from 'zod'
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 
 type Handler<T = unknown> = (
   req: Request,
@@ -14,7 +14,7 @@ interface ApiHandlerConfig {
   noBody?: boolean
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export function apiHandler<T>(
   handler: Handler<T>,
   config?: ApiHandlerConfig

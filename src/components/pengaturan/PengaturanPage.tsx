@@ -12,7 +12,7 @@ export default function PengaturanPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    setForm({ pajak_persen, alamat, telepon, catatan_struk })
+    Promise.resolve().then(() => setForm({ pajak_persen, alamat, telepon, catatan_struk }))
   }, [pajak_persen, alamat, telepon, catatan_struk])
 
   const set = (k: string, v: string | number) => setForm(f => ({ ...f, [k]: v }))

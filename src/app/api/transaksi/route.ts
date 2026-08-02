@@ -4,7 +4,7 @@ import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
 import type { Transaksi, DetailTransaksi } from '@/types'
 
-export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -53,7 +53,7 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
   return NextResponse.json(saved)
 }
 
-export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function GET(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

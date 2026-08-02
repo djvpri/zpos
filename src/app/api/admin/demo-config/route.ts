@@ -78,8 +78,8 @@ export async function PUT(req: Request) {
       const url = `${t.url.replace(/\/$/, '')}/api/demo/reset-daily`
       const r = await fetch(url, { method: 'POST', headers: { 'Authorization': `Bearer ${t.secret}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(10000) })
       results.push({ url: t.url, status: r.ok ? 'success' : 'error', statusCode: r.status, message: r.ok ? 'OK' : `HTTP ${r.status}` })
-    } catch (e: any) {
-      results.push({ url: t.url, status: 'error', message: e?.message || 'error' })
+    } catch (e: unknown) {
+      results.push({ url: t.url, status: 'error', message: (e as Error)?.message || 'error' })
     }
   }
   return NextResponse.json({ results })

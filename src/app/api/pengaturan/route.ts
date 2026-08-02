@@ -4,7 +4,7 @@ import { getTokoFromRequest } from '@/lib/auth'
 import { pengaturanSchema } from '@/lib/validation'
 import { apiHandler } from '@/lib/api-handler'
 
-export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function GET(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

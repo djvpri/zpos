@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 
-export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -110,9 +110,9 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
         )
       `
       berhasil++
-    } catch (e: any) {
+    } catch (e: unknown) {
       gagal++
-      errors.push({ baris, pesan: e.message?.slice(0, 100) || 'Kesalahan tak dikenal' })
+      errors.push({ baris, pesan: ((e as Error)?.message ?? '').slice(0, 100) || 'Kesalahan tak dikenal' })
     }
   }
 

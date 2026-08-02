@@ -4,16 +4,14 @@ import sql from '@/lib/db'
 import { signToken } from '@/lib/auth'
 import { getCrossAppSecret } from '@/lib/secrets'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!)
-
 // Terima SSO token dari Z One, cocokkan ke user ZPOS, buat sesi ZPOS
-export async function POST(req: NextRequest, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function POST(req: NextRequest) {
   try {
     const { token } = await req.json()
     if (!token) return NextResponse.json({ error: 'Token wajib diisi' }, { status: 400 })
 
     // 1. Verifikasi token dari Z One
-    let payload: any
+    let payload: Record<string, unknown>
     try {
       const crossSecret = new TextEncoder().encode(getCrossAppSecret())
       const result = await jwtVerify(token, crossSecret)

@@ -39,7 +39,9 @@ export function usePengaturan() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    Promise.resolve().then(load)
+  }, [load])
 
   // Reload setelah siklus sinkron (useAuth.ts) berhasil kirim pengaturan
   // yang sempat tertunda, supaya data lokal sejalan lagi dengan server.

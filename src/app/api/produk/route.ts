@@ -7,11 +7,12 @@ import { buatThumbnail } from '@/lib/thumbnail'
 import { produkSchema } from '@/lib/validation'
 import { generateProductBarcode } from '@/lib/barcode-code39'
 import { apiHandler } from '@/lib/api-handler'
+import { z } from 'zod'
 import type { Produk } from '@/types'
 
 const LIMIT_PRODUK_TRIAL = 100
 
-export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function GET(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -33,7 +34,7 @@ export async function GET(req: Request, _ctx: { params: Promise<Record<string, s
   return NextResponse.json(rows)
 }
 
-export const POST = apiHandler(async (req: Request, body: any) => {
+export const POST = apiHandler(async (req: Request, body: z.infer<typeof produkSchema>) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -61,7 +62,7 @@ export const POST = apiHandler(async (req: Request, body: any) => {
   try {
     ;[row] = await sql`
       INSERT INTO produk (nama, harga, stok, emoji, deskripsi, foto_url, barcode, kategori_id, toko_id, expired_at, stok_minimum, client_ref, harga_grosir, min_qty_grosir)
-      VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId}, ${body.expired_at || null}, ${body.stok_minimum ?? 5}, ${body.client_ref || null}, ${body.harga_grosir ?? null}, ${body.min_qty_grosir ?? null})
+      VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji ?? null}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId}, ${body.expired_at || null}, ${body.stok_minimum ?? 5}, ${body.client_ref || null}, ${body.harga_grosir ?? null}, ${body.min_qty_grosir ?? null})
       RETURNING *
     `
 
@@ -72,19 +73,19 @@ export const POST = apiHandler(async (req: Request, body: any) => {
       await sql`UPDATE produk SET barcode = ${generateProductBarcode(row.id)} WHERE id = ${row.id}`
       ;[row] = await sql`SELECT * FROM produk WHERE id = ${row.id}`
     }
-  } catch (e: any) {
-    if (body.client_ref && e.code === '23505') {
+  } catch (e: unknown) {
+    if (body.client_ref && (e as { code?: string })?.code === '23505') {
       const [existing] = await sql`SELECT * FROM produk WHERE client_ref = ${body.client_ref} AND toko_id = ${toko.tokoId}`
       if (existing) return NextResponse.json(existing, { status: 409 })
     }
     // Unique barcode (produk_toko_barcode_unik): barcode sudah dipakai produk
     // lain dalam toko ini. Beri pesan informatif, bukan internal error 500.
-    if (body.barcode && e.code === '23505') {
+    if (body.barcode && (e as { code?: string })?.code === '23505') {
       return NextResponse.json({ error: `Barcode ${body.barcode} sudah dipakai produk lain di toko ini.` }, { status: 409 })
     }
     // Unique nama (produk_toko_nama_unik): nama sudah dipakai produk mana pun
     // (aktif/nonaktif) dalam toko ini, case-insensitive. Tolak dgn pesan jelas.
-    if (e.code === '23505') {
+    if ((e as { code?: string })?.code === '23505') {
       return NextResponse.json({ error: `Nama "${body.nama}" sudah dipakai produk lain di toko ini.` }, { status: 409 })
     }
     throw e

@@ -153,6 +153,7 @@ export default function UploadFotoModal({ onClose }: { onClose: () => void }) {
               {items.map(item => (
                 <div key={item.id} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5">
                   {item.preview ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- preview data URI dinamis
                     <img src={item.preview} className="w-10 h-10 rounded-lg object-cover shrink-0" alt="" />
                   ) : (
                     <div className="w-10 h-10 rounded-lg bg-gray-200 shrink-0" />

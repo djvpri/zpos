@@ -5,7 +5,7 @@ import { deteksiNamaDariFoto } from '@/lib/gemini-nama-produk'
 // Proxy server-side untuk "foto → nama produk" via Gemini. Client mengirim
 // foto ke endpoint ZPOS sendiri (session cookie), bukan langsung ke Gemini —
 // GEMINI_API_KEY tidak pernah terkirim/terlihat di browser. TIdak memakai DB.
-export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

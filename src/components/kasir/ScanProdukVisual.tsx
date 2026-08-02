@@ -90,27 +90,7 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
     }
   }, [])
 
-  // Loop deteksi gerakan
-  useEffect(() => {
-    if (!kameraAktif || status !== 'kamera') return
-    const interval = setInterval(detectMotion, 200)
-    return () => clearInterval(interval)
-  }, [kameraAktif, status, detectMotion])
-
-  // Auto-scan saat diam
-  useEffect(() => {
-    if (!diaming || !autoScan || status !== 'kamera' || scanningRef.current) return
-    const now = Date.now()
-    if (now - lastScanRef.current < SCAN_INTERVAL) return
-    autoAmbilFoto()
-  }, [diaming, autoScan, status])
-
-  useEffect(() => {
-    startKamera()
-    return () => stopKamera()
-  }, [])
-
-  async function ambilFrame(): Promise<Blob | null> {
+  const ambilFrame = useCallback(async (): Promise<Blob | null> => {
     const video = videoRef.current
     const canvas = document.createElement('canvas')
     if (!video || video.readyState < 2) return null
@@ -118,9 +98,9 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
     canvas.height = video.videoHeight
     canvas.getContext('2d')?.drawImage(video, 0, 0)
     return new Promise(res => canvas.toBlob(b => res(b), 'image/jpeg', 0.8))
-  }
+  }, [])
 
-  async function autoAmbilFoto() {
+  const autoAmbilFoto = useCallback(async () => {
     if (scanningRef.current || !toko) return
     scanningRef.current = true
     lastScanRef.current = Date.now()
@@ -145,7 +125,27 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
       setDiaming(false)
     }
     scanningRef.current = false
-  }
+  }, [toko, stopKamera, ambilFrame])
+
+  // Loop deteksi gerakan
+  useEffect(() => {
+    if (!kameraAktif || status !== 'kamera') return
+    const interval = setInterval(detectMotion, 200)
+    return () => clearInterval(interval)
+  }, [kameraAktif, status, detectMotion])
+
+  // Auto-scan saat diam
+  useEffect(() => {
+    if (!diaming || !autoScan || status !== 'kamera' || scanningRef.current) return
+    const now = Date.now()
+    if (now - lastScanRef.current < SCAN_INTERVAL) return
+    autoAmbilFoto()
+  }, [diaming, autoScan, status, autoAmbilFoto])
+
+  useEffect(() => {
+    Promise.resolve().then(() => startKamera())
+    return () => stopKamera()
+  }, [startKamera, stopKamera])
 
   async function manualScan() {
     if (!toko) return
@@ -264,7 +264,8 @@ export default function ScanProdukVisual({ onPilih, onClose }: Props) {
                 {hasil.map((h, i) => (
                   <button key={i} onClick={() => pilihProduk(h)}
                     className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition hover:shadow-sm ${i === 0 && h.status === 'tinggi' ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'}`}>
-                    {(() => { const f = h.foto_thumb || h.foto_url; return f ? <img src={f} alt={h.nama} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" /> : null })()}
+                    {(() => { const f = h.foto_thumb || h.foto_url; return f ? // eslint-disable-next-line @next/next/no-img-element -- foto thumb/data URI dinamis
+                      <img src={f} alt={h.nama} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" /> : null })()}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900 truncate">{h.nama}</span>

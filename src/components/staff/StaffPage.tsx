@@ -18,7 +18,7 @@ export default function StaffPage() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { Promise.resolve().then(() => load()) }, [])
 
   const ubahRole = async (u: Staff) => {
     const next = u.role === 'admin' ? 'kasir' : 'admin'

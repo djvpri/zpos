@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { XLg, Camera, ArrowClockwise } from 'react-bootstrap-icons'
+import { XLg, Camera } from 'react-bootstrap-icons'
 
 interface Props {
   onFoto: (base64: string) => void

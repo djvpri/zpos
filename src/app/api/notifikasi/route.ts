@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 
-export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function GET(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

@@ -140,9 +140,9 @@ export function useAuthProvider() {
   }, [])
 
   useEffect(() => {
-    fetchMe()
-    refreshQueueCount()
-    cobaSinkron()
+    Promise.resolve().then(fetchMe)
+    Promise.resolve().then(refreshQueueCount)
+    Promise.resolve().then(cobaSinkron)
     window.addEventListener('focus', fetchMe)
     window.addEventListener('online', fetchMe)
     window.addEventListener('online', cobaSinkron)

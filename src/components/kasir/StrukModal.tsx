@@ -20,9 +20,6 @@ interface Props {
 }
 
 export function StrukModal({ transaksi, toko, onTutup }: Props) {
-  if (!transaksi) return null
-  const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir } = transaksi
-  const waktu = fmtDateTime()
   const [btStatus, setBtStatus] = useState<PrintStatus>('idle')
   const [btMsg, setBtMsg] = useState('')
   const [savedPrinter, setSavedPrinter] = useState<string | null>(null)
@@ -31,6 +28,10 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
   useState(() => {
     getSavedPrinterName().then(name => setSavedPrinter(name))
   })
+
+  if (!transaksi) return null
+  const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir } = transaksi
+  const waktu = fmtDateTime()
 
   const teksStruk = () => {
     const baris: string[] = []

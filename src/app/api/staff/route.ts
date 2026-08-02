@@ -7,7 +7,7 @@ import { getTokoFromRequest } from '@/lib/auth'
 // /api/admin/cross-app (action 'create'). Halaman Staff ZPos hanya
 // KELOLA (lihat, ubah role, aktif/nonaktif) dari akun yang sudah ada.
 
-export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function GET(req: Request) {
   const auth = await getTokoFromRequest(req)
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (auth.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

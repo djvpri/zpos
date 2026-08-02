@@ -18,7 +18,7 @@ const LIMIT_PRODUK_TRIAL = 100
 //   4) ringkas hasil {ok, nama, id} | {ok:false, alasan}
 // Produk dibuat harga 1 & tanpa stok — nanti diupdate massal via Excel.
 // GEMINI_API_KEY tidak pernah terlihat di browser.
-export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function POST(req: Request) {
   const auth = await getTokoFromRequest(req)
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -77,7 +77,7 @@ export async function POST(req: Request, _ctx: { params: Promise<Record<string, 
   const [{ count: cocok }] = await sql`SELECT count(*)::int AS count FROM produk WHERE toko_id = ${auth.tokoId} AND nama LIKE ${nama + '%'}`
   if (cocok > 0) {
     const dipakai = await sql`SELECT nama FROM produk WHERE toko_id = ${auth.tokoId}`
-    namaSimpan = namaUnikDari(nama, new Set(dipakai.map((r: any) => r.nama)))
+    namaSimpan = namaUnikDari(nama, new Set(dipakai.map((r) => r.nama)))
   }
 
   // 3) Insert produk mode cepat (harga 1, stok 0, foto tersimpan)

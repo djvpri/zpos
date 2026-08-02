@@ -17,7 +17,7 @@ export default function SyaratPage() {
         <div className="prose prose-sm max-w-none text-gray-600 space-y-5 leading-relaxed">
           <section>
             <h2 className="font-semibold text-gray-900">1. Penerimaan</h2>
-            <p>Dengan mendaftar dan menggunakan ZPos ("Layanan"), Anda menyetujui Syarat &amp; Ketentuan ini. Jika tidak setuju, mohon tidak menggunakan Layanan.</p>
+            <p>Dengan mendaftar dan menggunakan ZPos (&quot;Layanan&quot;), Anda menyetujui Syarat &amp; Ketentuan ini. Jika tidak setuju, mohon tidak menggunakan Layanan.</p>
           </section>
 
           <section>
@@ -42,7 +42,7 @@ export default function SyaratPage() {
 
           <section>
             <h2 className="font-semibold text-gray-900">6. Ketersediaan &amp; Tanggung Jawab</h2>
-            <p>Layanan disediakan "sebagaimana adanya". Kami berupaya menjaga ketersediaan, namun tidak menjamin Layanan bebas gangguan. Sejauh diizinkan hukum, kami tidak bertanggung jawab atas kerugian tidak langsung akibat penggunaan Layanan.</p>
+            <p>Layanan disediakan &quot;sebagaimana adanya&quot;. Kami berupaya menjaga ketersediaan, namun tidak menjamin Layanan bebas gangguan. Sejauh diizinkan hukum, kami tidak bertanggung jawab atas kerugian tidak langsung akibat penggunaan Layanan.</p>
           </section>
 
           <section>

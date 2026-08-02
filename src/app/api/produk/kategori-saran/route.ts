@@ -5,7 +5,7 @@ import { saranKategoriDariNama } from '@/lib/gemini-nama-produk'
 // Proxy server-side "nama produk → rekomendasi kategori" via Gemini. Client
 // kirim nama ke endpoint ZPOS sendiri (session cookie), bukan langsung ke
 // Gemini — GEMINI_API_KEY tak pernah terkirim/terlihat di browser. Tanpa DB.
-export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

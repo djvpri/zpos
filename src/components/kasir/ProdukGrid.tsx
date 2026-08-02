@@ -5,7 +5,6 @@ import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
 import { Search, ImageFill } from 'react-bootstrap-icons'
 
-const KATEGORI = ['Semua', 'Makanan', 'Minuman', 'Snack', 'Lainnya']
 const LOAD_PER = 15
 
 interface Props {
@@ -72,6 +71,7 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
               }`}
             >
               {tampilFoto && (p.foto_thumb || p.foto_url) && (
+                // eslint-disable-next-line @next/next/no-img-element -- foto thumb/data URI dinamis
                 <img src={p.foto_thumb || p.foto_url} alt={p.nama} className="h-12 w-12 mb-2 rounded-lg object-cover" loading="lazy" />
               )}
               {tampilFoto && !p.foto_thumb && !p.foto_url && <div className="text-3xl mb-2">{p.emoji}</div>}

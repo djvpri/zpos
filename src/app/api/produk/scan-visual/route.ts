@@ -6,7 +6,7 @@ import { cariProdukDariFoto } from '@/lib/zface-visual'
 // mengirim foto ke endpoint ZPOS sendiri (session cookie), bukan langsung
 // ke ZFace — tokoId diambil dari sesi terverifikasi, bukan dari client,
 // dan CROSS_APP_SECRET tidak pernah terkirim/terlihat di browser.
-export async function POST(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

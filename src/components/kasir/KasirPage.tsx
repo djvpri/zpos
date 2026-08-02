@@ -23,6 +23,8 @@ import { Produk, ItemKeranjang, Transaksi, DetailTransaksi } from '@/types'
 import { hitungPajak, hitungTotal, noTrx } from '@/lib/utils'
 import { hargaEfektif, isGrosir } from '@/lib/dual-pricing'
 
+type ProdukVirtual = { id: number; nama: string; harga: number; stok: number; kategori_id: null; barcode: null; foto_url: null }
+
 export default function KasirPage() {
   const { produk, loading, kurangiStok, tambahStok } = useProduk()
   const { simpan } = useTransaksi()
@@ -37,12 +39,11 @@ export default function KasirPage() {
   const [bayar, setBayar] = useState('')
   const [metode, setMetode] = useState<'Tunai' | 'QRIS' | 'Transfer'>('Tunai')
   const [struk, setStruk] = useState<Transaksi | null>(null)
-  const [saving, setSaving] = useState(false)
   const [showCart, setShowCart] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const [tab, setTab] = useState<'produk' | 'lain'>('produk')
   const [showScanVisual, setShowScanVisual] = useState(false)
-  const [virtualProduk, setVirtualProduk] = useState<Record<number, {id:number;nama:string;harga:number;stok:number;kategori_id:null;barcode:null;foto_url:null}>>({})
+  const [virtualProduk, setVirtualProduk] = useState<Record<number, ProdukVirtual>>({})
   // Flash-scan: barcode tidak dikenal di katalog → minta harga utk auto-create
   const [flashScan, setFlashScan] = useState<string | null>(null)
   const [flashNama, setFlashNama] = useState('')
@@ -95,7 +96,7 @@ export default function KasirPage() {
   }
 
   function tambahItemLain(itemsLain: {id: string; nama: string; harga: number; qty: number}[]) {
-    const newVirtual: Record<number, any> = {}
+    const newVirtual: Record<number, ProdukVirtual> = {}
     const newKeranjang: Record<number, number> = {}
     itemsLain.forEach(item => {
       const virtualId = -(Date.now() + Math.floor(Math.random() * 10000))
@@ -106,11 +107,11 @@ export default function KasirPage() {
     setKeranjang(k => ({ ...k, ...newKeranjang }))
   }
 
-  const tambahKeKeranjang = (p: Produk) => {
+  const tambahKeKeranjang = useCallback((p: Produk) => {
     if (p.stok <= 0) return
     setKeranjang(k => ({ ...k, [p.id]: (k[p.id] || 0) + 1 }))
     kurangiStok(p.id, 1)
-  }
+  }, [kurangiStok])
 
   // Autofill nama & kategori dari Open Food Facts. Coverage terbatas (mayoritas
   // produk lokal tak terdaftar) — kalau tak ketemu, dibiarkan kasir isi manual.
@@ -147,7 +148,7 @@ export default function KasirPage() {
       setFlashScan(code)
       autofillNama(code)
     }
-  }, [produk, autofillNama])
+  }, [produk, autofillNama, tambahKeKeranjang])
 
   useBarcodeUsbListener(onBarcodeScan)
 
@@ -188,7 +189,8 @@ export default function KasirPage() {
     const cur = keranjang[id] || 0
     const next = cur + delta
     if (next <= 0) {
-      const { [id]: _, ...rest } = keranjang
+      const rest = { ...keranjang }
+      delete rest[id]
       setKeranjang(rest)
       if (delta < 0) tambahStok(id, 1)
     } else {
@@ -205,7 +207,6 @@ export default function KasirPage() {
 
   const bayarSekarang = async () => {
     if (items.length === 0 || (metode === 'Tunai' && kurang > 0)) return
-    setSaving(true)
     setPesanSimpan(null)
 
     const trxData: Transaksi = {
@@ -234,7 +235,6 @@ export default function KasirPage() {
     }))
 
     const hasil = await simpan(trxData, details)
-    setSaving(false)
 
     if (hasil.error) {
       // Server terjangkau tapi benar-benar menolak (mis. langganan habis) —

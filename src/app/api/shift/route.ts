@@ -4,7 +4,7 @@ import { getTokoFromRequest } from '@/lib/auth'
 import { shiftSchema } from '@/lib/validation'
 import { apiHandler } from '@/lib/api-handler'
 
-const withTotals = (tokoId: number, extraWhere: string = '') => sql`
+const withTotals = (tokoId: number) => sql`
   SELECT
     s.id, s.kasir_nama, s.modal_awal, s.buka_at, s.tutup_at, s.aktif,
     COUNT(t.id)  FILTER (WHERE t.dibatalkan IS NOT TRUE)::int          AS jumlah_transaksi,
@@ -20,14 +20,14 @@ const withTotals = (tokoId: number, extraWhere: string = '') => sql`
   LIMIT 50
 `
 
-export async function GET(req: Request, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function GET(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const rows = await withTotals(toko.tokoId)
   const filtered = toko.role === 'admin'
     ? rows
-    : rows.filter((s: any) => s.kasir_nama === toko.userName)
+    : rows.filter((s) => s.kasir_nama === toko.userName)
 
   return NextResponse.json(filtered)
 }

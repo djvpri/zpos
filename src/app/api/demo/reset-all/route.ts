@@ -57,8 +57,8 @@ export async function POST(req: Request) {
       await seedDataDemo(t.id)
     }
     hasil.push({ app: 'zpos', status: 'success', message: `${tokoDemo.length} toko direset` })
-  } catch (e: any) {
-    hasil.push({ app: 'zpos', status: 'error', message: e?.message || 'error' })
+  } catch (e: unknown) {
+    hasil.push({ app: 'zpos', status: 'error', message: (e as Error)?.message || 'error' })
   }
 
   // 2. Reset semua app terdaftar di demo-config
@@ -76,8 +76,8 @@ export async function POST(req: Request) {
         status: res.ok ? 'success' : 'error',
         message: res.ok ? 'OK' : `HTTP ${res.status}`,
       })
-    } catch (e: any) {
-      hasil.push({ app: app.url, status: 'error', message: e?.message || 'timeout' })
+    } catch (e: unknown) {
+      hasil.push({ app: app.url, status: 'error', message: (e as Error)?.message || 'timeout' })
     }
   }
 

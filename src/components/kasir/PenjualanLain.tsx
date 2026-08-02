@@ -57,7 +57,7 @@ export default function PenjualanLain({ onTambahKeKeranjang }: Props) {
   const [tambahPresetNama, setTambahPresetNama] = useState('')
   const [tambahPresetHarga, setTambahPresetHarga] = useState('')
 
-  useEffect(() => { setPreset(loadPreset()) }, [])
+  useEffect(() => { Promise.resolve().then(() => setPreset(loadPreset())) }, [])
 
   function updatePreset(newPreset: Preset[]) {
     setPreset(newPreset)

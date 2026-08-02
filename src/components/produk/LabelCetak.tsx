@@ -19,7 +19,7 @@ type Mode = 'barcode' | 'nama-harga' | 'lengkap'
 // belum punya → pilih mode cetak (barcode / nama+harga / nama+harga+barcode)
 // → cetak label via printer (browser dialog). Menggantikan BarcodeLabel +
 // StickerHarga jadi satu fitur.
-export default function LabelCetak({ produk, onSelesai, onTutup, update }: Props) {
+export default function LabelCetak({ produk, onTutup, update }: Props) {
   const tanpaBarcode = produk.filter(p => !p.barcode && !p._pending)
   const [terpilih, setTerpilih] = useState<Record<number, boolean>>(() => {
     const awal: Record<number, boolean> = {}

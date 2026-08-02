@@ -4,6 +4,8 @@ import { getTokoFromRequest } from '@/lib/auth'
 import { embedProduk, hapusEmbedding } from '@/lib/zface-visual'
 import { produkUpdateSchema } from '@/lib/validation'
 import { apiHandler } from '@/lib/api-handler'
+import { z } from 'zod'
+import type { Produk } from '@/types'
 
 // GET satu produk LENGKAP (termasuk foto_url besar). Dipakai modal edit —
 // list produk sengaja TIDAK mengirim foto_url (lihat GET /api/produk) supaya
@@ -23,25 +25,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json(row)
 }
 
-export const PUT = apiHandler(async (req: Request, body: any, context) => {
+export const PUT = apiHandler(async (req: Request, body: z.infer<typeof produkUpdateSchema>, context) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const params = await context.params
   const id = String(params.id)
-  let row: any
+  let row: Produk
   try {
     ;[row] = await sql`
       UPDATE produk
-      SET nama = ${body.nama}, harga = ${body.harga}, stok = ${body.stok},
-          emoji = ${body.emoji}, deskripsi = ${body.deskripsi || null}, foto_url = ${body.foto_url || null},
-          barcode = ${body.barcode || null}, kategori_id = ${body.kategori_id},
+      SET nama = ${body.nama ?? null}, harga = ${body.harga ?? null}, stok = ${body.stok ?? null},
+          emoji = ${body.emoji ?? null}, deskripsi = ${body.deskripsi || null}, foto_url = ${body.foto_url || null},
+          barcode = ${body.barcode || null}, kategori_id = ${body.kategori_id ?? null},
           harga_grosir = ${body.harga_grosir ?? null}, min_qty_grosir = ${body.min_qty_grosir ?? null}
       WHERE id = ${Number(id)} AND toko_id = ${toko.tokoId}
       RETURNING *
     `
-  } catch (e: any) {
-    if (e.code === '23505') {
+  } catch (e: unknown) {
+    if ((e as { code?: string })?.code === '23505') {
       return NextResponse.json({ error: `Nama "${body.nama}" sudah dipakai produk lain di toko ini.` }, { status: 409 })
     }
     throw e

@@ -21,7 +21,7 @@ export function useProduk() {
       setProduk(data)
       setError(null)
       cacheSet(CACHE_KEY, data).catch(() => {})
-    } catch (e: any) {
+    } catch (e) {
       // Gagal (kemungkinan besar offline) — pakai cache lokal kalau ada,
       // supaya kasir tetap punya katalog untuk dijual, bukan layar kosong.
       const cached = await cacheGet<Produk[]>(CACHE_KEY).catch(() => null)
@@ -29,14 +29,16 @@ export function useProduk() {
         setProduk(cached)
         setError(null)
       } else {
-        setError(e.message)
+        setError(e instanceof Error ? e.message : 'Gagal memuat produk')
       }
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => {
+    Promise.resolve().then(fetch)
+  }, [fetch])
 
   // Dengar sinyal dari siklus sinkron (useAuth.ts) kalau ada mutasi produk
   // yang baru selesai terkirim — reload dari server supaya ID sementara

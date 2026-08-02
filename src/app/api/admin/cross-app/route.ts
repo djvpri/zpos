@@ -42,7 +42,7 @@ async function buildData() {
   }
 }
 
-export async function GET(req: NextRequest, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return Response.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     return Response.json(await buildData())
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest, _ctx: { params: Promise<Record<strin
   }
 }
 
-export async function POST(req: NextRequest, _ctx: { params: Promise<Record<string, string | string[]>> }) {
+export async function POST(req: NextRequest) {
   if (!checkAuth(req)) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {

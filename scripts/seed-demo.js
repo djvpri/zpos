@@ -11,6 +11,7 @@
 // Target toko: env DEMO_EMAIL (email toko), fallback toko bernama "demo",
 // fallback toko pertama.
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const postgres = require('postgres')
 const sql = postgres(process.env.DATABASE_URL, { ssl: 'require' })
 

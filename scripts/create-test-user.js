@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { hash } = require('bcryptjs');
 const postgres = require('postgres');
 
