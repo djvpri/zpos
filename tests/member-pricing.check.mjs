@@ -15,6 +15,11 @@ assert.strictEqual(hargaMemberEfektif({ hargaNormal: 9999, diskonPersen: 33.33 }
 assert.strictEqual(hargaMemberEfektif({ hargaNormal: 10000, diskonPersen: 100 }), 0)
 assert.strictEqual(hargaMemberEfektif({ hargaNormal: 10000, diskonPersen: 150 }), 0, 'lebih dari 100% = 0')
 
+// 3b. diskon NEGATIF = markup (member bayar LEBIH MAHAL)
+assert.strictEqual(hargaMemberEfektif({ hargaNormal: 10000, diskonPersen: -20 }), 12000, 'markup 20%')
+assert.strictEqual(hargaMemberEfektif({ hargaNormal: 15000, diskonPersen: -10 }), 16500)
+assert.strictEqual(hargaMemberEfektif({ hargaNormal: 10000, diskonPersen: -100 }), 20000, 'markup 100% = dobel')
+
 // 4. Harga tetap menang penuh atas diskon %
 assert.strictEqual(hargaMemberEfektif({ hargaNormal: 20000, hargaTetap: 12000, diskonPersen: 50 }), 12000)
 

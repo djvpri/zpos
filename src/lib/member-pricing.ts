@@ -2,7 +2,8 @@
 //
 // Prioritas harga satu baris saat member AKTIF (tertinggi ke terendah):
 //   1. `hargaTetap`  — harga TETAP khusus produk × kategori (harga_member.harga) kalau ada.
-//   2. `hargaNormal × (1 - diskonPersen/100)` — diskon % kategori member kalau diskon_persen > 0.
+//   2. `hargaNormal × (1 - diskonPersen/100)` — diskon % kategori member kalau diskonPersen
+//      ≠ 0; nilai NEGATIF = markup (member bayar lebih mahal, faktor >1).
 //   3. `hargaNormal` (ecer) bila member tak punya kategori / tanpa diskon / tanpa harga tetap.
 
 export interface MemberHargaInput {
@@ -11,15 +12,17 @@ export interface MemberHargaInput {
   diskonPersen?: number | null
 }
 
-// Harga satuan efektif utk produk terhadap kategori member. Return 0 dianggap
-// "pakai hargaNormal lain yang dihitung dari diskon" — tapi jaga agar selalu > 0.
+// Harga satuan efektif utk produk terhadap kategori member. Harga selalu >= 0.
 export function hargaMemberEfektif(input: MemberHargaInput): number {
   const dasar = input.hargaNormal
   // 1. harga tetap menang penuh
   if (input.hargaTetap != null && input.hargaTetap > 0) return input.hargaTetap
-  // 2. diskon % kategori
+  // 2. diskon % kategori (0/non-null diabaikan); negatif = markup (lebih mahal)
   const pct = input.diskonPersen ?? 0
-  if (pct > 0) return Math.round(dasar * (1 - Math.min(100, pct) / 100))
+  if (pct !== 0) {
+    const faktor = 1 - Math.min(pct, 100) / 100  // negatif => faktor >1 (markup)
+    return Math.round(Math.max(dasar * faktor, 0))  // clamp >=0
+  }
   // 3. normal
   return dasar
 }

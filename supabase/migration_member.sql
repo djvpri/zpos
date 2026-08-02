@@ -3,6 +3,7 @@
 --
 -- Menambahkan 3 tabel:
 --   kategori_member  : kelompok member (mis. "Umum", "Grosir", "VIP") + diskon_persen global.
+--                      diskon_persen negatif = markup (member bayar LEBIH MAHAL).
 --   member           : pelanggan (nama, telepon) terikat satu kategori.
 --   harga_member     : harga TETAP khusus per produk × kategori (override, menang atas diskon %).
 --
@@ -14,7 +15,7 @@
 CREATE TABLE IF NOT EXISTS kategori_member (
   id          SERIAL PRIMARY KEY,
   nama        TEXT NOT NULL,
-  diskon_persen NUMERIC NOT NULL DEFAULT 0 CHECK (diskon_persen >= 0 AND diskon_persen <= 100),
+  diskon_persen NUMERIC NOT NULL DEFAULT 0 CHECK (diskon_persen >= -100 AND diskon_persen <= 100),
   toko_id     INTEGER NOT NULL REFERENCES toko(id) ON DELETE CASCADE,
   created_at  TIMESTAMPTZ DEFAULT now(),
   UNIQUE (toko_id, nama)

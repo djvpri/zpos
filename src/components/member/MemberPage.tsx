@@ -152,7 +152,7 @@ export default function MemberPage() {
                 {editKat?.id === k.id ? (
                   <>
                     <input className="border border-indigo-300 rounded-lg px-2 py-1 flex-1" value={editNama} onChange={e => setEditNama(e.target.value)} placeholder="Nama kategori" />
-                    <input className="border border-indigo-300 rounded-lg px-2 py-1 w-24" type="number" value={editDiskon} onChange={e => setEditDiskon(e.target.value)} title="Diskon %" />
+                    <input className="border border-indigo-300 rounded-lg px-2 py-1 w-24" type="number" value={editDiskon} onChange={e => setEditDiskon(e.target.value)} title="Diskaun/markup % (negatif = lebih mahal)" />
                     <button onClick={simpanKat} className="px-2 py-1 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Simpan</button>
                     <button onClick={() => setEditKat(null)} className="p-1 text-gray-400 hover:text-gray-600"><XLg size={14} /></button>
                   </>
@@ -160,7 +160,7 @@ export default function MemberPage() {
                   <>
                     <span className="font-medium text-gray-800 flex-1">{k.nama}</span>
                     <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
-                      {k.diskon_persen > 0 ? `diskon ${k.diskon_persen}%` : 'tanpa diskon'}
+                      {k.diskon_persen > 0 ? `diskon ${k.diskon_persen}%` : k.diskon_persen < 0 ? `markup ${-k.diskon_persen}%` : 'tanpa diskon'}
                     </span>
                     <button onClick={() => bukaAtur(k)} title="Atur harga tetap per produk"
                       className="p-1.5 text-gray-400 hover:text-emerald-600"><CashCoin size={16} /></button>
@@ -176,7 +176,7 @@ export default function MemberPage() {
           {/* Tambah kategori */}
           <div className="rounded-2xl border border-gray-200 bg-white p-4 flex flex-wrap gap-3 items-center">
             <input className={inp + ' flex-1 min-w-[180px]'} value={namaBaru} onChange={e => setNamaBaru(e.target.value)} placeholder="Nama kategori (mis. Grosir)" />
-            <input className={inp + ' w-32'} type="number" value={diskonBaru} onChange={e => setDiskonBaru(e.target.value)} placeholder="Diskon %" />
+            <input className={inp + ' w-32'} type="number" value={diskonBaru} onChange={e => setDiskonBaru(e.target.value)} placeholder="Diskon % (- = mahal)" title="+diskon, 0 tak ada, -markup (lebih mahal)" />
             <button onClick={buatKat} disabled={!namaBaru.trim()}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50">
               <Plus size={16} /> Tambah

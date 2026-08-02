@@ -43,14 +43,15 @@ export async function GET(req: Request) {
     WHERE p.toko_id = ${toko.tokoId} AND p.aktif = true
   `
 
-  // Harga efektif member per produk:
-  //   1. harga_tetap kalau ada  2. harga_normal × (1 - diskon/100)
+  //   map[r.produk_id] = Math.round(r.harga_tetap)
+  //   2. diskon_persen != 0 (positif = diskon, negatif = markup) → harga × (1 - diskon/100)
   const map: Record<number, number> = {}
   for (const r of rows) {
     if (r.harga_tetap != null && r.harga_tetap > 0) {
       map[r.produk_id] = Math.round(r.harga_tetap)
-    } else if (r.diskon_persen > 0) {
-      map[r.produk_id] = Math.round(r.harga_normal * (1 - r.diskon_persen / 100))
+    } else if (r.diskon_persen !== 0) {
+      const faktor = 1 - r.diskon_persen / 100  // negatif => >1 (markup)
+      map[r.produk_id] = Math.round(r.harga_normal * Math.max(faktor, 0))  // clamp >=0
     }
   }
   return NextResponse.json(map)

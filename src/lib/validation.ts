@@ -103,7 +103,7 @@ export const adminMemberSchema = z.object({
 // ===== Member / Kategori Member =====
 export const kategoriMemberSchema = z.object({
   nama: z.string().min(1, 'Nama kategori wajib diisi'),
-  diskon_persen: z.number().min(0).max(100).default(0),
+  diskon_persen: z.number().min(-100).max(100).default(0),
 })
 
 export const memberSchema = z.object({
