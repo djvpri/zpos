@@ -18,7 +18,7 @@ export async function GET(
   if (!toko) return NextResponse.json({ error: 'toko-tidak-ditemukan' }, { status: 404 })
 
   const produk = await sql`
-    SELECT p.id, p.nama, p.harga, p.emoji, p.deskripsi, p.stok, p.foto_thumb, k.nama AS kategori
+    SELECT p.id, p.nama, p.harga, p.emoji, p.deskripsi, p.stok, p.foto_url AS foto, k.nama AS kategori
     FROM produk p
     LEFT JOIN kategori k ON k.id = p.kategori_id
     WHERE p.toko_id = ${toko.id} AND p.aktif = true AND p.harga > 0

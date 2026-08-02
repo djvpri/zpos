@@ -25,7 +25,7 @@ export default async function TokoOnlinePage({
   }
 
   const produk = await sql`
-    SELECT p.id, p.nama, p.harga, p.emoji, p.deskripsi, p.stok, p.foto_thumb, k.nama AS kategori
+    SELECT p.id, p.nama, p.harga, p.emoji, p.deskripsi, p.stok, p.foto_url, k.nama AS kategori
     FROM produk p
     LEFT JOIN kategori k ON k.id = p.kategori_id
     WHERE p.toko_id = ${toko.id} AND p.aktif = true AND p.harga > 0
@@ -47,7 +47,7 @@ export default async function TokoOnlinePage({
     emoji: p.emoji,
     deskripsi: p.deskripsi ?? undefined,
     stok: Number(p.stok),
-    foto: p.foto_thumb ?? null,
+    foto: p.foto_url ?? null,
     kategori: p.kategori ?? undefined,
   }))
 
