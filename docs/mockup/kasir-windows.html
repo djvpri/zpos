@@ -74,6 +74,56 @@
   .pay:active { transform:scale(.98); }
   .offq { display:flex; align-items:center; gap:8px; margin:0 16px 16px; padding:10px 12px; border-radius:10px; border:1.5px dashed #ffb347; color:#b26a00; background:#fff8ec; font-size:12px; }
   .offq .n { background:#ffb347; color:#fff; border-radius:999px; padding:1px 8px; font-weight:800; }
+  /* Bar member */
+  .toolrow { display:flex; align-items:center; gap:8px; }
+  .member { position:relative; }
+  .member .pill { display:flex; align-items:center; gap:7px; padding:7px 12px; border-radius:999px; border:1.5px solid #e2e6ee; background:#fff; font-size:12px; font-weight:600; color:#3b4658; cursor:pointer; transition:.12s; }
+  .member .pill:hover { border-color:#4f7cff; color:#4f7cff; }
+  .member .pill.on { background:#e7f6ec; border-color:#34a853; color:#1e7d33; }
+  .member .pill i { font-size:14px; }
+  .member .mwin { position:absolute; top:calc(100%+6px); left:0; width:240px; background:#fff; border:1px solid #eef0f4; border-radius:12px; box-shadow:0 12px 34px rgba(0,0,0,.14); z-index:30; display:none; overflow:hidden; }
+  .member .mwin.show { display:block; }
+  .mwin .mhead { padding:10px 12px; font-size:12px; font-weight:700; color:#1e2f4d; background:#f7f9fc; }
+  .mwin .mitem { display:flex; align-items:center; gap:9px; padding:10px 12px; cursor:pointer; font-size:13px; }
+  .mwin .mitem:hover { background:#f3f6fc; }
+  .mwin .mitem i { font-size:14px; color:#4f7cff; }
+  .mwin .mitem .info { flex:1; min-width:0; }
+  .mwin .mitem .info .nm { font-weight:600; color:#2a3548; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mwin .mitem .info .kat { font-size:11px; color:#98a2b3; }
+  .mwin .mitem .tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; }
+  .mwin .tag.hitam { background:#fde8e8; color:#d64545; }
+  .mwin .tag.murah { background:#e7f6ec; color:#1e7d33; }
+  /* Bon gantung */
+  .bon { display:flex; gap:7px; }
+  .bon button { display:flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px; border:1.5px solid #e2e6ee; background:#fff; font-size:12px; font-weight:600; color:#3b4658; cursor:pointer; transition:.12s; position:relative; }
+  .bon button i { font-size:13px; }
+  .bon button:hover { border-color:#ffb347; color:#b26a00; }
+  .bon button:disabled { opacity:.4; cursor:not-allowed; }
+  .bon .badge { position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; font-size:9px; font-weight:800; min-width:16px; height:16px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 4px; }
+  /* harga asli coret */
+  .item .p .gores { text-decoration:line-through; color:#c3c9d6; margin-right:6px; font-size:10px; }
+  .item .p .member-tag { display:inline-block; margin-left:5px; font-size:9px; font-weight:700; color:#1e7d33; background:#e7f6ec; padding:1px 6px; border-radius:999px; }
+  /* modal bon */
+  .modal { position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; z-index:60; }
+  .modal.show { display:flex; }
+  .modal .mc { background:#fff; border-radius:14px; max-width:420px; width:100%; max-height:80vh; overflow:hidden; display:flex; flex-direction:column; }
+  .modal .mch { padding:14px 18px; font-weight:700; color:#1e2f4d; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f0f2f7; }
+  .modal .mch .x { cursor:pointer; color:#98a2b3; }
+  .modal .mch .x:hover { color:#ef4444; }
+  .modal .mcb { padding:14px 18px; overflow-y:auto; }
+  .modal .mcb p { font-size:12px; color:#5a6577; margin-bottom:10px; }
+  .bonRow { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f2f4f9; }
+  .bonRow:last-child { border-bottom:none; }
+  .bonRow .info { flex:1; min-width:0; }
+  .bonRow .info .nm { font-size:13px; font-weight:600; color:#2a3548; }
+  .bonRow .info .sub { font-size:11px; color:#98a2b3; }
+  .bonRow button { padding:6px 12px; border-radius:8px; border:none; background:#4f7cff; color:#fff; font-size:12px; font-weight:700; cursor:pointer; }
+  .bonRow button:hover { background:#3c63d8; }
+  .bonRow .del { background:none; color:#c3c9d6; padding:6px; margin-left:2px; }
+  .bonRow .del:hover { color:#ef4444; background:none; }
+  .bonRow .st { font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; }
+  .bonRow .st.bel { background:#fff3dc; color:#b26a00; }
+  .bonRow .st.sel { background:#e7f6ec; color:#1e7d33; }
   /* overlay offline */
   .ov { position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; z-index:50; }
   .ov.show { display:flex; }
@@ -105,6 +155,19 @@
     <!-- Kiri -->
     <div class="left">
       <div class="search"><i class="bi bi-search" style="position:absolute;left:12px;top:50%;translate:0 -50%;color:#9aa3b5"></i><input id="q" placeholder="Cari produk..." oninput="render()" /></div>
+      <div class="toolrow">
+        <div class="member">
+          <div class="pill" id="memberPill" onclick="toggleMember()"><i class="bi bi-person-badge"></i><span id="memberPillTxt">Member</span></div>
+          <div class="mwin" id="mwin">
+            <div class="mhead">PILIH MEMBER</div>
+            <div id="mList"></div>
+          </div>
+        </div>
+        <div class="bon">
+          <button onclick="simpanBon()" id="btnSimpanBon" title="Gantung transaksi (butuh member)"><i class="bi bi-bookmark-plus"></i> Gantung</button>
+          <button onclick="bukaBon()" title="Daftar bon gantung"><i class="bi bi-list-ul"></i><span id="bonBadge"></span></button>
+        </div>
+      </div>
       <div class="cats" id="cats"></div>
       <div class="grid" id="grid"></div>
       <div class="foot-left"><span><i class="bi bi-link-45deg"></i> Sepenuhnya offline</span><span>Katalog tersimpan lokal</span></div>
@@ -131,6 +194,14 @@
   </div>
 </div></div>
 
+<!-- Modal daftar bon gantung -->
+<div class="modal" id="bonModal">
+  <div class="mc">
+    <div class="mch"><span><i class="bi bi-list-ul"></i> Bon Gantung</span><span class="x" onclick="tutupBon()"><i class="bi bi-x-lg"></i></span></div>
+    <div class="mcb" id="bonList"></div>
+  </div>
+</div>
+
 <!-- Overlay transaksi sukses -->
 <div class="ov" id="ov">
   <div class="ovcard">
@@ -146,16 +217,36 @@
 
 <script>
   const PRODUK = [
-    {n:'Nasi Goreng',e:'bi-egg-fried',p:15000,s:40},{n:'Nasi Ayam',e:'bi-fire',p:18000,s:25},{n:'Es Teh',e:'bi-cup-hot',p:5000,s:120},
-    {n:'Es Jeruk',e:'bi-cup-straw',p:7000,s:60},{n:'Kopi Susu',e:'bi-cup',p:12000,s:15},{n:'Kentang',e:'bi-basket',p:10000,s:3},
+    {n:'Nasi Goreng',e:'bi-egg-fried',p:15000,s:40,m:17000},{n:'Nasi Ayam',e:'bi-fire',p:18000,s:25,m:20000},{n:'Es Teh',e:'bi-cup-hot',p:5000,s:120},
+    {n:'Es Jeruk',e:'bi-cup-straw',p:7000,s:60},{n:'Kopi Susu',e:'bi-cup',p:12000,s:15,m:10500},{n:'Kentang',e:'bi-basket',p:10000,s:3,m:8500},
     {n:'Donat',e:'bi-circle-half',p:8000,s:50},{n:'Roti Bakar',e:'bi-sun',p:9000,s:12},{n:'Sosis',e:'bi-egg',p:15000,s:30},
     {n:'Pudding',e:'bi-box',p:6000,s:0},{n:'Es Krim',e:'bi-thermometer-snow',p:11000,s:22},{n:'Air Mineral',e:'bi-droplet',p:4000,s:200},
   ];
+  // Member dgn kategori + diskon% kategori. diskon negatif = markup (lebih mahal).
+  // Harga item member = harga_member tetap kalau ada, selain itu harga × (1+diskon/100).
+  const MEMBERS = [
+    {n:'Syahrul', k:'Prioritas', d:0,   tetap:{2:10500,5:8500}},
+    {n:'Bu Rina',  k:'Palapa',    d:-15},                 // markup 15% semua item
+    {n:'Pak Joko', k:'Loyal',     d:10},                  // diskon 10%
+  ];
   let cart = [];
   let metode = 'Tunai';
+  let member = null;            // member aktif
   let offline = true;       // mulai offline (simulasi)
   let offQtn = 3;           // antrian transaksi tertunda
+  let bon = [];             // daftar bon gantung {nama, items:[{i,q}], total}
   const CATS = ['Semua','Makanan','Minuman','Snack'];
+
+  // Harga satuan produk utk member aktif (harga tetap menang, lalu diskon/markup %)
+  // d negatif = markup (harga × (1 - d/100) → lebih mahal), d positif = diskon.
+  function hargaMember(idx){
+    if(!member) return null;
+    const p=PRODUK[idx];
+    if(member.tetap && member.tetap[idx] != null) return member.tetap[idx];
+    const d=member.d||0;
+    if(d!==0) return Math.round(p.p*(1 - d/100));
+    return p.p;
+  }
 
   function fmt(n){ return 'Rp' + n.toLocaleString('id-ID'); }
   function status(){ 
@@ -183,20 +274,87 @@
   function renderCart(){
     document.getElementById('items').innerHTML=cart.map((c,x)=>{
       const p=PRODUK[c.i];
+      const hm=hargaMember(c.i);
+      const pakai = hm!=null && hm!==p.p;
+      const tampi = pakai ? hm : p.p;
       return `<div class="item">
-        <div class="meta"><div class="n">${p.n}</div><div class="p">${fmt(p.p)}</div></div>
+        <div class="meta"><div class="n">${p.n}</div><div class="p">${pakai?`<span class="gores">${fmt(p.p)}</span>`:''}${fmt(tampi)}${pakai?'<span class="member-tag">MEMBER</span>':''}</div></div>
         <div class="qty"><button onclick="chg(${x},-1)">−</button><span>${c.q}</span><button onclick="chg(${x},1)">+</button></div>
-        <div class="line">${fmt(p.p*c.q)}</div></div>`;
+        <div class="line">${fmt(tampi*c.q)}</div></div>`;
     }).join('');
-    const sub=cart.reduce((s,c)=>s+PRODUK[c.i].p*c.q,0);
+    const sub=cart.reduce((s,c)=>s+(member&&hargaMember(c.i)!==null&&hargaMember(c.i)!==PRODUK[c.i].p?hargaMember(c.i):PRODUK[c.i].p)*c.q,0);
     const disc=Math.round(sub*0.09/1000)*1000; // contoh diskon 9%
     document.getElementById('cnt').textContent=cart.length?'('+cart.reduce((s,c)=>s+c.q,0)+')':'';
     document.getElementById('sub').textContent=fmt(sub);
     document.getElementById('disc').textContent='-'+fmt(disc);
     document.getElementById('total').textContent=fmt(sub-disc);
+    document.getElementById('btnSimpanBon').disabled = !cart.length || !member;
+    // badge bon aktif
+    const aktif=bon.length;
+    document.getElementById('bonBadge').innerHTML = aktif?`<span class="badge">${aktif}</span>`:'';
   }
   function chg(x,d){ const c=cart[x]; c.q+=d; if(c.q<=0)cart.splice(x,1); renderCart(); }
   function clearCart(){ cart=[]; renderCart(); }
+
+  /* ===== Member ===== */
+  function toggleMember(){ document.getElementById('mwin').classList.toggle('show'); }
+  function renderMemberList(){
+    document.getElementById('mList').innerHTML = MEMBERS.map((m,i)=>{
+      const d=(m.d||0);
+      const tag = d<0 ? `<span class="tag hitam">markup ${-d}%</span>` : d>0 ? `<span class="tag murah">diskon ${d}%</span>` : `<span class="tag murah">harga tetap</span>`;
+      return `<div class="mitem" onclick="pilihMember(${i})"><i class="bi bi-person-circle"></i><div class="info"><div class="nm">${m.n}</div><div class="kat">${m.k}</div></div>${tag}</div>`;
+    }).join('') + `<div class="mitem" onclick="lepasMember()" style="border-top:1px solid #f0f2f7;color:#b26a00"><i class="bi bi-person-x"></i><div class="info"><div class="nm">Lepas member</div></div></div>`;
+  }
+  function pilihMember(i){
+    member=MEMBERS[i];
+    document.getElementById('memberPill').classList.add('on');
+    document.getElementById('memberPillTxt').textContent=member.n+' · '+member.k;
+    document.getElementById('mwin').classList.remove('show');
+    toast('Member: '+member.n);
+    renderCart();
+  }
+  function lepasMember(){
+    member=null;
+    document.getElementById('memberPill').classList.remove('on');
+    document.getElementById('memberPillTxt').textContent='Member';
+    document.getElementById('mwin').classList.remove('show');
+    renderCart();
+  }
+  // klik luar untuk menutup menu member
+  document.addEventListener('click',e=>{ if(!e.target.closest('.member')) document.getElementById('mwin').classList.remove('show'); });
+
+  /* ===== Bon gantung ===== */
+  function simpanBon(){
+    if(!cart.length){ toast('Keranjang kosong'); return; }
+    if(!member){ toast('Pilih member dulu sebelum menggantung'); return; }
+    bon.push({ nama: member.n, items: cart.map(c=>({i:c.i,q:c.q})), total: Number(document.getElementById('total').textContent.replace('Rp','').replace(/\./g,'')) });
+    toast('Bon digantung atas nama '+member.n);
+    clearCart();
+  }
+  function bukaBon(){
+    document.getElementById('bonList').innerHTML = bon.length===0
+      ? `<p style="text-align:center;color:#98a2b3;padding:20px 0">Belum ada bon gantung.<br>Isi keranjang + pilih member, lalu klik <b>Gantung</b>.</p>`
+      : bon.map((b,x)=>`
+        <div class="bonRow">
+          <i class="bi bi-bookmark" style="color:#ffb347"></i>
+          <div class="info"><div class="nm">${b.nama}</div><div class="sub">${b.items.reduce((s,it)=>s+it.q,0)} item · ${fmt(b.total)}</div></div>
+          <button onclick="tarikBon(${x})">Tarik</button>
+          <span class="del" onclick="hapusBon(${x})" title="Hapus"><i class="bi bi-trash3"></i></span>
+        </div>`).join('');
+    document.getElementById('bonModal').classList.add('show');
+  }
+  function tarikBon(x){
+    const b=bon[x];
+    cart = b.items.map(it=>({i:it.i,q:it.q}));
+    bon.splice(x,1);
+    document.getElementById('bonModal').classList.remove('show');
+    toast('Bon ditarik');
+    renderCart();
+  }
+  function hapusBon(x){ bon.splice(x,1); bukaBon(); renderCart(); }
+  function tutupBon(){ document.getElementById('bonModal').classList.remove('show'); }
+  document.getElementById('bonModal').addEventListener('click',e=>{ if(e.target.id==='bonModal') tutupBon(); });
+
   function bayar(){
     if(!cart.length){ toast('Keranjang kosong'); return; }
     if(offline) offQtn++; else offQtn=0;
@@ -224,7 +382,7 @@
   document.querySelectorAll('.cat').forEach(c=>c.onclick=()=>{
     document.querySelectorAll('.cat').forEach(x=>x.classList.remove('on')); c.classList.add('on');
   });
-  status(); clock(); setInterval(clock,10000); render(); renderCart();
+  status(); clock(); setInterval(clock,10000); render(); renderCart(); renderMemberList();
 </script>
 </body>
 </html>
