@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { Search, Cart3, XLg, QrCodeScan, ThreeDots, Camera, CheckLg, PersonBadge } from 'react-bootstrap-icons'
+import { Search, Cart3, XLg, QrCodeScan, ThreeDots, Camera, CheckLg, PersonBadge, ListUl, BookmarkPlus, Trash3 } from 'react-bootstrap-icons'
 import PenjualanLain from '@/components/kasir/PenjualanLain'
 import { useProduk } from '@/hooks/useProduk'
 import { useTransaksi } from '@/hooks/useTransaksi'
@@ -20,9 +20,10 @@ const BarcodeCameraModal = dynamic(
   { ssr: false }
 )
 import { Produk, ItemKeranjang, Transaksi, DetailTransaksi, Member } from '@/types'
-import { hitungPajak, hitungTotal, noTrx } from '@/lib/utils'
+import { hitungPajak, hitungTotal, noTrx, fmt } from '@/lib/utils'
 import { hargaEfektif, isGrosir } from '@/lib/dual-pricing'
 import { useMember, useHargaMember } from '@/hooks/useMember'
+import { useBon, Bon } from '@/hooks/useBon'
 
 type ProdukVirtual = { id: number; nama: string; harga: number; stok: number; kategori_id: null; barcode: null; foto_url: null }
 
@@ -34,6 +35,7 @@ export default function KasirPage() {
   const { pajakPersen, alamat, telepon, catatan_struk } = usePengaturan()
   const { anggota } = useMember()
   const { getHarga } = useHargaMember()
+  const { bon, loading: bonLoading, simpan: simpanBon, hapus: hapusBon, tandaiSelesai, reload: reloadBon } = useBon()
 
   const [katId, setKatId] = useState<number | null>(null)
   const [cari, setCari] = useState('')
@@ -59,6 +61,11 @@ export default function KasirPage() {
   const [memberAktif, setMemberAktif] = useState<Member | null>(null)
   const [memberMap, setMemberMap] = useState<Record<number, number>>({})
   const [mlistTerbuka, setMlistTerbuka] = useState(false)
+  // Bon gantung: modal simpan (input nama) + modal daftar (tarik/hapus/bayar).
+  const [showSimpanBon, setShowSimpanBon] = useState(false)
+  const [bonNama, setBonNama] = useState('')
+  const [showListBon, setShowListBon] = useState(false)
+  const [bonErr, setBonErr] = useState('')
 
   const produkFiltered = useMemo(() =>
     produk.filter(p =>
@@ -295,6 +302,26 @@ export default function KasirPage() {
     setMemberMap(map)
   }
 
+  // Bon gantung: simpan keranjang sekarang sbg bon (belum dibayar). Keranjang
+  // dikosongkan setelah tersimpan.
+  async function konfirmSimpanBon() {
+    setBonErr('')
+    try {
+      await simpanBon(keranjang, bonNama.trim() || null, total)
+      setKeranjang({})
+      setVirtualProduk({})
+      setShowSimpanBon(false)
+      setBonNama('')
+    } catch (e) { setBonErr((e as Error).message) }
+  }
+
+  // Tarik bon → isi ulang keranjang (produk id positif), tandai selesai.
+  async function tarikBon(b: Bon) {
+    setKeranjang({ ...b.produk })
+    setShowListBon(false)
+    await tandaiSelesai(b.id)
+  }
+
   const keranjangProps = {
     items, diskon: disc, bayar, metode,
     subtotal, pajak, pajakPersen, total, kembali, kurang,
@@ -340,6 +367,31 @@ export default function KasirPage() {
     </div>
   )
 
+  // Tombol aksi bon gantung: simpan keranjang (jika isi) + buka daftar bon.
+  const bonActions = (
+    <div className="flex items-center gap-1.5">
+      <button onClick={() => setShowSimpanBon(true)} disabled={totalItem === 0}
+        title="Gantung transaksi (simpan keranjang, bayar nanti)"
+        className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+          totalItem === 0 ? 'cursor-not-allowed text-gray-300' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+        }`}>
+        <BookmarkPlus size={13} /> Gantung
+      </button>
+      <button onClick={() => { setShowListBon(true); reloadBon() }}
+        title="Daftar bon gantung"
+        className={`relative flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors ${
+          bon.some(x => !x.selesai) ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+        }`}>
+        <ListUl size={13} />
+        {bon.some(x => !x.selesai) && (
+          <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center font-bold">
+            {bon.filter(x => !x.selesai).length}
+          </span>
+        )}
+      </button>
+    </div>
+  )
+
   return (
     <>
       <ShiftBanner />
@@ -381,6 +433,7 @@ export default function KasirPage() {
               </div>
               <div className="flex items-center gap-2">
                 {memberPicker}
+                {bonActions}
                 <div className="flex-1">{filterChips}</div>
               </div>
               <div className="flex-1 overflow-y-auto">
@@ -409,7 +462,7 @@ export default function KasirPage() {
             <Camera size={18} />
           </button>
         </div>
-        <div className="flex items-center gap-2">{memberPicker}</div>
+        <div className="flex items-center gap-2">{memberPicker}{bonActions}</div>
         <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
           <button onClick={() => setTab('produk')}
             className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors ${tab === 'produk' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>
@@ -530,6 +583,66 @@ export default function KasirPage() {
           </div>
         </div>
       )}
+      {/* Modal simpan bon gantung */}
+      {showSimpanBon && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-semibold text-gray-800">Gantung Transaksi</span>
+              <button onClick={() => setShowSimpanBon(false)} className="p-1.5 rounded-full hover:bg-gray-100"><XLg size={16} className="text-gray-500" /></button>
+            </div>
+            <p className="text-sm text-gray-500 mb-3">Keranjang ({totalItem} item, {fmt(total)}) disimpan & bisa dilanjutkan kapan saja.</p>
+            <label className="text-xs text-gray-500">Nama / keterangan <span className="text-gray-300">(opsional)</span></label>
+            <input value={bonNama} onChange={e => setBonNama(e.target.value)}
+              placeholder="Contoh: karyawan, Bu Rina, cicil"
+              autoFocus className="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400"
+              onKeyDown={e => { if (e.key === 'Enter') konfirmSimpanBon() }} />
+            {bonErr && <p className="text-sm text-red-600 mt-2">{bonErr}</p>}
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => setShowSimpanBon(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Batal</button>
+              <button onClick={konfirmSimpanBon} disabled={totalItem === 0}
+                className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50">Gantung</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal daftar bon gantung */}
+      {showListBon && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <span className="font-semibold text-gray-800">Bon Gantung</span>
+              <div className="flex items-center gap-1">
+                <button onClick={() => { reloadBon() }} className="p-1.5 rounded-full hover:bg-gray-100"><ListUl size={16} className="text-gray-500" /></button>
+                <button onClick={() => setShowListBon(false)} className="p-1.5 rounded-full hover:bg-gray-100"><XLg size={16} className="text-gray-500" /></button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {bonLoading && <div className="py-8 text-center text-sm text-gray-400">Memuat...</div>}
+              {!bonLoading && bon.filter(x => !x.selesai).length === 0 && (
+                <div className="py-8 text-center text-sm text-gray-400">Belum ada bon gantung aktif.<br />Gunakan tombol <b className="text-amber-600">Gantung</b> utk menyimpan keranjang.</div>
+              )}
+              {bon.filter(x => !x.selesai).map(b => {
+                const jumlah = Object.values(b.produk).reduce((s, q) => s + q, 0)
+                return (
+                  <div key={b.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-800 truncate">{b.nama || `Bon #${b.id}`}</div>
+                      <div className="text-xs text-gray-400">{jumlah} item · {fmt(b.total)}</div>
+                    </div>
+                    <button onClick={() => tarikBon(b)}
+                      className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700">Tarik</button>
+                    <button onClick={() => { if (confirm(`Hapus bon ${b.nama || '#'+b.id}?`)) hapusBon(b.id) }}
+                      className="p-2 text-gray-400 hover:text-red-500"><Trash3 size={14} /></button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <StrukModal
         transaksi={struk}
         toko={{ nama: toko?.nama ?? '', alamat, telepon, catatan_struk }}
