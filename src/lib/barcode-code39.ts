@@ -33,6 +33,16 @@ export function generateProductBarcode(id: number): string {
   return base + String(check)
 }
 
+// true kalau barcode ini DIBUAT internal ZPos (prefix '2' + 11 digit + Luhn),
+// bukan barcode asli kemasan. Dipakai UI utk kasih tahu admin kalau produk
+// perlu discan barcode aslinya. Sedikit bisa false-positive kalau barcode
+// real kebetulan mulai '2', 13 digit, & Luhn valid — jarang, dan efeknya
+// cuma hint UI, tak memblokir apa pun.
+export function isInternalBarcode(bc?: string | null): boolean {
+  if (!bc) return false
+  return /^2\d{12}$/.test(bc) && Number(luhn(bc.slice(0, 12))) === Number(bc[12])
+}
+
 // Checksum Luhn (mod 10) — yang dipakai kartu, juga valid utk barcode numerik.
 // Kembalikan digit cek (0-9) supaya num + digit cek habis dibagi 10.
 // Untuk KALKULASI checksum: digit paling kanan dari `num` di-double dulu
