@@ -61,9 +61,8 @@ export default function KasirPage() {
   const [memberAktif, setMemberAktif] = useState<Member | null>(null)
   const [memberMap, setMemberMap] = useState<Record<number, number>>({})
   const [mlistTerbuka, setMlistTerbuka] = useState(false)
-  // Bon gantung: modal simpan (input nama) + modal daftar (tarik/hapus/bayar).
+  // Bon gantung: modal simpan (butuh member aktif) + modal daftar (tarik/hapus/bayar).
   const [showSimpanBon, setShowSimpanBon] = useState(false)
-  const [bonNama, setBonNama] = useState('')
   const [showListBon, setShowListBon] = useState(false)
   const [bonErr, setBonErr] = useState('')
 
@@ -302,17 +301,25 @@ export default function KasirPage() {
     setMemberMap(map)
   }
 
-  // Bon gantung: simpan keranjang sekarang sbg bon (belum dibayar). Keranjang
-  // dikosongkan setelah tersimpan.
+  // Bon gantung: simpan keranjang sekarang sbg bon (belum dibayar). WAJIB ada
+  // member aktif — nama member dipakai sbg keterangan bon.
   async function konfirmSimpanBon() {
+    if (!memberAktif) { setShowSimpanBon(false); return }
     setBonErr('')
     try {
-      await simpanBon(keranjang, bonNama.trim() || null, total)
+      await simpanBon(keranjang, memberAktif.nama, total)
       setKeranjang({})
       setVirtualProduk({})
       setShowSimpanBon(false)
-      setBonNama('')
     } catch (e) { setBonErr((e as Error).message) }
+  }
+
+  // Buka modal simpan bon. Wajib member aktif — kalau belum, buka list member.
+  function bukaSimpanBon() {
+    if (totalItem === 0) return
+    if (!memberAktif) { setMlistTerbuka(true); return }  // minta pilih member dulu
+    setBonErr('')
+    setShowSimpanBon(true)
   }
 
   // Tarik bon → isi ulang keranjang (produk id positif), tandai selesai.
@@ -327,7 +334,7 @@ export default function KasirPage() {
     subtotal, pajak, pajakPersen, total, kembali, kurang,
     onUbahQty: ubahQty, onDiskon: setDiskon, onBayar: setBayar,
     onMetode: setMetode, onBayarSekarang: bayarSekarang,
-    onGantung: () => setShowSimpanBon(true),
+    onGantung: bukaSimpanBon,
     onListBon: () => { setShowListBon(true); reloadBon() },
     bonAktif: bon.filter(x => !x.selesai).length,
   }
@@ -373,8 +380,8 @@ export default function KasirPage() {
   // Tombol aksi bon gantung: simpan keranjang (jika isi) + buka daftar bon.
   const bonActions = (
     <div className="flex items-center gap-1.5">
-      <button onClick={() => setShowSimpanBon(true)} disabled={totalItem === 0}
-        title="Gantung transaksi (simpan keranjang, bayar nanti)"
+      <button onClick={bukaSimpanBon} disabled={totalItem === 0}
+        title="Gantung transaksi (butuh member aktif)"
         className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
           totalItem === 0 ? 'cursor-not-allowed text-gray-300' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
         }`}>
@@ -594,16 +601,16 @@ export default function KasirPage() {
               <span className="font-semibold text-gray-800">Gantung Transaksi</span>
               <button onClick={() => setShowSimpanBon(false)} className="p-1.5 rounded-full hover:bg-gray-100"><XLg size={16} className="text-gray-500" /></button>
             </div>
-            <p className="text-sm text-gray-500 mb-3">Keranjang ({totalItem} item, {fmt(total)}) disimpan & bisa dilanjutkan kapan saja.</p>
-            <label className="text-xs text-gray-500">Nama / keterangan <span className="text-gray-300">(opsional)</span></label>
-            <input value={bonNama} onChange={e => setBonNama(e.target.value)}
-              placeholder="Contoh: karyawan, Bu Rina, cicil"
-              autoFocus className="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400"
-              onKeyDown={e => { if (e.key === 'Enter') konfirmSimpanBon() }} />
+            <p className="text-sm text-gray-500 mb-3">Keranjang ({totalItem} item, {fmt(total)}) digantung atas nama member berikut & bisa dilanjutkan kapan saja.</p>
+            <label className="text-xs text-gray-500">Member</label>
+            <div className="flex items-center gap-2 mt-1 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2.5">
+              <PersonBadge size={16} className="text-emerald-600 shrink-0" />
+              <span className="text-sm font-medium text-emerald-800">{memberAktif?.nama}</span>
+            </div>
             {bonErr && <p className="text-sm text-red-600 mt-2">{bonErr}</p>}
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowSimpanBon(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Batal</button>
-              <button onClick={konfirmSimpanBon} disabled={totalItem === 0}
+              <button onClick={konfirmSimpanBon} disabled={totalItem === 0 || !memberAktif}
                 className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50">Gantung</button>
             </div>
           </div>
