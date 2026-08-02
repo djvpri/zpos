@@ -23,6 +23,7 @@ export async function GET(req: Request) {
     total: r.total,
     selesai: r.selesai,
     created_at: r.created_at,
+    dibayar_at: r.dibayar_at,
   }))
   return NextResponse.json(out)
 }

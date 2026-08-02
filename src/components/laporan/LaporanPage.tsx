@@ -12,7 +12,7 @@ const fmtDT = (d: string) => `${fmtDate(d)} ${fmtTime(d)}`
 interface BonRow {
   id: number
   nama: string | null
-  produk_json: Record<string, number>
+  produk: Record<string, number>
   total: number
   selesai: boolean
   created_at: string
@@ -84,7 +84,7 @@ export default function LaporanPage() {
     if (bonLoaded) return
     setLoadingBon(true)
     try {
-      const res = await fetch('/api/bon')
+      const res = await fetch('/api/bon?semua=1')
       if (!res.ok) throw new Error('gagal')
       const data = await res.json()
       setBon(data)
@@ -106,7 +106,7 @@ export default function LaporanPage() {
     const head = ['ID', 'Member', 'Jumlah Item', 'Total (Rp)', 'Status', 'Dibuat', 'Dibayar']
     const rows = bon.map(b => [
       b.id, b.nama || '-',
-      Object.values(b.produk_json).reduce((s, n) => s + n, 0),
+      Object.values(b.produk).reduce((s, n) => s + n, 0),
       b.total, b.selesai ? 'Selesai' : 'Belum Dibayar',
       b.created_at ? fmtDT(b.created_at) : '', b.dibayar_at ? fmtDT(b.dibayar_at) : '',
     ])
@@ -390,7 +390,7 @@ export default function LaporanPage() {
                       </thead>
                       <tbody>
                         {bon.map(b => {
-                          const item = Object.values(b.produk_json).reduce((s, n) => s + n, 0)
+                          const item = Object.values(b.produk).reduce((s, n) => s + n, 0)
                           return (
                             <tr key={b.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
                               <td className="px-4 py-3 font-medium text-gray-800">{b.nama || `Bon #${b.id}`}</td>
