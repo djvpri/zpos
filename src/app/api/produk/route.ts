@@ -4,6 +4,7 @@ import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
 import { embedProduk } from '@/lib/zface-visual'
 import { buatThumbnail } from '@/lib/thumbnail'
+import { catatBarcode } from '@/lib/barcode-katalog'
 import { produkSchema } from '@/lib/validation'
 import { generateProductBarcode } from '@/lib/barcode-code39'
 import { apiHandler } from '@/lib/api-handler'
@@ -107,6 +108,20 @@ export const POST = apiHandler(async (req: Request, body: z.infer<typeof produkS
       tokoId: toko.tokoId,
       fotoUrl: row.foto_url,
     }).catch(() => {})
+  }
+
+  // Belajar otomatis: setiap produk baru yang ber-barcode memperkaya katalog
+  // barcode pusat, supaya saran input makin lengkap sepanjang ZPos dipakai.
+  if (row.barcode) {
+    const [kat] = row.kategori_id
+      ? await sql`SELECT nama FROM kategori WHERE id = ${row.kategori_id}`
+      : [null]
+    void catatBarcode({
+      barcode: row.barcode,
+      nama: row.nama,
+      merek: null,
+      kategori: kat?.nama || null,
+    })
   }
 
   return NextResponse.json(row)

@@ -117,6 +117,29 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     }
   }
 
+  // Auto-suggest dari katalog barcode pusat (barcode_katalog) saat kasir scan /
+  // ketik barcode yang belum dikenali toko ini. Hanya mengisi bila nama masih
+  // kosong (tak menimpa input yang sudah ada). null response = barcode tak ada
+  // di katalog — kasir tetap bisa input manual.
+  const sugestikan = async (barcode: string) => {
+    const bc = (barcode || '').trim()
+    if (bc.length < 8 || form.nama.trim()) return
+    setEr('')
+    try {
+      const res = await fetch(`/api/barcode-katalog/${encodeURIComponent(bc)}`, { cache: 'no-store' })
+      if (!res.ok) return // 404 = tak dikenal → diam, biar kasir input manual
+      const d = await res.json()
+      // Cek lagi jangan sampai user sudah mengetik nama sambil menunggu.
+      if (d.nama && !form.nama.trim()) {
+        setForm(f => ({ ...f, nama: d.nama }))
+        // Saran kategori dari katalog: auto-pilih bila ada & belum ada.
+        if (d.kategori) await pakaiSaranKat(d.kategori).catch(() => {})
+      }
+    } catch {
+      // jaringan — diam, tidak usah ganggu alur input.
+    }
+  }
+
 
   // Deteksi nama produk otomatis dari foto (proxy server → Gemini). Bentar,
   // isi field nama; admin tetap bisa edit.
@@ -282,7 +305,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
               <input
                 className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400"
                 value={form.barcode}
-                onChange={e => set('barcode', e.target.value)}
+                onChange={e => { set('barcode', e.target.value); void sugestikan(e.target.value) }}
                 placeholder="Scan atau ketik barcode..."
                 onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
               />
@@ -412,7 +435,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
 
       {scanBarcode && (
         <BarcodeCameraModal
-          onScan={code => { set('barcode', code); setScanBarcode(false) }}
+          onScan={code => { set('barcode', code); setScanBarcode(false); void sugestikan(code) }}
           onTutup={() => setScanBarcode(false)}
         />
       )}
