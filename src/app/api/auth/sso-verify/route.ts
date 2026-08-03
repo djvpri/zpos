@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 import sql from '@/lib/db'
 import { signToken } from '@/lib/auth'
+import { confirmDeviceLogin } from '@/lib/device-login'
 import { getCrossAppSecret } from '@/lib/secrets'
 
 // Terima SSO token dari Z One, cocokkan ke user ZPOS, buat sesi ZPOS
 export async function POST(req: NextRequest) {
   try {
-    const { token } = await req.json()
+    const { token, device } = await req.json()
     if (!token) return NextResponse.json({ error: 'Token wajib diisi' }, { status: 400 })
 
     // 1. Verifikasi token dari Z One
@@ -71,6 +72,13 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 30, // 30 hari
       path: '/',
     })
+
+    // Jika SSO ini berasal dari pairing QR desktop (query device hadir),
+    // sangkut token ZPos ke baris device_login — desktop nanti poll mendapat token.
+    if (device && typeof device === 'string') {
+      await confirmDeviceLogin(device, sessionToken, user.email, user.plan)
+    }
+
     return res
   } catch (err) {
     console.error('SSO verify error:', err)

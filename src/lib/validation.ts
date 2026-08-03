@@ -112,6 +112,15 @@ export const memberSchema = z.object({
   kategori_member_id: z.number().int().positive().nullable(),
 })
 
+// ===== Device login (QR pairing desktop ZPos Windows) =====
+export const qrDeviceSchema = z.object({
+  device_code: z.string().min(8).max(16),
+})
+export const qrConfirmSchema = z.object({
+  device_code: z.string().min(8).max(16),
+  token: z.string().min(1),
+})
+
 export const hargaMemberSchema = z.object({
   produk_id: z.number().int().positive(),
   kategori_member_id: z.number().int().positive(),
