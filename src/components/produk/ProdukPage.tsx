@@ -16,6 +16,7 @@ const ScanBarcodeMassal = dynamic(() => import('./ScanBarcodemassal'), { ssr: fa
 const TambahCepat = dynamic(() => import('./TambahCepat'), { ssr: false })
 const LabelCetak = dynamic(() => import('./LabelCetak'), { ssr: false })
 const ImportBarcodeKatalog = dynamic(() => import('./ImportBarcodeKatalog'), { ssr: false })
+const KatalogBarcodeModal = dynamic(() => import('./KatalogBarcodeModal'), { ssr: false })
 const TemplateProduk = dynamic(() => import('./TemplateProduk'), { ssr: false })
 const BarcodeCameraModal = dynamic(
   () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
@@ -46,6 +47,7 @@ export default function ProdukPage() {
   const [showFoto, setShowFoto] = useState(false)
   const [showScanMassal, setShowScanMassal] = useState(false)
   const [showKatalogImport, setShowKatalogImport] = useState(false)
+  const [showKatalogLihat, setShowKatalogLihat] = useState(false)
   const [showCepat, setShowCepat] = useState(false)
   const [showLabel, setShowLabel] = useState(false)
   const [showTemplate, setShowTemplate] = useState(false)
@@ -179,6 +181,13 @@ export default function ProdukPage() {
               className="flex items-center gap-2 px-4 py-2 border border-green-200 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors"
             >
               <FileEarmarkSpreadsheet size={16} /> Katalog
+            </button>
+            <button
+              onClick={() => setShowKatalogLihat(true)}
+              title="Lihat isi katalog barcode global"
+              className="flex items-center gap-2 px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+            >
+              <FileEarmarkSpreadsheet size={16} /> Lihat Katalog
             </button>
             <button
               onClick={exportExcel}
@@ -491,6 +500,7 @@ export default function ProdukPage() {
       {showScanMassal && <ScanBarcodeMassal onSelesai={fetchProduk} onTutup={() => setShowScanMassal(false)} tambahOffline={tambah} />}
       {showImport && <ImportProduk onSelesai={fetchProduk} onTutup={() => setShowImport(false)} tambahOffline={tambah} />}
       {showKatalogImport && <ImportBarcodeKatalog onTutup={() => setShowKatalogImport(false)} />}
+      {showKatalogLihat && <KatalogBarcodeModal onTutup={() => setShowKatalogLihat(false)} />}
       {showFoto && <UploadFotoProduk onClose={() => { setShowFoto(false); fetchProduk() }} />}
       {showCepat && <TambahCepat onSelesai={() => { setShowCepat(false); fetchProduk() }} onTutup={() => setShowCepat(false)} />}
       {showLabel && <LabelCetak produk={produk} onSelesai={() => { setShowLabel(false); fetchProduk() }} onTutup={() => setShowLabel(false)} update={update} />}
