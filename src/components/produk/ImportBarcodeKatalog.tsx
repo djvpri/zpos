@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { Upload, XLg, CheckCircleFill, ExclamationCircle, FileEarmarkSpreadsheet } from 'react-bootstrap-icons'
+import { XLg, CheckCircleFill, ExclamationCircle, FileEarmarkSpreadsheet } from 'react-bootstrap-icons'
 import * as XLSX from 'xlsx'
 
 // Import Barcode Katalog (global, lintas toko). Layar: admin memilih file Excel
@@ -9,6 +9,8 @@ import * as XLSX from 'xlsx'
 // auto-suggest nama saat kasir input produk baru.
 
 interface Props { onTutup: () => void }
+
+interface Item { barcode: string; nama: string; merek?: string; kategori?: string }
 
 interface Hasil {
   berhasil: number
@@ -25,6 +27,7 @@ export default function ImportBarcodeKatalog({ onTutup }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState<'upload' | 'proses' | 'selesai'>('upload')
   const [count, setCount] = useState(0)
+  const [progres, setProgres] = useState<{ done: number; total: number }>({ done: 0, total: 0 })
   const [hasil, setHasil] = useState<Hasil | null>(null)
   const [error, setError] = useState('')
   const [fname, setFname] = useState('')
@@ -58,6 +61,7 @@ export default function ImportBarcodeKatalog({ onTutup }: Props) {
           }))
         if (!items.length) { setError('File kosong atau kolom tidak sesuai template'); return }
         setCount(items.length)
+        setProgres({ done: 0, total: items.length })
         setFname(file.name)
         setStep('proses')
         void upload(items)
@@ -69,16 +73,28 @@ export default function ImportBarcodeKatalog({ onTutup }: Props) {
     e.target.value = ''
   }
 
-  async function upload(items: { barcode: string; nama: string; merek?: string; kategori?: string }[]) {
+  // Upload dalam batch (5000/batch) supaya progres mengalir — tak terasa hang
+  // untuk data 50rb+. Tiap batch selesai → akumulasi hasil + update bar progres.
+  const BATCH = 5000
+  async function upload(items: Item[]) {
+    const akum: Hasil = { berhasil: 0, gagal: 0, errors: [] }
     try {
-      const res = await fetch('/api/barcode-katalog/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
-      })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Gagal impor.'); setStep('upload'); return }
-      setHasil({ berhasil: data.berhasil ?? 0, gagal: data.gagal ?? 0, errors: data.errors ?? [] })
+      for (let i = 0; i < items.length; i += BATCH) {
+        const batch = items.slice(i, i + BATCH)
+        const res = await fetch('/api/barcode-katalog/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: batch }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) { setError(data.error || 'Gagal impor.'); setStep('upload'); return }
+        akum.berhasil += data.berhasil ?? 0
+        akum.gagal += data.gagal ?? 0
+        akum.errors.push(...(data.errors ?? []))
+        // Kemajuan: jumlah item yang sudah diproses server.
+        setProgres({ done: Math.min(i + batch.length, items.length), total: items.length })
+      }
+      setHasil(akum)
       setStep('selesai')
     } catch {
       setError('Gagal terhubung ke server.'); setStep('upload')
@@ -120,10 +136,30 @@ export default function ImportBarcodeKatalog({ onTutup }: Props) {
         )}
 
         {step === 'proses' && (
-          <div className="text-center py-8">
-            <Upload size={24} className="mx-auto text-indigo-500 mb-3" />
-            <p className="text-sm text-gray-700">Mengimpor <b>{count.toLocaleString('id-ID')}</b> baris dari <b>{fname}</b>...</p>
-            <p className="text-xs text-gray-400 mt-1">Bisa butuh beberapa detik untuk data besar.</p>
+          <div className="py-6">
+            <p className="text-sm text-gray-700 text-center mb-3">
+              Mengimpor <b>{count.toLocaleString('id-ID')}</b> baris dari <b>{fname}</b>...
+            </p>
+            {(() => {
+              const pct = progres.total ? Math.round((progres.done / progres.total) * 100) : 0
+              return (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>{progres.done.toLocaleString('id-ID')} / {progres.total.toLocaleString('id-ID')}</span>
+                    <span className="font-semibold text-indigo-600">{pct}%</span>
+                  </div>
+                  <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-400 text-center pt-1">
+                    {progres.done === 0 ? 'Memulai...' : pct < 100 ? 'Terus berjalan... jangan tutup jendela.' : 'Hampir selesai...'}
+                  </p>
+                </div>
+              )
+            })()}
           </div>
         )}
 
