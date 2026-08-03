@@ -3,6 +3,7 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { shiftSchema } from '@/lib/validation'
 import { apiHandler } from '@/lib/api-handler'
+import { catatAktivitas } from '@/lib/aktivitas'
 
 const withTotals = (tokoId: number) => sql`
   SELECT
@@ -46,5 +47,10 @@ export const POST = apiHandler(async (req: Request, body: { modal_awal?: number 
     VALUES (${toko.tokoId}, ${toko.userId}, ${toko.userName}, ${Math.max(0, Number(body.modal_awal ?? 0) || 0)})
     RETURNING *
   `
+
+  // Audit: catat buka shift + modal awal (cek penggelembungan modal/kecurangan).
+  void catatAktivitas(toko, 'shift_buka',
+    `Buka shift #${shift.id} · modal Rp ${Number(shift.modal_awal || 0).toLocaleString('id-ID')}`)
+
   return NextResponse.json(shift)
 }, { schema: shiftSchema })

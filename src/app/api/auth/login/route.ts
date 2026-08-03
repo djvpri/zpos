@@ -5,6 +5,7 @@ import { signToken } from '@/lib/auth'
 import { bolehLogin, catatGagal, resetPercobaan, ipDari } from '@/lib/ratelimit'
 import { loginSchema } from '@/lib/validation'
 import { apiHandler } from '@/lib/api-handler'
+import { catatAktivitas } from '@/lib/aktivitas'
 
 export const POST = apiHandler(async (req: Request, body: { email: string; password: string }) => {
   const { email, password } = body
@@ -53,5 +54,12 @@ export const POST = apiHandler(async (req: Request, body: { email: string; passw
     maxAge: 60 * 60 * 24 * 30,
     path: '/',
   })
+
+  // Audit: catat login sukses (fire-and-forget, tak blok respons).
+  void catatAktivitas(
+    { tokoId: user.toko_id, userId: user.id, userName: user.nama, role: user.role },
+    'login',
+    `Login via web dari IP ${ip}`,
+  )
   return res
 }, { schema: loginSchema })

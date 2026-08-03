@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { apiHandler } from '@/lib/api-handler'
+import { catatAktivitas } from '@/lib/aktivitas'
 
 // PATCH tandai bon selesai (dibayar/selesai ditarik). Body { selesai: true }.
 // Kalau false → aktifkan kembali (jarang, tapi ada utk undo).
@@ -20,6 +21,9 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai: boolean },
     RETURNING id, selesai, dibayar_at
   `
   if (!row) return NextResponse.json({ error: 'Bon tidak ditemukan' }, { status: 404 })
+
+  void catatAktivitas(toko, 'bon_bayar',
+    `Bon #${row.id} ${selesai ? 'dibayar/selesai' : 'diaktifkan kembali'}`)
   return NextResponse.json(row)
 })
 
@@ -31,5 +35,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
   const id = Number((await context.params).id)
   const [row] = await sql`DELETE FROM bon WHERE id = ${id} AND toko_id = ${toko.tokoId} RETURNING id`
   if (!row) return NextResponse.json({ error: 'Bon tidak ditemukan' }, { status: 404 })
+
+  void catatAktivitas(toko, 'data_hapus', `Bon #${id} dihapus permanen`)
   return NextResponse.json({ ok: true })
 }

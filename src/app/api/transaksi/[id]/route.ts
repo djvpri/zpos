@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
+import { catatAktivitas } from '@/lib/aktivitas'
 
 // Batalkan (void) transaksi: kembalikan stok & keluarkan dari laporan.
 // Hanya admin. Tidak menghapus baris agar jejak audit tetap ada.
@@ -13,7 +14,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const trxId = parseInt(id)
 
   const [trx] = await sql`
-    SELECT id, dibatalkan FROM transaksi WHERE id = ${trxId} AND toko_id = ${toko.tokoId}
+    SELECT id, no_transaksi, total, dibatalkan FROM transaksi WHERE id = ${trxId} AND toko_id = ${toko.tokoId}
   `
   if (!trx) return NextResponse.json({ error: 'Transaksi tidak ditemukan' }, { status: 404 })
   if (trx.dibatalkan) return NextResponse.json({ error: 'Transaksi sudah dibatalkan' }, { status: 400 })
@@ -32,6 +33,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     await sql`UPDATE transaksi SET dibatalkan = true WHERE id = ${trxId}`
   })
+
+  // Audit: catat pembatalan (kritis utk cek kecurangan kasir).
+  void catatAktivitas(toko, 'transaksi_batal',
+    `${trx.no_transaksi} · Rp ${Number(trx.total).toLocaleString('id-ID')} · stok dikembalikan`)
 
   return NextResponse.json({ ok: true })
 }

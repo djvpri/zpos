@@ -4,6 +4,7 @@ import { getTokoFromRequest } from '@/lib/auth'
 import { embedProduk, hapusEmbedding } from '@/lib/zface-visual'
 import { produkUpdateSchema } from '@/lib/validation'
 import { apiHandler } from '@/lib/api-handler'
+import { catatAktivitas } from '@/lib/aktivitas'
 import { z } from 'zod'
 import type { Produk } from '@/types'
 
@@ -72,6 +73,18 @@ export const PUT = apiHandler(async (req: Request, body: z.infer<typeof produkUp
     }).catch(() => {})
   }
 
+  // Audit: catat perubahan produk — sorot perubahan harga (kecurangan paling umum).
+  const ubahHarga = () => {
+    const lama = Number(existing.harga)
+    const baru = Number(row.harga)
+    const bagian = []
+    if (lama !== baru) bagian.push(`harga Rp ${lama.toLocaleString('id-ID')} → Rp ${baru.toLocaleString('id-ID')}`)
+    if (existing.nama !== row.nama) bagian.push(`nama "${existing.nama}" → "${row.nama}"`)
+    if (Number(existing.stok) !== Number(row.stok)) bagian.push(`stok ${existing.stok} → ${row.stok}`)
+    return bagian.length ? `#${row.id} ${[...bagian].join(' · ')}` : `#${row.id} update detail`
+  }
+  void catatAktivitas(toko, 'produk_ubah', ubahHarga())
+
   return NextResponse.json(row)
 }, { schema: produkUpdateSchema })
 
@@ -80,6 +93,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
+  const [existing] = await sql`SELECT nama, harga FROM produk WHERE id = ${Number(id)} AND toko_id = ${toko.tokoId}`
+  if (existing) {
+    void catatAktivitas(toko, 'produk_hapus',
+      `"${existing.nama}" (harga Rp ${Number(existing.harga).toLocaleString('id-ID')}) dihapus/tak aktif`)
+  }
   await sql`UPDATE produk SET aktif = false WHERE id = ${Number(id)} AND toko_id = ${toko.tokoId}`
   hapusEmbedding({ produkId: Number(id), tokoId: toko.tokoId }).catch(() => {})
   return NextResponse.json({ ok: true })

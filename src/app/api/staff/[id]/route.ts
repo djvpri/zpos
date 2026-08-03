@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
+import { catatAktivitas } from '@/lib/aktivitas'
 
 // Kelola status & role user dalam satu toko (bukan create — akun dibuat via ZOne).
 // Soft-delete (nonaktif) konsisten dengan /api/admin/cross-app action 'delete',
@@ -53,6 +54,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const [updated] = await sql`SELECT id, nama, email, role, aktif FROM "user" WHERE id = ${userId}`
+
+  // Audit: perubahan role/status staff — krusial utk cek kasir mengangkat dirinya sendiri.
+  if (role !== undefined) {
+    void catatAktivitas(auth, 'staff_ubah',
+      `Role ${target.nama || `#${userId}`} ${target.role} → ${role}`)
+  }
+  if (aktif !== undefined) {
+    const aksi: 'staff_tambah' | 'staff_hapus' = aktif ? 'staff_tambah' : 'staff_hapus'
+    void catatAktivitas(auth, aksi,
+      `${target.nama || `#${userId}`} di${aktif ? 'aktifkan' : 'nonaktifkan'}`)
+  }
+
   return NextResponse.json(updated)
 }
 
@@ -69,12 +82,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
 
   const [staff] = await sql`
-    SELECT id FROM "user"
+    SELECT id, nama FROM "user"
     WHERE id = ${staffId} AND toko_id = ${auth.tokoId}
   `
   if (!staff) return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 })
 
   // Soft-delete: nonaktif, bukan hapus baris (histori shift aman).
   await sql`UPDATE "user" SET aktif = false WHERE id = ${staffId}`
+
+  void catatAktivitas(auth, 'staff_hapus', `Staff #${staffId} "${staff.nama}" dinonaktifkan`)
   return NextResponse.json({ ok: true })
 }

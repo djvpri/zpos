@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
+import { catatAktivitas } from '@/lib/aktivitas'
 
 // GET: detail shift + totals (untuk rekap sebelum tutup)
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -58,5 +59,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     WHERE s.id = ${Number(id)}
     GROUP BY s.id
   `
+
+  // Audit: rekap tutup shift — siapa pegang berapa (inti deteksi kecurangan).
+  void catatAktivitas(toko, 'shift_tutup',
+    `Tutup shift #${shift.id} · ${detail.jumlah_transaksi ?? 0} trx · tunai Rp ${Number(detail.total_tunai || 0).toLocaleString('id-ID')} · non-tunai Rp ${Number((detail.total_qris || 0) + (detail.total_transfer || 0)).toLocaleString('id-ID')} · total Rp ${Number(detail.total_penjualan || 0).toLocaleString('id-ID')}`)
+
   return NextResponse.json(detail)
 }

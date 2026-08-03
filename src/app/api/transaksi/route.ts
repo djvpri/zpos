@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
+import { catatAktivitas } from '@/lib/aktivitas'
 import type { Transaksi, DetailTransaksi } from '@/types'
 
 export async function POST(req: Request) {
@@ -49,6 +50,10 @@ export async function POST(req: Request) {
     }))
     await sql`INSERT INTO detail_transaksi ${sql(rows)}`
   }
+
+  // Audit: catat transaksi baru (metode bayar + total, utk cek kecurangan).
+  void catatAktivitas(toko, 'transaksi_buat',
+    `${saved.no_transaksi} · ${trx.metode_bayar ?? '-'} · Rp ${Number(saved.total).toLocaleString('id-ID')} · ${items.length} item`)
 
   return NextResponse.json(saved)
 }
