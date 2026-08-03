@@ -8,6 +8,7 @@ function SsoContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
+  const device = searchParams.get('device')
   const [status, setStatus] = useState<'loading' | 'error'>('loading')
   const [msg, setMsg] = useState('')
 
@@ -23,7 +24,7 @@ function SsoContent() {
     fetch('/api/auth/sso-verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token, device }),
     })
       .then(r => r.json())
       .then(d => {
@@ -40,7 +41,7 @@ function SsoContent() {
         setStatus('error')
         setMsg('Tidak dapat terhubung ke server ZPOS')
       })
-  }, [token, router])
+  }, [token, device, router])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
