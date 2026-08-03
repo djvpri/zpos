@@ -11,6 +11,7 @@ const LABEL: Record<string, string> = {
   laporan: 'Laporan Penjualan',
   staff: 'Kelola Staff',
   pengaturan: 'Pengaturan',
+  'stock-opname': 'Stock Opname',
 }
 
 interface Props {

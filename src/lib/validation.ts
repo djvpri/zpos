@@ -127,3 +127,15 @@ export const hargaMemberSchema = z.object({
   harga: z.number().int().positive('Harga harus lebih dari 0'),
   toko_id: z.number().int().positive().optional(),
 })
+
+// ===== Stock Opname (SO) =====
+export const stockOpnameBuatSchema = z.object({
+  nama: z.string().max(200).optional(),
+  scope: z.enum(['semua', 'kategori']).default('semua'),
+  kategori_id: z.number().int().positive().nullable().optional(),
+})
+export const stockOpnameScanSchema = z.object({
+  barcode: z.string().min(1, 'Barcode wajib diisi').max(64),
+  qty: z.number().int().min(1).max(9999).default(1),
+})
+export const stockOpnameSelesaiSchema = z.object({})

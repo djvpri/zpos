@@ -11,11 +11,12 @@ import MemberPage from '@/components/member/MemberPage'
 import PengaturanPage from '@/components/pengaturan/PengaturanPage'
 import LisensiPage from '@/components/lisensi/LisensiPage'
 import TokoOnlinePage from '@/components/toko-online/TokoOnlinePage'
-import { Receipt, Box, BarChartLine, People, PersonBadge, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle, Shop } from 'react-bootstrap-icons'
+import StockOpnamePage from '@/components/stock-opname/StockOpnamePage'
+import { Receipt, Box, BarChartLine, People, PersonBadge, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle, Shop, ClipboardCheck } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import { fmtDate } from '@/lib/utils'
 
-type Halaman = 'kasir' | 'produk' | 'member' | 'laporan' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online'
+type Halaman = 'kasir' | 'produk' | 'member' | 'laporan' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online' | 'stock-opname'
 
 const NAV_OWNER = [
   { id: 'kasir' as Halaman, icon: Receipt, label: 'Kasir' },
@@ -24,6 +25,7 @@ const NAV_OWNER = [
   { id: 'laporan' as Halaman, icon: BarChartLine, label: 'Laporan' },
   { id: 'staff' as Halaman, icon: People, label: 'Staff' },
   { id: 'lisensi' as Halaman, icon: CardChecklist, label: 'Lisensi' },
+  { id: 'stock-opname' as Halaman, icon: ClipboardCheck, label: 'Stock Opname' },
   { id: 'toko-online' as Halaman, icon: Shop, label: 'Toko Online' },
   { id: 'pengaturan' as Halaman, icon: Gear, label: 'Atur' },
 ]
@@ -168,6 +170,7 @@ export default function AppPage() {
           {halaman === 'staff' && isOwner && <StaffPage />}
           {halaman === 'lisensi' && isOwner && <LisensiPage />}
           {halaman === 'toko-online' && isOwner && <TokoOnlinePage />}
+          {halaman === 'stock-opname' && isOwner && <StockOpnamePage />}
           {halaman === 'pengaturan' && isOwner && <PengaturanPage />}
         </main>
       </div>
