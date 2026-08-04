@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
+import bcrypt from 'bcryptjs'
 import { getTokoFromRequest } from '@/lib/auth'
 import { catatAktivitas } from '@/lib/aktivitas'
 
@@ -19,10 +20,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const [diri] = await sql`SELECT id FROM "user" WHERE id = ${auth.userId}`
 
   const body = await req.json().catch(() => ({}))
-  const { role, aktif } = body
+  const { role, aktif, pin } = body
 
-  if (role === undefined && aktif === undefined) {
-    return NextResponse.json({ error: 'role atau aktif wajib diisi' }, { status: 400 })
+  if (role === undefined && aktif === undefined && pin === undefined) {
+    return NextResponse.json({ error: 'role, aktif, atau pin wajib diisi' }, { status: 400 })
   }
 
   const [target] = await sql`SELECT id, role FROM "user" WHERE id = ${userId} AND toko_id = ${auth.tokoId}`
@@ -53,6 +54,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await sql`UPDATE "user" SET aktif = ${aktif ? true : false} WHERE id = ${userId}`
   }
 
+  if (pin !== undefined) {
+    if (target.role === 'admin') {
+      return NextResponse.json({ error: 'Admin tidak wajib PIN kasir; hanya role kasir' }, { status: 400 })
+    }
+    if (typeof pin !== 'string' || !/^\d{6}$/.test(pin)) {
+      return NextResponse.json({ error: 'PIN harus 6 digit angka (0-9)' }, { status: 400 })
+    }
+    const pinHash = await bcrypt.hash(pin, 10)
+    await sql`UPDATE "user" SET kasir_pin_hash = ${pinHash} WHERE id = ${userId}`
+  }
+
   const [updated] = await sql`SELECT id, nama, email, role, aktif FROM "user" WHERE id = ${userId}`
 
   // Audit: perubahan role/status staff — krusial utk cek kasir mengangkat dirinya sendiri.
@@ -65,6 +77,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     void catatAktivitas(auth, aksi,
       `${target.nama || `#${userId}`} di${aktif ? 'aktifkan' : 'nonaktifkan'}`)
   }
+  if (pin !== undefined) {
+    void catatAktivitas(auth, 'staff_pin',
+      `${target.nama || `#${userId}`} PIN kasir diset`)
+  }
+
 
   return NextResponse.json(updated)
 }

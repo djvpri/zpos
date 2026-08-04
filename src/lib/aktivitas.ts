@@ -24,6 +24,7 @@ export type Aksi =
   | 'staff_tambah'
   | 'staff_ubah'
   | 'staff_hapus'
+  | 'staff_pin'
   | 'kategori_tambah'
   | 'kategori_ubah'
   | 'kategori_hapus'
@@ -51,6 +52,7 @@ const KATEGORI: Record<Aksi, string> = {
   staff_tambah: 'staff',
   staff_ubah: 'staff',
   staff_hapus: 'staff',
+  staff_pin: 'staff',
   kategori_tambah: 'produk',
   kategori_ubah: 'produk',
   kategori_hapus: 'produk',
