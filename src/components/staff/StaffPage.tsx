@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { XLg, Trash3, Shield, Key } from 'react-bootstrap-icons'
+import { XLg, Trash3, Shield, Key, Lock } from 'react-bootstrap-icons'
 import { Staff } from '@/types'
 
 // Kelola kasir & admin satu toko. User TIDAK dibuat di sini — akun dibuat
@@ -78,6 +78,34 @@ export default function StaffPage() {
     }
   }
 
+  // Set/reset PIN kasir (6 digit) utk login offline di app kasir. Berlaku utk
+  // kasir & admin (admin boleh merangkap kasir). Kalau kosong → generate acak 6 digit.
+  const setPin = async (u: Staff) => {
+    const pin = prompt(`Set PIN kasir utk ${u.nama} — 6 digit angka (0-9).\\nDipakai login di app kasir. Biarkan kosong utk generate acak.`)
+    if (pin === null) return
+    if (pin === '') {
+      const acak = String(Math.floor(100000 + Math.random() * 900000))
+      if (!confirm(`Tidak ada input. Generate PIN acak ${acak} utk ${u.nama}?`)) return
+      const res = await fetch(`/api/staff/${u.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: acak }),
+      })
+      if (res.ok) { setError(`PIN ${u.nama} di-generate: ${acak}`) }
+      else { const d = await res.json(); setError(d.error || 'Gagal set PIN') }
+      return
+    }
+    if (!/^\d{6}$/.test(pin)) { setError('PIN harus 6 digit angka (0-9)'); return }
+    if (!confirm(`Terapkan PIN ${pin} utk ${u.nama}?`)) return
+    const res = await fetch(`/api/staff/${u.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    })
+    if (res.ok) { setError('') }
+    else { const d = await res.json(); setError(d.error || 'Gagal set PIN') }
+  }
+
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -125,6 +153,13 @@ export default function StaffPage() {
                   className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                 >
                   <Key size={15} />
+                </button>
+                <button
+                  onClick={() => setPin(u)}
+                  title="Set/reset PIN kasir 6 digit (login di app kasir)"
+                  className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                >
+                  <Lock size={15} />
                 </button>
                 <button
                   onClick={() => ubahRole(u)}

@@ -55,9 +55,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   if (pin !== undefined) {
-    if (target.role === 'admin') {
-      return NextResponse.json({ error: 'Admin tidak wajib PIN kasir; hanya role kasir' }, { status: 400 })
-    }
+    // Admin boleh set PIN juga — utk login app kasir jadi kasir (owner/admin
+    // sering merangkap kasir). Guard lama "Admin tak wajib PIN" dibuang.
     if (typeof pin !== 'string' || !/^\d{6}$/.test(pin)) {
       return NextResponse.json({ error: 'PIN harus 6 digit angka (0-9)' }, { status: 400 })
     }
