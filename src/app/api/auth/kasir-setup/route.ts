@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
 import { apiHandler } from '@/lib/api-handler'
+import { signToken } from '@/lib/auth'
 import { loginSchema } from '@/lib/validation'
 import { bolehLogin, catatGagal, resetPercobaan, ipDari } from '@/lib/ratelimit'
 import { catatAktivitas } from '@/lib/aktivitas'
@@ -53,6 +54,18 @@ export const POST = apiHandler(async (req: Request, body: { email: string; passw
     return NextResponse.json({ error: 'Hanya admin toko yang bisa setup kasir' }, { status: 403 })
   }
 
+  // JWT access token utk app pakai sinkron katalog/member setelah setup
+  // (server baca cookie `zpos_token`). Sama skema dgn /api/auth/login.
+  const token = await signToken({
+    userId: user.id,
+    tokoId: user.toko_id,
+    nama: user.toko_nama,
+    userName: user.nama,
+    email: user.email,
+    plan: user.plan,
+    role: user.role,
+  })
+
   // Ambil semua user aktif dalam toko user ini (scope toko sendiri).
   const users = await sql`
     SELECT id, nama, role, aktif, kasir_pin_hash
@@ -86,5 +99,5 @@ export const POST = apiHandler(async (req: Request, body: { email: string; passw
     `Setup kasir: ${hasil.length} staff (PIN default utk belum punya)`,
   )
 
-  return NextResponse.json({ toko_id: user.toko_id, toko_nama: user.toko_nama, users: hasil })
+  return NextResponse.json({ toko_id: user.toko_id, toko_nama: user.toko_nama, token, users: hasil })
 }, { schema: loginSchema })
