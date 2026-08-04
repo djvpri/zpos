@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   ClipboardCheck, UpcScan, PlayFill, XCircle, Check2Circle,
   ArrowCounterclockwise, Clipboard2Check,
@@ -73,19 +73,20 @@ export default function StockOpnamePage() {
   const [pesan, setPesan] = useState('')
   const scanRef = useRef<HTMLInputElement>(null)
 
-  const muatRiwayat = useCallback(async () => {
+  async function muatRiwayat() {
     try {
       const res = await fetch('/api/stock-opname')
       const d = await res.json()
       if (res.ok) setRiwayat(Array.isArray(d) ? d : [])
     } catch { /* biarkan riwayat kosong */ }
-  }, [])
+  }
 
   // Muat daftar kategori (utk scope) + riwayat sesi.
   useEffect(() => {
     fetch('/api/kategori').then(r => r.json()).then(setKategori).catch(() => {})
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- setState memakai .then async di luar, bukan sync
     void muatRiwayat()
-  }, [muatRiwayat])
+  }, [])
 
   async function bukaSesi() {
     setPesan('')
