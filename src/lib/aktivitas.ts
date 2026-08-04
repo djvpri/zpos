@@ -33,6 +33,7 @@ export type Aksi =
   | 'so_selesai'
   | 'so_batal'
   | 'so_approve'
+  | 'kasir_setup'
 
 const KATEGORI: Record<Aksi, string> = {
   login: 'sesi',
@@ -61,6 +62,7 @@ const KATEGORI: Record<Aksi, string> = {
   so_selesai: 'produk',
   so_batal: 'produk',
   so_approve: 'produk',
+  kasir_setup: 'sesi',
 }
 
 export async function catatAktivitas(
