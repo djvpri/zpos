@@ -28,9 +28,15 @@ export async function GET(req: Request) {
   // produk). Kirim thumbnail kecil (foto_thumb ~1KB) untuk preview; foto_url
   // penuh diambil per-produk saat modal edit (GET /api/produk/:id). Kalaupun
   // belum ada thumbnail, biarkan null — UI pakai emoji fallback.
+  const url = new URL(req.url)
+  const semua = url.searchParams.get('semua') === '1'
+
   for (const r of rows) {
     r.foto_url = null
-    r.foto_thumb = r.foto_thumb || null
+    // Mode ringan (`?semua=1`, dipakai sync app kasir Tauri): kirim TANPA
+    // base64 thumbnail (~29MB utk 6000+ produk) supaya sinkron cepat & tak
+    // bocor payload besar. Web (tanpa query) tetap sertakan foto_thumb preview.
+    r.foto_thumb = semua ? null : (r.foto_thumb || null)
   }
   return NextResponse.json(rows)
 }
