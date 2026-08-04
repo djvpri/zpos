@@ -48,9 +48,9 @@ export const POST = apiHandler(async (req: Request, body: { email: string; passw
   }
   await resetPercobaan(kunci)
 
-  // Setup PIN hanya utk OWNER (admin) tenant — kasir tak boleh tarik daftar staff.
-  if (user.role !== 'owner') {
-    return NextResponse.json({ error: 'Hanya owner toko yang bisa setup kasir' }, { status: 403 })
+  // Setup PIN hanya utk ADMIN tenant (owner) — kasir tak boleh tarik daftar staff.
+  if (user.role !== 'admin') {
+    return NextResponse.json({ error: 'Hanya admin toko yang bisa setup kasir' }, { status: 403 })
   }
 
   // Ambil semua user aktif dalam toko user ini (scope toko sendiri).
