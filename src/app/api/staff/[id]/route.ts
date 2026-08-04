@@ -20,10 +20,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const [diri] = await sql`SELECT id FROM "user" WHERE id = ${auth.userId}`
 
   const body = await req.json().catch(() => ({}))
-  const { role, aktif, pin } = body
+  const { role, aktif, pin, password } = body
 
-  if (role === undefined && aktif === undefined && pin === undefined) {
-    return NextResponse.json({ error: 'role, aktif, atau pin wajib diisi' }, { status: 400 })
+  if (role === undefined && aktif === undefined && pin === undefined && password === undefined) {
+    return NextResponse.json({ error: 'role, aktif, pin, atau password wajib diisi' }, { status: 400 })
   }
 
   const [target] = await sql`SELECT id, role FROM "user" WHERE id = ${userId} AND toko_id = ${auth.tokoId}`
@@ -65,6 +65,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await sql`UPDATE "user" SET kasir_pin_hash = ${pinHash} WHERE id = ${userId}`
   }
 
+  if (password !== undefined) {
+    // Set/reset password utk login web & setup app kasir (banyak user login via
+    // Google tanpa password lokal). Admin toko set password ini di zone manage.
+    if (typeof password !== 'string' || password.length < 6) {
+      return NextResponse.json({ error: 'Password minimal 6 karakter' }, { status: 400 })
+    }
+    const pw = await bcrypt.hash(password, 10)
+    await sql`UPDATE "user" SET password_hash = ${pw} WHERE id = ${userId}`
+  }
+
   const [updated] = await sql`SELECT id, nama, email, role, aktif FROM "user" WHERE id = ${userId}`
 
   // Audit: perubahan role/status staff — krusial utk cek kasir mengangkat dirinya sendiri.
@@ -80,6 +90,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (pin !== undefined) {
     void catatAktivitas(auth, 'staff_pin',
       `${target.nama || `#${userId}`} PIN kasir diset`)
+  }
+  if (password !== undefined) {
+    void catatAktivitas(auth, 'staff_password',
+      `${target.nama || `#${userId}`} password diset/diubah utk login web & kasir`)
   }
 
 
