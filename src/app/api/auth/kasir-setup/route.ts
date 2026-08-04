@@ -75,7 +75,7 @@ export const POST = apiHandler(async (req: Request, body: { email: string; passw
   `
 
   // Generate + simpan hash PIN default untuk yg belum punya.
-  const hasil: { id: number; nama: string; email: string; role: string; aktif: boolean; kasir_pin_hash: string }[] = []
+  const hasil: { id: number; toko_id: number; nama: string; email: string; role: string; aktif: boolean; kasir_pin_hash: string }[] = []
   for (const u of users as unknown as { id: number; nama: string; email: string; role: string; aktif: boolean; kasir_pin_hash: string | null }[]) {
     let hash = u.kasir_pin_hash
     if (!hash) {
@@ -84,6 +84,7 @@ export const POST = apiHandler(async (req: Request, body: { email: string; passw
     }
     hasil.push({
       id: u.id,
+      toko_id: user.toko_id,
       nama: u.nama,
       email: u.email ?? '',
       role: u.role,
