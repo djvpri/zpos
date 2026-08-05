@@ -71,6 +71,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
   }, [produk?.id])  
   const [uploading, setUploading] = useState(false)
   const [scanBarcode, setScanBarcode] = useState(false)
+  const barcodeInputRef = useRef<HTMLInputElement>(null) // fokus utk scanner USB
   const [showKamera, setShowKamera] = useState(false)
   // Auto-detect nama produk dari foto (Gemini Flash-Lite). null = idle/bukan error.
   const [deteksiNama, setDeteksiNama] = useState<'deteksi' | 'gagal' | 'tanpa_teks' | null>(null)
@@ -304,12 +305,21 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
             <div className="flex gap-2 mt-1">
               <input
                 data-scanner="barcode"
+                ref={barcodeInputRef}
                 className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400"
                 value={form.barcode}
                 onChange={e => { set('barcode', e.target.value); void sugestikan(e.target.value) }}
                 placeholder="Scan atau ketik barcode..."
                 onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
               />
+              <button
+                type="button"
+                onClick={() => barcodeInputRef.current?.focus()}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-gray-400 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
+                title="Scan dengan scanner USB (fokus ke kolom barcode)"
+              >
+                <UpcScan size={16} />
+              </button>
               <button
                 type="button"
                 onClick={() => setScanBarcode(true)}
