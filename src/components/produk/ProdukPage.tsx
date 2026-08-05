@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useProduk } from '@/hooks/useProduk'
 import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import FotoLightbox from '@/components/produk/FotoLightbox'
 import { Produk } from '@/types'
+import { useBarcodeUsbListener } from '@/components/kasir/BarcodeScanner'
 import { fmt } from '@/lib/utils'
 import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, LayoutTextWindow, Download, CameraFill, ImageFill } from 'react-bootstrap-icons'
 import * as XLSX from 'xlsx'
@@ -59,6 +60,21 @@ export default function ProdukPage() {
   const [editing, setEditing] = useState<{ id: number; field: 'harga' | 'stok' } | null>(null)
   // Edit cepat: scan barcode via kamera utk produk ini.
   const [scanBar, setScanBar] = useState<Produk | null>(null)
+  // Notif "produk tak ditemukan" saat scan USB pertama (auto-hilang 2.5s).
+  const [scanErr, setScanErr] = useState('')
+  // Scan barcode USB (bukan kamera) → cari langsung. Match → buka modal detail;
+  // tak match → notif. Hook `useBarcodeUsbListener` aktif walau tak fokus di input.
+  const onBarcodeCari = useCallback((code: string) => {
+    const p = produk.find(x => x.barcode === code)
+    if (p) {
+      setScanErr('')
+      setModal(p)
+    } else {
+      setScanErr(`Produk tak ditemukan: ${code}`)
+      setTimeout(() => setScanErr(''), 2500)
+    }
+  }, [produk])
+  useBarcodeUsbListener(onBarcodeCari)
 
   const filtered = produk
     .filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
@@ -291,6 +307,7 @@ export default function ProdukPage() {
               ))}
             </div>
           </div>
+          {scanErr && <p className="text-red-600 text-xs mb-2">{scanErr}</p>}
 
           <div className="bg-white border border-gray-100 rounded-xl overflow-hidden overflow-x-auto">
             <table className="w-full min-w-[640px]">
