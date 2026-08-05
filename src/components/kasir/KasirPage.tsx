@@ -69,7 +69,9 @@ export default function KasirPage() {
   const produkFiltered = useMemo(() =>
     produk.filter(p =>
       (katId === null || p.kategori_id === katId) &&
-      p.nama.toLowerCase().includes(cari.toLowerCase())
+      (cari === '' ||
+        p.nama.toLowerCase().includes(cari.toLowerCase()) ||
+        (p.barcode && p.barcode.toLowerCase().includes(cari.toLowerCase())))
     ), [produk, katId, cari])
 
   const items: ItemKeranjang[] = useMemo(() =>
