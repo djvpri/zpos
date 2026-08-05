@@ -15,7 +15,7 @@ export function useProduk() {
   const fetch = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await globalThis.fetch('/api/produk')
+      const res = await globalThis.fetch('/api/produk?semua=1')
       if (!res.ok) throw new Error('Gagal memuat produk')
       const data = await res.json()
       setProduk(data)
@@ -37,6 +37,9 @@ export function useProduk() {
   }, [])
 
   useEffect(() => {
+    // Render pertama instan dari cache lokal (kalau ada) daripada menunggu
+    // fetch 6000+ produk. Fetch jaringan tetap jalan di latar utk refresh.
+    cacheGet<Produk[]>(CACHE_KEY).then(c => { if (c?.length) setProduk(c) }).catch(() => {})
     Promise.resolve().then(fetch)
   }, [fetch])
 
