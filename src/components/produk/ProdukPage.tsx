@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useProduk } from '@/hooks/useProduk'
 import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
@@ -27,7 +27,30 @@ const BarcodeCameraModal = dynamic(
 type Tab = 'produk' | 'kategori'
 
 export default function ProdukPage() {
-  const { produk, tambah, update, hapus, fetch: fetchProduk } = useProduk()
+  const { produk, tambah, update, hapus } = useProduk()
+  const [cari, setCari] = useState('')
+  const [sortBy, setSortBy] = useState<'nama' | 'terbaru' | 'terlama'>('nama')
+  // --- Paged fetch (server-side, 6000+ produk → render instan) ---
+  const [daftar, setDaftar] = useState<Produk[]>([])
+  const [totalProduk, setTotalProduk] = useState(0)
+  const [paging, setPaging] = useState(false)   // sedang muat page
+  const [halaman, setHalaman] = useState(1)
+  const PAGE = 50
+  const muatProduk = useCallback(async (pge: number, kata?: string, sb?: string, append = false) => {
+    setPaging(true)
+    try {
+      const qs = new URLSearchParams({ limit: String(PAGE), page: String(pge) })
+      if (kata) qs.set('q', kata)
+      if (sb && sb !== 'nama') qs.set('sort', sb)
+      const res = await fetch(`/api/produk?${qs}`)
+      const d = await res.json()
+      setDaftar(append ? (p) => [...p, ...(d.data || [])] : (d.data || []))
+      setTotalProduk(d.total || 0)
+      setHalaman(pge)
+    } finally { setPaging(false) }
+  }, [])
+  // Muat page 1 saat mount & saat kata cari / urutan berubah.
+  useEffect(() => { muatProduk(1, cari, sortBy) }, [cari, sortBy, muatProduk])
   const { kategori, tambah: tambahKat, hapus: hapusKat } = useKategori()
   const [tab, setTab] = useState<Tab>('produk')
   const [modal, setModal] = useState<'tambah' | Produk | null>(null)
@@ -37,10 +60,6 @@ export default function ProdukPage() {
   // Ukuran tampil thumbnail di tabel: kecil/sedang/besar (cuma CSS, tak ubah file).
   const [ukuranThumb, setUkuranThumb] = useState<'kecil' | 'sedang' | 'besar'>('kecil')
   const ukuranThumbCls = ukuranThumb === 'kecil' ? 'w-9 h-9' : ukuranThumb === 'sedang' ? 'w-14 h-14' : 'w-20 h-20'
-  const [cari, setCari] = useState('')
-  // Urut daftar produk: 'nama' (alfabet, default), 'terbaru' atau 'terlama'
-  // (waktu upload = created_at).
-  const [sortBy, setSortBy] = useState<'nama' | 'terbaru' | 'terlama'>('nama')
   const [namaKat, setNamaKat] = useState('')
   const [katError, setKatError] = useState('')
   const [katLoading, setKatLoading] = useState(false)
@@ -52,8 +71,6 @@ export default function ProdukPage() {
   const [showCepat, setShowCepat] = useState(false)
   const [showLabel, setShowLabel] = useState(false)
   const [showTemplate, setShowTemplate] = useState(false)
-  // Load-more: tampilkan 15 produk dulu, tombol "Tampilkan lebih banyak" menambah 15.
-  const [tampil, setTampil] = useState(15)
   // Edit cepat inline: id + field sel yang sedang diedit. Nilai dibaca
   // langsung dari input DOM saat commit (uncontrolled) — meniadakan race
   // controlled+onBlur yang bikin input number macet tak bisa diketik.
@@ -64,34 +81,29 @@ export default function ProdukPage() {
   const [scanErr, setScanErr] = useState('')
   // Scan barcode USB (bukan kamera) → cari langsung. Match → buka modal detail;
   // tak match → notif. Hook `useBarcodeUsbListener` aktif walau tak fokus di input.
-  const onBarcodeCari = useCallback((code: string) => {
-    const p = produk.find(x => x.barcode === code)
-    console.log('[SCAN-CARI] code=', JSON.stringify(code), 'ketemu=', !!p, 'total=', produk.length, 'barcodeSampel=', produk.slice(0,3).map(x=>JSON.stringify(x.barcode)))
-    if (p) {
-      setScanErr('')
-      setModal(p)
-    } else {
+  // (A) Scan barcode USB → cari langsung lewat API (bukan array client yg kini
+  // dipaging). Barcode apa pun ketemu walau produk belum termuat di halaman.
+  const onBarcodeCari = useCallback(async (code: string) => {
+    try {
+      const res = await fetch(`/api/produk/barcode/${encodeURIComponent(code)}`)
+      if (res.ok) {
+        const p = await res.json()
+        setScanErr('')
+        setModal(p)
+        // kalau produk hasil scan tak ada di daftar saat ini, muat page-nya biar konsisten
+        muatProduk(1, '', sortBy)
+      } else {
+        setScanErr(`Produk tak ditemukan: ${code}`)
+        setTimeout(() => setScanErr(''), 2500)
+      }
+    } catch {
       setScanErr(`Produk tak ditemukan: ${code}`)
       setTimeout(() => setScanErr(''), 2500)
     }
-  }, [produk])
+  }, [muatProduk, sortBy])
   useBarcodeUsbListener(onBarcodeCari)
 
-  const filtered = produk
-    .filter(p => {
-      const q = cari.toLowerCase().trim()
-      if (!q) return true
-      return p.nama.toLowerCase().includes(q)
-        || (p.barcode && p.barcode.toLowerCase().includes(q))
-        || (p.kategori?.nama && p.kategori.nama.toLowerCase().includes(q))
-    })
-    .sort((a, b) => {
-      if (sortBy === 'nama') return a.nama.localeCompare(b.nama)
-      const ta = new Date(a.created_at ?? 0).getTime()
-      const tb = new Date(b.created_at ?? 0).getTime()
-      return sortBy === 'terbaru' ? tb - ta : ta - tb
-    })
-  const tampilkanList = filtered.slice(0, tampil)
+  const tampilkanList = daftar
 
   const startEdit = (p: Produk, field: 'harga' | 'stok') =>
     setEditing({ id: p.id, field })
@@ -292,12 +304,12 @@ export default function ProdukPage() {
           <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-4 py-2.5 mb-4">
             <Search size={16} className="text-gray-400" />
             <input
-              value={cari} onChange={e => { setCari(e.target.value); setTampil(15) }}
+              value={cari} onChange={e => setCari(e.target.value)}
               placeholder="Cari produk..."
               className="flex-1 bg-transparent outline-none text-sm"
             />
             {cari && (
-              <button onClick={() => { setCari(''); setTampil(15) }} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setCari('')} className="text-gray-400 hover:text-gray-600">
                 <XLg size={14} />
               </button>
             )}
@@ -305,7 +317,7 @@ export default function ProdukPage() {
               {([['nama', 'Nama'], ['terbaru', 'Terbaru'], ['terlama', 'Terlama']] as const).map(([s, lbl]) => (
                 <button
                   key={s}
-                  onClick={() => { setSortBy(s); setTampil(15) }}
+                  onClick={() => setSortBy(s)}
                   className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                     sortBy === s ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -449,7 +461,7 @@ export default function ProdukPage() {
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && (
+                {daftar.length === 0 && !paging && (
                   <tr>
                     <td colSpan={6} className="text-center py-12 text-gray-300">
                       <Box size={36} className="mx-auto mb-2 opacity-40" />
@@ -459,13 +471,14 @@ export default function ProdukPage() {
                 )}
               </tbody>
             </table>
-            {filtered.length > tampil && (
+            {daftar.length < totalProduk && (
               <div className="flex justify-center py-4">
                 <button
-                  onClick={() => setTampil(t => t + 15)}
-                  className="px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors"
+                  onClick={() => muatProduk(halaman + 1, cari, sortBy, true)}
+                  disabled={paging}
+                  className="px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors disabled:opacity-50"
                 >
-                  Tampilkan lebih banyak ({tampil} dari {filtered.length})
+                  {paging ? 'Memuat...' : `Tampilkan lebih banyak (${daftar.length} dari ${totalProduk})`}
                 </button>
               </div>
             )}
@@ -522,14 +535,14 @@ export default function ProdukPage() {
         </div>
       )}
 
-      {showScanMassal && <ScanBarcodeMassal onSelesai={fetchProduk} onTutup={() => setShowScanMassal(false)} tambahOffline={tambah} />}
-      {showImport && <ImportProduk onSelesai={fetchProduk} onTutup={() => setShowImport(false)} tambahOffline={tambah} />}
+      {showScanMassal && <ScanBarcodeMassal onSelesai={() => muatProduk(1, cari, sortBy)} onTutup={() => setShowScanMassal(false)} tambahOffline={tambah} />}
+      {showImport && <ImportProduk onSelesai={() => muatProduk(1, cari, sortBy)} onTutup={() => setShowImport(false)} tambahOffline={tambah} />}
       {showKatalogImport && <ImportBarcodeKatalog onTutup={() => setShowKatalogImport(false)} />}
       {showKatalogLihat && <KatalogBarcodeModal onTutup={() => setShowKatalogLihat(false)} />}
-      {showFoto && <UploadFotoProduk onClose={() => { setShowFoto(false); fetchProduk() }} />}
-      {showCepat && <TambahCepat onSelesai={() => { setShowCepat(false); fetchProduk() }} onTutup={() => setShowCepat(false)} />}
-      {showLabel && <LabelCetak produk={produk} onSelesai={() => { setShowLabel(false); fetchProduk() }} onTutup={() => setShowLabel(false)} update={update} />}
-      {showTemplate && <TemplateProduk onSelesai={() => { setShowTemplate(false); fetchProduk() }} onTutup={() => setShowTemplate(false)} />}
+      {showFoto && <UploadFotoProduk onClose={() => { setShowFoto(false); muatProduk(1, cari, sortBy) }} />}
+      {showCepat && <TambahCepat onSelesai={() => { setShowCepat(false); muatProduk(1, cari, sortBy) }} onTutup={() => setShowCepat(false)} />}
+      {showLabel && <LabelCetak produk={produk} onSelesai={() => { setShowLabel(false); muatProduk(1, cari, sortBy) }} onTutup={() => setShowLabel(false)} update={update} />}
+      {showTemplate && <TemplateProduk onSelesai={() => { setShowTemplate(false); muatProduk(1, cari, sortBy) }} onTutup={() => setShowTemplate(false)} />}
       {modal && (
         <ProdukModal
           produk={modal === 'tambah' ? null : modal}

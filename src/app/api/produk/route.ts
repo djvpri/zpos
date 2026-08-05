@@ -17,20 +17,45 @@ export async function GET(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const url = new URL(req.url)
+  const semua = url.searchParams.get('semua') === '1'
+  const q = (url.searchParams.get('q') ?? '').trim()
+  const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10) || 1)
+  const limitParam = url.searchParams.get('limit')
+  const limit = limitParam ? Math.max(1, parseInt(limitParam, 10) || 1) : null
+  const sort = url.searchParams.get('sort') || 'nama'
+  const orderBy = sort === 'terbaru' ? sql`ORDER BY p.created_at DESC` : sort === 'terlama' ? sql`ORDER BY p.created_at ASC` : sql`ORDER BY p.nama`
+
+  const where = sql`p.aktif = true AND p.toko_id = ${toko.tokoId}`
+  const qCond = q
+    ? sql` AND (p.nama ILIKE ${'%' + q + '%'} OR p.barcode ILIKE ${'%' + q + '%'} OR k.nama ILIKE ${'%' + q + '%'})`
+    : sql``
+
+  // Mode paged (`?limit=...`): muat sebagian, dipakai halaman manajemen produk
+  // (6000+ produk) supaya render instan & memory hemat. Mode full (tanpa limit,
+  // utk sync app kasir + POS offline) tetap balikin semua buat kompatibilitas.
+  if (limit) {
+    const offset = (page - 1) * limit
+    const [{ total }] = await sql`SELECT count(*)::int AS total FROM produk p LEFT JOIN kategori k ON k.id = p.kategori_id WHERE ${where} ${qCond}`
+    const rows = await sql`
+      SELECT p.*, json_build_object('nama', k.nama) AS kategori
+      FROM produk p
+      LEFT JOIN kategori k ON k.id = p.kategori_id
+      WHERE ${where} ${qCond}
+      ${orderBy}
+      LIMIT ${limit} OFFSET ${offset}
+    `
+    for (const r of rows) { r.foto_url = null; r.foto_thumb = null }
+    return NextResponse.json({ data: rows, total, page, limit, totalPages: Math.ceil(total / limit) })
+  }
+
   const rows = await sql`
     SELECT p.*, json_build_object('nama', k.nama) AS kategori
     FROM produk p
     LEFT JOIN kategori k ON k.id = p.kategori_id
-    WHERE p.aktif = true AND p.toko_id = ${toko.tokoId}
+    WHERE ${where} ${qCond}
     ORDER BY p.nama
   `
-  // List produk berat TIDAK mengirim foto_url besar (hingga ~100KB × puluhan
-  // produk). Kirim thumbnail kecil (foto_thumb ~1KB) untuk preview; foto_url
-  // penuh diambil per-produk saat modal edit (GET /api/produk/:id). Kalaupun
-  // belum ada thumbnail, biarkan null — UI pakai emoji fallback.
-  const url = new URL(req.url)
-  const semua = url.searchParams.get('semua') === '1'
-
   for (const r of rows) {
     r.foto_url = null
     // Mode ringan (`?semua=1`, dipakai sync app kasir Tauri): kirim TANPA
