@@ -15,7 +15,7 @@ const BarcodeCameraModal = dynamic(
 
 interface Props {
   produk?: Produk | null
-  onSimpan: (p: Partial<Produk>) => void
+  onSimpan: (p: Partial<Produk>) => Promise<{ message?: string } | null | undefined> | { message?: string } | null | undefined
   onTutup: () => void
 }
 
@@ -192,7 +192,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     e.target.value = ''
   }
 
-  const submit = () => {
+  const submit = async () => {
     // Validasi eksplisit: beri tahu field mana yang kurang, JANGAN silent
     // return (sebelumnya membuat pengguna bingung "klik simpan tak bereaksi").
     // Mode cepat: hanya NAMA wajib. Harga default 1 & kategori opsional.
@@ -202,7 +202,9 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       return
     }
     const kategoriId = Number(form.kategori_id) || null
-    onSimpan({
+    // onSimpan return null/undefined = sukses; { message } = gagal (mis. nama/barcode
+    // duplikat di server). Kalau gagal, jangan tutup modal & tampilkan pesannya.
+    const r = await onSimpan({
       ...(produk || {}),
       nama: form.nama,
       harga: Number(form.harga) || 1,
@@ -218,6 +220,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       min_qty_grosir: form.min_qty_grosir ? Number(form.min_qty_grosir) : null,
       aktif: true,
     })
+    if (r?.message) setEr(r.message)
   }
 
   const inputCls = "w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400 mt-1"

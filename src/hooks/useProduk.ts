@@ -57,7 +57,8 @@ export function useProduk() {
         body: JSON.stringify(p),
       })
       if (res.ok) { fetch(); return null }
-      return { message: 'Gagal menambah produk' }
+      const d = await res.json().catch(() => ({}))
+      return { message: (d as { error?: string })?.error || 'Gagal menambah produk' }
     } catch {
       // Offline — antrikan, tampilkan langsung di daftar dengan ID
       // sementara + penanda pending. SENGAJA tidak sellable sampai
@@ -82,7 +83,8 @@ export function useProduk() {
         body: JSON.stringify(p),
       })
       if (res.ok) { fetch(); return null }
-      return { message: 'Gagal mengupdate produk' }
+      const d = await res.json().catch(() => ({}))
+      return { message: (d as { error?: string })?.error || 'Gagal mengupdate produk' }
     } catch {
       await queueUbahProduk(id, p)
       setProduk(prev => prev.map(x => x.id === id ? { ...x, ...p, _pending: true } : x))

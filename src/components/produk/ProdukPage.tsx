@@ -101,11 +101,12 @@ export default function ProdukPage() {
   }
 
   const onSimpan = async (p: Partial<Produk>) => {
-    if (p.id) await update(p.id, p)
-    else await tambah(p as Omit<Produk, 'id' | 'created_at' | 'updated_at'>)
+    const res = p.id ? await update(p.id, p) : await tambah(p as Omit<Produk, 'id' | 'created_at' | 'updated_at'>)
+    if (res?.message) return res     // gagal → modal tetap buka + tampilkan pesan
     setModal(null)
     // Embed ke ZFace sekarang ditangani server-side di api/produk (POST/PUT),
     // otomatis kalau ada foto — tidak perlu panggilan terpisah dari client lagi.
+    return null
   }
 
   const onHapusProduk = async (id: number) => {
