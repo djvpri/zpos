@@ -68,6 +68,7 @@ export function useBarcodeUsbListener(onScan: (barcode: string) => void) {
           // Kalau focus di input biasa (cari/nama) → biarkan field tak terisi barcode,
           // langsung emit sebagai scan global. Field barcode → native sudah ketik+Enter.
           if (inField && !isBarcodeField) e.preventDefault()
+          console.log('[SCAN-USB] code=', JSON.stringify(code), 'len=', code.length)
           onScan(code)
         } else {
           buffer.current = ''

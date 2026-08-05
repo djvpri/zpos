@@ -66,6 +66,7 @@ export default function ProdukPage() {
   // tak match → notif. Hook `useBarcodeUsbListener` aktif walau tak fokus di input.
   const onBarcodeCari = useCallback((code: string) => {
     const p = produk.find(x => x.barcode === code)
+    console.log('[SCAN-CARI] code=', JSON.stringify(code), 'ketemu=', !!p, 'total=', produk.length, 'barcodeSampel=', produk.slice(0,3).map(x=>JSON.stringify(x.barcode)))
     if (p) {
       setScanErr('')
       setModal(p)

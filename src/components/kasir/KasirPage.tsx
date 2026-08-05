@@ -161,6 +161,7 @@ export default function KasirPage() {
     // server. Ini juga membuat scan tetap jalan saat offline total, dan
     // lebih cepat + lebih ringan ke server bahkan saat online.
     const p = produk.find(x => x.barcode === code)
+    console.log('[SCAN-POS] code=', JSON.stringify(code), 'ketemu=', !!p, 'total=', produk.length)
     if (p) {
       tambahKeKeranjang(p)
     } else {
