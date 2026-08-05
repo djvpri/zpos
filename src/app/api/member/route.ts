@@ -3,6 +3,7 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { memberSchema } from '@/lib/validation'
 import { apiHandler } from '@/lib/api-handler'
+import { catatAktivitas } from '@/lib/aktivitas'
 
 // GET daftar member toko. Query optional `cari` dipakai kasir utk lookup
 // cepat (telepon/nama) saat pilih member. Zona per-toko + role aman.
@@ -34,11 +35,11 @@ export async function GET(req: Request) {
   return NextResponse.json(rows)
 }
 
-// POST tambah member
+// POST tambah member. Buka utk kasir (role apa pun): pelanggan didaftarkan
+// di titik jual, bukan hanya admin. PUT/DELETE tetap admin (lihat [id]/route.ts).
 export const POST = apiHandler(async (req: Request, body: { nama: string; telepon?: string | null; kategori_member_id?: number | null }) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (toko.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const kategoriId = body.kategori_member_id ?? null
   // Validasi kategori milik toko ini kalau diisi (cegah menautkan kategori toko lain)
@@ -52,5 +53,6 @@ export const POST = apiHandler(async (req: Request, body: { nama: string; telepo
     VALUES (${body.nama.trim()}, ${body.telepon || null}, ${kategoriId}, ${toko.tokoId})
     RETURNING id, nama, telepon, kategori_member_id, created_at
   `
+  void catatAktivitas(toko, 'member_tambah', `Member #${row.id} "${row.nama}" didaftarkan`)
   return NextResponse.json(row, { status: 201 })
 }, { schema: memberSchema })
