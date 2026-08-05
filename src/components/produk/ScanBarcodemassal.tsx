@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { XLg, QrCodeScan, Trash, CheckLg, ArrowRepeat, Box, ExclamationCircle, Bag } from 'react-bootstrap-icons'
+import { XLg, QrCodeScan, UpcScan, Trash, CheckLg, ArrowRepeat, Box, ExclamationCircle, Bag } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 import { useKategori } from '@/hooks/useKategori'
 import { Produk } from '@/types'
@@ -146,10 +146,14 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }:
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-700 transition">
                 <QrCodeScan size={18} /> Scan Barcode dengan Kamera
               </button>
+              <button onClick={() => inputRef.current?.focus()}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-indigo-300 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50 transition">
+                <UpcScan size={18} /> Scan dengan Scanner USB
+              </button>
 
               {/* Input manual */}
               <div className="flex gap-2">
-                <input ref={inputRef} value={manualBarcode}
+                <input ref={inputRef} value={manualBarcode} data-scanner="barcode"
                   onChange={e => setManualBarcode(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { tambahBarcode(manualBarcode); setManualBarcode('') } }}
                   placeholder="Atau ketik barcode + Enter..."
