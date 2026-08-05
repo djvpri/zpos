@@ -77,7 +77,13 @@ export default function ProdukPage() {
   useBarcodeUsbListener(onBarcodeCari)
 
   const filtered = produk
-    .filter(p => p.nama.toLowerCase().includes(cari.toLowerCase()))
+    .filter(p => {
+      const q = cari.toLowerCase().trim()
+      if (!q) return true
+      return p.nama.toLowerCase().includes(q)
+        || (p.barcode && p.barcode.toLowerCase().includes(q))
+        || (p.kategori?.nama && p.kategori.nama.toLowerCase().includes(q))
+    })
     .sort((a, b) => {
       if (sortBy === 'nama') return a.nama.localeCompare(b.nama)
       const ta = new Date(a.created_at ?? 0).getTime()
