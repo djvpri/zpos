@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Search, ImageFill } from 'react-bootstrap-icons'
+import { Search, ImageFill, Box } from 'react-bootstrap-icons'
 
 const LOAD_PER = 15
 
@@ -74,7 +74,7 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
                 // eslint-disable-next-line @next/next/no-img-element -- foto thumb/data URI dinamis
                 <img src={p.foto_thumb || p.foto_url} alt={p.nama} className="h-12 w-12 mb-2 rounded-lg object-cover" loading="lazy" />
               )}
-              {tampilFoto && !p.foto_thumb && !p.foto_url && <div className="text-3xl mb-2">{p.emoji}</div>}
+              {tampilFoto && !p.foto_thumb && !p.foto_url && <Box size={28} className="text-gray-300 mb-2" />}
               <div className="text-sm font-medium text-gray-800 leading-tight mb-1">{p.nama}</div>
               <div className="text-xs text-indigo-700 font-semibold">{fmt(p.harga)}</div>
               <div className={`text-xs mt-1 ${

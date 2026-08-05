@@ -192,7 +192,6 @@ export default function KasirPage() {
           nama: flashNama.trim() || 'Produk baru',
           harga,
           stok: 0,
-          emoji: '📦',
           kategori_id: null,
           barcode: flashScan,
           aktif: true,

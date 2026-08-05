@@ -209,7 +209,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       nama: form.nama,
       harga: Number(form.harga) || 1,
       stok: Number(form.stok) || 0,
-      emoji: produk?.emoji || '📦',
+      emoji: produk?.emoji || '',
       deskripsi: form.deskripsi.trim() || undefined,
       foto_url: form.foto_url || undefined,
       barcode: form.barcode.trim() || undefined,

@@ -356,8 +356,6 @@ export default function ProdukPage() {
                             {/* eslint-disable-next-line @next/next/no-img-element -- foto thumb/data URI dinamis */}
                             <img src={p.foto_thumb} alt={p.nama} className={`${ukuranThumbCls} rounded-lg object-cover`} />
                           </button>
-                        ) : p.emoji ? (
-                          <span className="text-xl w-9 text-center shrink-0">{p.emoji}</span>
                         ) : (
                           <span className="text-gray-300 w-9 text-center shrink-0"><ImageFill size={20} /></span>
                         ))}

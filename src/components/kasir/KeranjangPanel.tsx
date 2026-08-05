@@ -2,7 +2,7 @@
 
 import { ItemKeranjang } from '@/types'
 import { fmt } from '@/lib/utils'
-import { Cart3, Bag, CreditCardFill, BookmarkPlus, ListUl } from 'react-bootstrap-icons'
+import { Cart3, Bag, Box, CreditCardFill, BookmarkPlus, ListUl } from 'react-bootstrap-icons'
 
 interface Props {
   items: ItemKeranjang[]
@@ -56,7 +56,7 @@ export function KeranjangPanel({
             {it.foto_thumb || it.foto_url
               ? // eslint-disable-next-line @next/next/no-img-element -- foto dynamic (thumb/data URI)
                 <img src={it.foto_thumb || it.foto_url} alt={it.nama} className="h-9 w-9 rounded-md object-cover flex-shrink-0" loading="lazy" />
-              : <span className="text-xl">{it.emoji}</span>}
+              : <Box size={22} className="text-gray-300 flex-shrink-0" />}
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-gray-800 truncate">
                 {it.nama}
