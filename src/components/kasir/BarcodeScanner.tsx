@@ -41,31 +41,49 @@ export function BarcodeCameraModal({ onScan, onTutup }: { onScan: (b: string) =>
   )
 }
 
-// Komponen untuk USB scanner — input tersembunyi yang menangkap scan cepat
+// Komponen untuk USB scanner — input tersembunyi yang menangkap scan cepat.
+// Upgrade Langkah B: tak lagi skip saat focus di input. Scanner USB (pola ketik
+// kencang + Enter) ditangkap walau cursor di field cari/nama; preventDefault di
+// Enter agar barcode TIDAK ikut "ketik" ke field biasa. Hanya field bertanda
+// data-scanner="barcode" yang dibiarkan menerima ketikan native (isi field barcode).
 export function useBarcodeUsbListener(onScan: (barcode: string) => void) {
   const buffer = useRef('')
+  const lastTime = useRef(0)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Abaikan jika focus ada di input/textarea
       const tag = (e.target as HTMLElement)?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      const inField = tag === 'INPUT' || tag === 'TEXTAREA'
+      // Field barcode yang memang mau diisi native → biarkan (jangan preventDefault).
+      const isBarcodeField = (e.target as HTMLElement)?.dataset?.scanner === 'barcode'
 
       if (e.key === 'Enter') {
-        if (buffer.current.length >= 3) onScan(buffer.current)
-        buffer.current = ''
+        const now = performance.now()
+        // Deteksi pola scanner: buffer >= 3 char, dan ketikan kencang (bukan manual).
+        const fast = !timer.current || buffer.current.split('').length >= 3
+        if (buffer.current.length >= 3 && fast) {
+          const code = buffer.current
+          buffer.current = ''
+          // Kalau focus di input biasa (cari/nama) → biarkan field tak terisi barcode,
+          // langsung emit sebagai scan global. Field barcode → native sudah ketik+Enter.
+          if (inField && !isBarcodeField) e.preventDefault()
+          onScan(code)
+        } else {
+          buffer.current = ''
+        }
+        lastTime.current = now
         return
       }
 
-      if (e.key.length === 1) {
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        // Jika sedang focus di field barcode, biarkan native (bukan tangkap manual).
+        if (inField && isBarcodeField) return
         buffer.current += e.key
         if (timer.current) clearTimeout(timer.current)
-        // Reset buffer jika tidak ada input baru dalam 100ms (bukan scanner USB)
         timer.current = setTimeout(() => { buffer.current = '' }, 100)
       }
     }
-
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [onScan])

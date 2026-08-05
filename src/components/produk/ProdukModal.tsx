@@ -303,6 +303,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
             </label>
             <div className="flex gap-2 mt-1">
               <input
+                data-scanner="barcode"
                 className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400"
                 value={form.barcode}
                 onChange={e => { set('barcode', e.target.value); void sugestikan(e.target.value) }}
