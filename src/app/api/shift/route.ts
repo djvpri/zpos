@@ -33,18 +33,34 @@ export async function GET(req: Request) {
   return NextResponse.json(filtered)
 }
 
-export const POST = apiHandler(async (req: Request, body: { modal_awal?: number }) => {
+export const POST = apiHandler(async (req: Request, body: { modal_awal?: number; user_id?: number }) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // Kasir Tauri (token admin) buka shift utk kasir lokal tertentu via `user_id`.
+  // Hanya role admin yg boleh assign — cegah kasir biasa membuka shift orang lain.
+  // Tanpa `user_id`, shift melekat ke user token (perilaku web biasa).
+  let targetUserId = toko.userId
+  let targetNama = toko.userName
+  if (body.user_id) {
+    if (toko.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    const [u] = await sql`SELECT id, nama FROM "user" WHERE id = ${Number(body.user_id)} AND toko_id = ${toko.tokoId}`
+    if (!u) return NextResponse.json({ error: 'User tidak ditemukan di toko ini' }, { status: 400 })
+    targetUserId = u.id
+    targetNama = u.nama
+  }
+  if (!targetUserId) return NextResponse.json({ error: 'Invalid user' }, { status: 400 })
+
   const [existing] = await sql`
-    SELECT id FROM shift WHERE toko_id = ${toko.tokoId} AND user_id = ${toko.userId} AND aktif = true LIMIT 1
+    SELECT id FROM shift WHERE toko_id = ${toko.tokoId} AND user_id = ${targetUserId} AND aktif = true LIMIT 1
   `
   if (existing) return NextResponse.json({ error: 'Shift sudah aktif' }, { status: 400 })
 
   const [shift] = await sql`
     INSERT INTO shift (toko_id, user_id, kasir_nama, modal_awal)
-    VALUES (${toko.tokoId}, ${toko.userId}, ${toko.userName}, ${Math.max(0, Number(body.modal_awal ?? 0) || 0)})
+    VALUES (${toko.tokoId}, ${targetUserId}, ${targetNama}, ${Math.max(0, Number(body.modal_awal ?? 0) || 0)})
     RETURNING *
   `
 

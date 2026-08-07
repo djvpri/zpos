@@ -53,6 +53,7 @@ export interface Transaksi {
   kembali: number
   metode_bayar: 'Tunai' | 'QRIS' | 'Transfer'
   kasir?: string
+  shift_id?: number | null // diisi kasir Tauri utk tautan shift per kasir
   dibatalkan?: boolean
   created_at?: string
   items?: DetailTransaksi[]

@@ -79,7 +79,8 @@ export const simpanTransaksiSchema = z.object({
 
 // ===== Shift =====
 export const shiftSchema = z.object({
-  shift_id: z.number().int().positive().optional(),
+  modal_awal: z.number().int().nonnegative().optional(),
+  user_id: z.number().int().positive().optional(),
 })
 
 // ===== Pengaturan =====
