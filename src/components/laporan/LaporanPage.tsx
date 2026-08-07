@@ -3,8 +3,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi, Shift } from '@/types'
-import { GraphUpArrow, Receipt, Bag, Percent, Ban, Download, ArrowClockwise, Trophy } from 'react-bootstrap-icons'
+import { GraphUpArrow, Receipt, Bag, Percent, Ban, Download, ArrowClockwise, Trophy, Printer } from 'react-bootstrap-icons'
 import { cacheGet, cacheSet } from '@/lib/offline-cache'
+import { useAuth } from '@/hooks/useAuth'
+import { usePengaturan } from '@/hooks/usePengaturan'
+import { StrukModal } from '@/components/kasir/StrukModal'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 const fmtDT = (d: string) => `${fmtDate(d)} ${fmtTime(d)}`
@@ -57,6 +60,11 @@ export default function LaporanPage() {
   const [terlaris, setTerlaris] = useState<ProdukTerlaris[]>([])
   const [riwayat, setRiwayat] = useState<Transaksi[]>([])
   const [loadingRingkasan, setLoadingRingkasan] = useState(true)
+  const [strukCetak, setStrukCetak] = useState<Transaksi | null>(null)
+
+  // Info toko utk render nota (nama, alamat, telp, catatan struk).
+  const { toko } = useAuth()
+  const { alamat, telepon, catatan_struk } = usePengaturan()
 
   // --- Shift ---
   const [shifts, setShifts] = useState<Shift[]>([])
@@ -206,6 +214,20 @@ export default function LaporanPage() {
     }
   }
 
+  // Cetak ulang nota transaksi lama: tarik detail (items) dari server,
+  // lalu tampilkan lewat StrukModal (renderer nota yang sama dgn kasir).
+  const cetakUlang = async (id?: number) => {
+    if (!id) return
+    try {
+      const res = await fetch(`/api/transaksi/${id}`)
+      if (!res.ok) throw new Error('gagal')
+      const trx = await res.json()
+      setStrukCetak(trx)
+    } catch {
+      alert('Gagal memuat detail transaksi. Pastikan koneksi online.')
+    }
+  }
+
   const hari = laporan[0] || { total_penjualan: 0, jumlah_transaksi: 0, rata_rata: 0, total_diskon: 0 }
 
   const cards = [
@@ -296,6 +318,9 @@ export default function LaporanPage() {
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <div className={`text-sm font-semibold ${t.dibatalkan ? 'text-gray-300 line-through' : 'text-gray-800'}`}>{fmt(t.total)}</div>
+                              <button onClick={() => cetakUlang(t.id)} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Cetak ulang nota">
+                                <Printer size={14} />
+                              </button>
                               {!t.dibatalkan && (
                                 <button onClick={() => batalkan(t.id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Batalkan transaksi">
                                   <Ban size={14} />
@@ -542,6 +567,12 @@ export default function LaporanPage() {
               )}
         </div>
       )}
+
+      <StrukModal
+        transaksi={strukCetak}
+        toko={{ nama: toko?.nama ?? '', alamat, telepon, catatan_struk }}
+        onTutup={() => setStrukCetak(null)}
+      />
     </div>
   )
 }

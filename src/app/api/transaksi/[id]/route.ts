@@ -3,6 +3,31 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { catatAktivitas } from '@/lib/aktivitas'
 
+// Ambil detail transaksi (utk cetak ulang nota). Return transaksi + items.
+// Hanya transaksi milik toko ini. Bisa utk transaksi yang sudah dibatalkan.
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const toko = await getTokoFromRequest(req)
+  if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { id } = await params
+  const trxId = parseInt(id)
+  if (!Number.isInteger(trxId)) return NextResponse.json({ error: 'ID tidak valid' }, { status: 400 })
+
+  const [trx] = await sql`
+    SELECT * FROM transaksi WHERE id = ${trxId} AND toko_id = ${toko.tokoId}
+  `
+  if (!trx) return NextResponse.json({ error: 'Transaksi tidak ditemukan' }, { status: 404 })
+
+  const items = await sql`
+    SELECT id, produk_id, nama_produk, harga, qty, subtotal
+    FROM detail_transaksi
+    WHERE transaksi_id = ${trxId}
+    ORDER BY id
+  `
+
+  return NextResponse.json({ ...trx, items })
+}
+
 // Batalkan (void) transaksi: kembalikan stok & keluarkan dari laporan.
 // Hanya admin. Tidak menghapus baris agar jejak audit tetap ada.
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

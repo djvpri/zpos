@@ -30,8 +30,12 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
   })
 
   if (!transaksi) return null
-  const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir } = transaksi
-  const waktu = fmtDateTime()
+  const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir, created_at, dibatalkan } = transaksi
+  // Waktu cetak asli adalah created_at transaksi; utk struk baru (belum ada id)
+  // dipakai waktu sekarang. Ini yang bikin reprint nota lama identik dgn aslinya.
+  const waktu = created_at
+    ? new Date(created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+    : fmtDateTime()
 
   const teksStruk = () => {
     const baris: string[] = []
@@ -41,6 +45,7 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
     baris.push('--------------------------------')
     baris.push(waktu)
     baris.push(`No: ${no_transaksi}`)
+    if (dibatalkan) baris.push('*** BATAL / REVERSI ***')
     if (kasir) baris.push(`Kasir: ${kasir}`)
     baris.push('--------------------------------')
     items?.forEach(it => {
@@ -105,7 +110,13 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl w-80 shadow-xl overflow-hidden">
         {/* Area struk (yang dicetak) */}
-        <div className="struk-area p-6 font-mono text-sm bg-white">
+        <div className="struk-area relative overflow-hidden p-6 font-mono text-sm bg-white">
+          {/* Watermark utk nota batal — tetap tercetak supaya nota void tak bisa dipakai bayar */}
+          {dibatalkan && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center" style={{ zIndex: 1 }}>
+              <div className="rotate-[-28deg] text-5xl font-black tracking-widest text-red-500/25">BATAL</div>
+            </div>
+          )}
 
           {/* Header — info toko */}
           <div className="text-center mb-4">
