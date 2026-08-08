@@ -123,8 +123,47 @@ export function buildEscPos(s: StrukData): string {
   return cmd
 }
 
+export interface StrukLaporan {
+  namaToko: string
+  alamat?: string
+  telepon?: string
+  tanggal: string
+  totalPenjualan: number
+  jumlahTransaksi: number
+  rataRata: number
+  totalDiskon: number
+  catatan?: string
+}
+
+// ESC/POS laporan penjualan harian — memakai helper yang sama (INIT, line,
+// twoCol) tapi konten = ringkasan hari, bukan item nota. Dipisah dari
+// buildEscPos supaya nota transaksi (StrukData) tak berubah.
+export function buildEscPosLaporan(s: StrukLaporan): string {
+  const rp = (v: number) => `Rp${v.toLocaleString('id-ID')}`
+  let cmd = INIT + ALIGN_CENTER
+  cmd += BOLD_ON + DOUBLE_ON + s.namaToko + LF + DOUBLE_OFF + BOLD_OFF
+  if (s.alamat) cmd += s.alamat + LF
+  if (s.telepon) cmd += `Tel: ${s.telepon}` + LF
+  cmd += line()
+  cmd += BOLD_ON + 'LAPORAN PENJUALAN' + LF + 'HARIAN' + LF + BOLD_OFF
+  cmd += s.tanggal + LF
+  cmd += line()
+  cmd += ALIGN_LEFT
+  cmd += twoCol('Jumlah Transaksi', String(s.jumlahTransaksi))
+  cmd += twoCol('Rata-rata', rp(s.rataRata))
+  if (s.totalDiskon > 0) cmd += twoCol('Total Diskon', `-${rp(s.totalDiskon)}`)
+  cmd += line()
+  cmd += ALIGN_CENTER
+  cmd += BOLD_ON + DOUBLE_ON + `TOTAL: ${rp(s.totalPenjualan)}` + LF + DOUBLE_OFF + BOLD_OFF
+  cmd += line()
+  cmd += ALIGN_CENTER
+  if (s.catatan) cmd += s.catatan + LF
+  cmd += 'Dicetak via ZPOS' + LF
+  cmd += LF + LF + LF
+  cmd += CUT
+  return cmd
+}
 /**
- * Print langsung via Web Bluetooth API — tidak butuh app tambahan.
  * RPP02N support BLE, jadi bisa connect langsung dari Chrome Android.
  * 
  * UUID service printer thermal BLE umumnya pakai Nordic UART Service (NUS):

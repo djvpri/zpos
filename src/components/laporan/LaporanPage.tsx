@@ -8,6 +8,7 @@ import { cacheGet, cacheSet } from '@/lib/offline-cache'
 import { useAuth } from '@/hooks/useAuth'
 import { usePengaturan } from '@/hooks/usePengaturan'
 import { StrukModal } from '@/components/kasir/StrukModal'
+import { LaporanStrukModal } from '@/components/laporan/LaporanStrukModal'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 const fmtDT = (d: string) => `${fmtDate(d)} ${fmtTime(d)}`
@@ -61,6 +62,7 @@ export default function LaporanPage() {
   const [riwayat, setRiwayat] = useState<Transaksi[]>([])
   const [loadingRingkasan, setLoadingRingkasan] = useState(true)
   const [strukCetak, setStrukCetak] = useState<Transaksi | null>(null)
+  const [lapCetak, setLapCetak] = useState<LaporanHarian | null>(null)
 
   // Info toko utk render nota (nama, alamat, telp, catatan struk).
   const { toko } = useAuth()
@@ -264,7 +266,16 @@ export default function LaporanPage() {
       {tab === 'ringkasan' && (
         loadingRingkasan
           ? <div className="flex items-center justify-center h-64 text-gray-400">Memuat laporan...</div>
-          : <>
+          : <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">Ringkasan penjualan <b className="text-gray-700">{laporan[0] ? fmtDate(laporan[0].tanggal) : ''}</b></p>
+                <button
+                  onClick={() => setLapCetak(laporan[0] || null)}
+                  disabled={!laporan[0]}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+                  <Printer size={13} /> Cetak Laporan
+                </button>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {cards.map(c => (
                   <div key={c.label} className="bg-white border border-gray-100 rounded-xl p-4">
@@ -361,7 +372,7 @@ export default function LaporanPage() {
                     </table>
                 }
               </div>
-            </>
+          </div>
       )}
 
       {/* ===== TAB SHIFT ===== */}
@@ -573,6 +584,16 @@ export default function LaporanPage() {
         toko={{ nama: toko?.nama ?? '', alamat, telepon, catatan_struk }}
         onTutup={() => setStrukCetak(null)}
       />
+      {lapCetak && (
+        <LaporanStrukModal
+          data={lapCetak}
+          namaToko={toko?.nama ?? ''}
+          alamat={alamat}
+          telepon={telepon}
+          catatan_struk={catatan_struk}
+          onTutup={() => setLapCetak(null)}
+        />
+      )}
     </div>
   )
 }
