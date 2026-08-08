@@ -14,7 +14,11 @@ export async function GET(req: Request) {
         count(*) AS jumlah_transaksi,
         sum(total) AS total_penjualan,
         round(avg(total)) AS rata_rata,
-        sum(diskon) AS total_diskon
+        sum(diskon) AS total_diskon,
+        coalesce(sum(total) FILTER (WHERE metode_bayar = 'Tunai'), 0) AS total_tunai,
+        COALESCE((SELECT SUM(k.nominal) FROM kas_keluar k
+                  WHERE k.toko_id = ${id} AND k.void = false
+                    AND date_trunc('day', k.dibuat_at) = date_trunc('day', transaksi.created_at)), 0) AS total_pengeluaran
       FROM transaksi
       WHERE toko_id = ${id} AND dibatalkan = false
       GROUP BY date_trunc('day', created_at)

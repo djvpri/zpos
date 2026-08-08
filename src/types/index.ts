@@ -90,6 +90,7 @@ export interface Shift {
   total_tunai?: number
   total_qris?: number
   total_transfer?: number
+  total_kas_keluar?: number
 }
 
 export interface LaporanHarian {
@@ -98,6 +99,8 @@ export interface LaporanHarian {
   total_penjualan: number
   rata_rata: number
   total_diskon: number
+  total_tunai?: number
+  total_pengeluaran?: number
 }
 
 export interface ProdukTerlaris {

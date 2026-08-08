@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi, Shift } from '@/types'
-import { GraphUpArrow, Receipt, Bag, Percent, Ban, Download, ArrowClockwise, Trophy, Printer } from 'react-bootstrap-icons'
+import { GraphUpArrow, Receipt, Bag, Percent, Ban, Download, ArrowClockwise, Trophy, Printer, CashCoin, Wallet2 } from 'react-bootstrap-icons'
 import { cacheGet, cacheSet } from '@/lib/offline-cache'
 import { useAuth } from '@/hooks/useAuth'
 import { usePengaturan } from '@/hooks/usePengaturan'
@@ -43,6 +43,8 @@ const AKTIVITAS_LABEL: Record<string, { label: string; cls: string }> = {
   member_hapus: { label: 'Hapus Member', cls: 'bg-red-50 text-red-600' },
   shift_buka: { label: 'Buka Shift', cls: 'bg-emerald-50 text-emerald-600' },
   shift_tutup: { label: 'Tutup Shift', cls: 'bg-violet-50 text-violet-600' },
+  kas_keluar: { label: 'Pengeluaran', cls: 'bg-amber-50 text-amber-600' },
+  kas_keluar_void: { label: 'Void Pengeluaran', cls: 'bg-red-50 text-red-500' },
   bon_bayar: { label: 'Bayar Bon', cls: 'bg-teal-50 text-teal-600' },
   staff_ubah: { label: 'Ubah Staff', cls: 'bg-amber-50 text-amber-600' },
   staff_hapus: { label: 'Hapus Staff', cls: 'bg-red-50 text-red-600' },
@@ -52,6 +54,14 @@ const AKTIVITAS_LABEL: Record<string, { label: string; cls: string }> = {
 
 const aksiInfo = (aksi: string) =>
   AKTIVITAS_LABEL[aksi] ?? { label: aksi.replace(/_/g, ' '), cls: 'bg-gray-100 text-gray-600' }
+
+// Saldo kas per shift = modal_awal + tunai − kas_keluar (server akurat, rumus display sama).
+const saldoKas = (s: { modal_awal?: number; total_tunai?: number; total_kas_keluar?: number }) =>
+  (s.modal_awal || 0) + (s.total_tunai || 0) - (s.total_kas_keluar || 0)
+
+// Saldo kas harian = tunai − pengeluaran (tanpa modal; modal = setoran awal shift, bukan laci hari).
+const saldoKasHarian = (h: { total_tunai?: number; total_pengeluaran?: number }) =>
+  (h.total_tunai || 0) - (h.total_pengeluaran || 0)
 
 export default function LaporanPage() {
   const [tab, setTab] = useState<'ringkasan' | 'shift' | 'bon' | 'log'>('ringkasan')
@@ -237,6 +247,8 @@ export default function LaporanPage() {
     { label: 'Jumlah Transaksi', val: String(hari.jumlah_transaksi || 0), icon: Receipt, color: 'teal' },
     { label: 'Rata-rata Transaksi', val: fmt(hari.rata_rata || 0), icon: Bag, color: 'amber' },
     { label: 'Total Diskon', val: fmt(hari.total_diskon || 0), icon: Percent, color: 'rose' },
+    { label: 'Pengeluaran', val: fmt(hari.total_pengeluaran || 0), icon: CashCoin, color: 'rose' },
+    { label: 'Saldo Kas', val: fmt(saldoKasHarian(hari)), icon: Wallet2, color: 'emerald' },
   ]
 
   const colorMap: Record<string, string> = {
@@ -244,6 +256,7 @@ export default function LaporanPage() {
     teal: 'bg-teal-50 text-teal-600',
     amber: 'bg-amber-50 text-amber-600',
     rose: 'bg-rose-50 text-rose-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
   }
 
   return (
@@ -276,7 +289,7 @@ export default function LaporanPage() {
                   <Printer size={13} /> Cetak Laporan
                 </button>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
                 {cards.map(c => (
                   <div key={c.label} className="bg-white border border-gray-100 rounded-xl p-4">
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${colorMap[c.color]}`}>
@@ -415,6 +428,16 @@ export default function LaporanPage() {
                             <div className="text-sm font-semibold text-indigo-700">{fmt(s.total_penjualan || 0)}</div>
                           </div>
                         </div>
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-50">
+                          <div>
+                            <div className="text-xs text-gray-400">Pengeluaran</div>
+                            <div className="text-sm font-medium text-rose-600">{fmt(s.total_kas_keluar || 0)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-400">Saldo Kas</div>
+                            <div className="text-sm font-semibold text-emerald-600">{fmt(saldoKas(s))}</div>
+                          </div>
+                        </div>
                         <div className="text-xs text-gray-400 text-center">{s.jumlah_transaksi ?? 0} transaksi</div>
                       </div>
                     )
@@ -432,6 +455,8 @@ export default function LaporanPage() {
                         <th className="text-right px-4 py-3">Trx</th>
                         <th className="text-right px-4 py-3">Tunai</th>
                         <th className="text-right px-4 py-3">Non-Tunai</th>
+                        <th className="text-right px-4 py-3">Pengeluar.</th>
+                        <th className="text-right px-4 py-3">Saldo Kas</th>
                         <th className="text-right px-4 py-3">Total</th>
                       </tr>
                     </thead>
@@ -453,6 +478,8 @@ export default function LaporanPage() {
                             <td className="px-4 py-3 text-right text-gray-500">{s.jumlah_transaksi ?? 0}x</td>
                             <td className="px-4 py-3 text-right text-gray-700">{fmt(s.total_tunai || 0)}</td>
                             <td className="px-4 py-3 text-right text-gray-700">{fmt(nonTunai)}</td>
+                            <td className="px-4 py-3 text-right text-rose-600">{fmt(s.total_kas_keluar || 0)}</td>
+                            <td className="px-4 py-3 text-right font-semibold text-emerald-600">{fmt(saldoKas(s))}</td>
                             <td className="px-4 py-3 text-right font-semibold text-gray-900">{fmt(s.total_penjualan || 0)}</td>
                           </tr>
                         )
