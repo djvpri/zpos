@@ -12,7 +12,9 @@ const withTotals = (tokoId: number) => sql`
     COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE), 0)::int  AS total_penjualan,
     COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE AND t.metode_bayar = 'Tunai'),    0)::int AS total_tunai,
     COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE AND t.metode_bayar = 'QRIS'),     0)::int AS total_qris,
-    COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE AND t.metode_bayar = 'Transfer'), 0)::int AS total_transfer
+    COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE AND t.metode_bayar = 'Transfer'), 0)::int AS total_transfer,
+    COALESCE((SELECT SUM(k.nominal)::int FROM kas_keluar k
+              WHERE k.shift_id = s.id AND k.void IS NOT TRUE), 0)     AS total_kas_keluar
   FROM shift s
   LEFT JOIN transaksi t ON t.shift_id = s.id AND t.toko_id = s.toko_id
   WHERE s.toko_id = ${tokoId}

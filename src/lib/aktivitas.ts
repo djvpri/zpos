@@ -20,6 +20,8 @@ export type Aksi =
   | 'shift_buka'
   | 'shift_tutup'
   | 'shift_modal'
+  | 'kas_keluar'
+  | 'kas_keluar_void'
   | 'bon_bayar'
   | 'staff_tambah'
   | 'staff_ubah'
@@ -50,6 +52,8 @@ const KATEGORI: Record<Aksi, string> = {
   shift_buka: 'uang',
   shift_tutup: 'uang',
   shift_modal: 'uang',
+  kas_keluar: 'uang',
+  kas_keluar_void: 'uang',
   bon_bayar: 'uang',
   staff_tambah: 'staff',
   staff_ubah: 'staff',
