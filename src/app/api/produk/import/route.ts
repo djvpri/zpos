@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
+import { isInternalBarcode } from '@/lib/barcode-code39'
 
 export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
@@ -38,6 +39,23 @@ export async function POST(req: Request) {
           RETURNING id
         `
         kategoriId = kat.id
+      }
+
+      // Sumbangkan barcode eksternal nyata (bukan barcode internal ZPos) ke
+      // katalog barcode global — supaya toko lain bisa auto-suggest dari
+      // barang yang di-import/scan di sini. Sangat anti-duplikat: UNIQUE(barcode).
+      const barcodeKatalog = p.barcode?.trim() || ''
+      if (barcodeKatalog && !isInternalBarcode(barcodeKatalog)) {
+        try {
+          await sql`
+            INSERT INTO barcode_katalog (barcode, nama, kategori, sumber)
+            VALUES (${barcodeKatalog}, ${p.nama.slice(0, 200) || null}, ${p.kategori?.trim() || null}, 'import')
+            ON CONFLICT (barcode) DO UPDATE SET
+              nama     = EXCLUDED.nama,
+              kategori = COALESCE(EXCLUDED.kategori, barcode_katalog.kategori),
+              sumber   = 'import'
+          `
+        } catch { /* katalog bukan blocker — gagal sedikit jangan batalkan import */ }
       }
 
       // Upsert dengan dua kunci, urutannya:
