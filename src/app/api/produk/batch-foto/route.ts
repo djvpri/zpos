@@ -80,12 +80,13 @@ export async function POST(req: Request) {
     namaSimpan = namaUnikDari(nama, new Set(dipakai.map((r) => r.nama)))
   }
 
-  // 3) Insert produk mode cepat (harga 1, stok 0, foto tersimpan)
+  // 3) Insert produk (harga AI jika terbaca jelas dari label, kalau tidak → 1)
   let row
   try {
+    const harga = hasil.harga ?? 1
     ;[row] = await sql`
       INSERT INTO produk (nama, harga, stok, foto_url, kategori_id, toko_id, stok_minimum, client_ref)
-      VALUES (${namaSimpan}, 1, 0, ${foto}, ${kategoriId}, ${auth.tokoId}, 5, null)
+      VALUES (${namaSimpan}, ${harga}, 0, ${foto}, ${kategoriId}, ${auth.tokoId}, 5, null)
       RETURNING *
     `
     // Auto-barcode internal (sama seperti POST /api/produk)

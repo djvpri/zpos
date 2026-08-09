@@ -158,6 +158,9 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       const d = await res.json().catch(() => ({}))
       if (res.ok && d.nama) set('nama', d.nama)
       if (res.ok && d.kategori) setSaranKat([d.kategori]) // foto → Gemini kasih nama sekalian kategori
+      if (res.ok && d.harga && !String(form.harga || '').trim()) {
+        set('harga', String(d.harga)) // harga AI terbaca jelas → isi field harga (bisa diedit)
+      }
       if (res.ok && d.adaTeks === false) {
         setDeteksiNama('tanpa_teks') // tak ada label → nama dari penampakan (konfirmasi manual)
       } else if (res.ok && d.nama) {

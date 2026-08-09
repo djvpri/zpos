@@ -12,8 +12,20 @@ const MODEL = 'gemini-3.5-flash-lite'
 export interface HasilNamaFoto {
   nama: string | null    // null = tak bisa dideteksi
   kategori?: string | null // kategori yang disarankan (opsional, dari foto yang sama)
+  harga?: number | null  // harga jual (Rp) jika TERLIHAT JELAS di foto (label harga/plastik); null = tak/belum tentu
   adaTeks?: boolean      // apakah foto punya teks/label yang terlihat (dari Gemini)
   error?: string         // error internal (key belum diset, timeout, dll)
+}
+
+/** Parsing JSON yang dikembalikan Gemini: normalisasi harga → number|null. */
+export function parseHarga(v: unknown): number | null {
+  if (typeof v === 'number') return Number.isFinite(v) && v > 0 ? Math.round(v) : null
+  if (typeof v !== 'string') return null
+  if (v.trim().startsWith('-') || /^[-–—]$/.test(v.trim())) return null // negatif/"-" → tak valid
+  const s = v.replace(/[^\d]/g, '') // buang 'Rp', '.', spasi, dll → hanya angka
+  if (!s) return null
+  const n = Number(s)
+  return Number.isFinite(n) && n > 0 ? n : null
 }
 
 /**
@@ -36,7 +48,7 @@ export async function deteksiNamaDariFoto(
       body: JSON.stringify({
         contents: [{
           parts: [
-            { text: 'Lihat foto produk minimarket Indonesia. Sebutkan nama produk ini dengan benar dan singkat. Kalau ada teks/label di kemasan, gunakan itu sebagai nama. Kalau TIDAK ada teks sama sekali (misal telur, sayur, buah, produk curah), gambarkan dari penampakan sesingkat mungkin (misal "Telur ayam", "Roti tawar", "Cabai merah"). Balas JSON: {"nama": "nama produk", "kategori": "kategori produk ini dalam 1-3 kata, misal Makanan/Minuman/Snack/Kebutuhan Harian/Sayur dan Buah. Kosongkan jika tidak tahu", "ada_teks": true atau false jika label/teks terlihat di foto}. Jangan tambahkan apa pun selain JSON.' },
+            { text: 'Lihat foto produk minimarket Indonesia. Sebutkan nama produk ini dengan benar dan singkat. Kalau ada teks/label di kemasan, gunakan itu sebagai nama. Kalau TIDAK ada teks sama sekali (misal telur, sayur, buah, produk curah), gambarkan dari penampakan sesingkat mungkin (misal "Telur ayam", "Roti tawar", "Cabai merah"). Baca HARGA JUAL (dalam Rupiah) HANYA jika terlihat jelas di foto — di label harga, tempelan harga, atau cetakan di kemasan (misal "Rp3.500", "harga 7500"). JANGAN menebak atau menyiratkan harga kalau tidak benar-benar terlihat; kalau tak jelas tulis null. Balas JSON: {"nama": "nama produk", "kategori": "kategori produk ini dalam 1-3 kata, misal Makanan/Minuman/Snack/Kebutuhan Harian/Sayur dan Buah. Kosongkan jika tidak tahu", "harga": <angka harga jual dalam Rupiah, HANYA jika terbaca jelas, selain itu null>, "ada_teks": true atau false jika label/teks terlihat di foto}. Jangan tambahkan apa pun selain JSON.' },
             { inline_data: { mime_type: 'image/jpeg', data: fotoBase64.replace(/^data:.*?;base64,/, '') } },
           ],
         }],
@@ -56,10 +68,11 @@ export async function deteksiNamaDariFoto(
       const parsed = JSON.parse(teks)
       const nama = typeof parsed?.nama === 'string' ? parsed.nama.trim() : ''
       const kategori = typeof parsed?.kategori === 'string' ? parsed.kategori.trim() || null : null
+      const harga = parseHarga(parsed?.harga)
       const adaTeks = typeof parsed?.ada_teks === 'boolean' ? parsed.ada_teks : undefined
-      return { nama: nama || null, kategori: kategori || null, adaTeks }
+      return { nama: nama || null, kategori: kategori || null, harga, adaTeks }
     } catch {
-      return { nama: teks ? teks.trim() : null }
+      return { nama: teks ? teks.trim() : null, harga: null }
     }
   } catch {
     return { nama: null, error: 'Gagal memanggil Gemini (jaringan/timeout).' }
