@@ -77,13 +77,29 @@ export default function ProdukPage() {
   const [editing, setEditing] = useState<{ id: number; field: 'harga' | 'stok' } | null>(null)
   // Edit cepat: scan barcode via kamera utk produk ini.
   const [scanBar, setScanBar] = useState<Produk | null>(null)
+  // Scan barcode via USB utk SET barcode ke produk ini (bedanya: dari kamera, USB
+  // pakai hook global; scan berikutnya diarahkan utk mengisi barcode produk target).
+  const [usbBar, setUsbBar] = useState<Produk | null>(null)
   // Notif "produk tak ditemukan" saat scan USB pertama (auto-hilang 2.5s).
   const [scanErr, setScanErr] = useState('')
+  // Notif positif saat barcode USB berhasil di-set ke produk (auto-hilang 2.5s).
+  const [scanOk, setScanOk] = useState('')
   // Scan barcode USB (bukan kamera) → cari langsung. Match → buka modal detail;
   // tak match → notif. Hook `useBarcodeUsbListener` aktif walau tak fokus di input.
   // (A) Scan barcode USB → cari langsung lewat API (bukan array client yg kini
   // dipaging). Barcode apa pun ketemu walau produk belum termuat di halaman.
   const onBarcodeCari = useCallback(async (code: string) => {
+    // Mode "set barcode ke produk": user klik tombol USB di sebuah produk → scan
+    // pertama setelahnya langsung mengisi barcode produk itu, bukan cari global.
+    if (usbBar) {
+      const target = usbBar
+      setUsbBar(null)
+      setScanErr('')
+      setScanOk(`Barcode ${code} diterapkan ke "${target.nama}"`)
+      setTimeout(() => setScanOk(''), 2500)
+      await update(target.id, { id: target.id, barcode: code } as Partial<Produk>)
+      return
+    }
     try {
       const res = await fetch(`/api/produk/barcode/${encodeURIComponent(code)}`)
       if (res.ok) {
@@ -100,7 +116,7 @@ export default function ProdukPage() {
       setScanErr(`Produk tak ditemukan: ${code}`)
       setTimeout(() => setScanErr(''), 2500)
     }
-  }, [muatProduk, sortBy])
+  }, [muatProduk, sortBy, usbBar, update])
   useBarcodeUsbListener(onBarcodeCari)
 
   const tampilkanList = daftar
@@ -328,6 +344,7 @@ export default function ProdukPage() {
             </div>
           </div>
           {scanErr && <p className="text-red-600 text-xs mb-2">{scanErr}</p>}
+          {scanOk && <p className="text-green-600 text-xs mb-2">{scanOk}</p>}
 
           <div className="bg-white border border-gray-100 rounded-xl overflow-hidden overflow-x-auto">
             <table className="w-full min-w-[640px]">
@@ -431,8 +448,15 @@ export default function ProdukPage() {
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button
+                          onClick={() => setUsbBar(p)}
+                          title="Scan barcode dengan scanner USB (arahkan ke produk ini)"
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
+                        >
+                          <UpcScan size={12} /> USB
+                        </button>
+                        <button
                           onClick={() => setScanBar(p)}
-                          title="Scan barcode kemasan"
+                          title="Scan barcode kemasan (kamera)"
                           className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
                         >
                           <QrCodeScan size={12} /> Barcode
