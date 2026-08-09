@@ -5,10 +5,11 @@ import { useProduk } from '@/hooks/useProduk'
 import { useKategori } from '@/hooks/useKategori'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import FotoLightbox from '@/components/produk/FotoLightbox'
+import CekDuplikatPanel from '@/components/produk/CekDuplikatPanel'
 import { Produk } from '@/types'
 import { useBarcodeUsbListener } from '@/components/kasir/BarcodeScanner'
 import { fmt } from '@/lib/utils'
-import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, LayoutTextWindow, Download, CameraFill, ImageFill } from 'react-bootstrap-icons'
+import { Plus, Search, PencilSquare, Trash, Box, Tag, XLg, FileEarmarkSpreadsheet, QrCodeScan, CursorText, UpcScan, Files, LayoutTextWindow, Download, CameraFill, ImageFill, Copy } from 'react-bootstrap-icons'
 import * as XLSX from 'xlsx'
 import dynamic from 'next/dynamic'
 const ImportProduk = dynamic(() => import('./ImportProduk'), { ssr: false })
@@ -24,7 +25,7 @@ const BarcodeCameraModal = dynamic(
   { ssr: false }
 )
 
-type Tab = 'produk' | 'kategori'
+type Tab = 'produk' | 'kategori' | 'deteksi'
 
 export default function ProdukPage() {
   const { produk, tambah, update, hapus } = useProduk()
@@ -216,6 +217,14 @@ export default function ProdukPage() {
             }`}
           >
             <Tag size={14} /> Kategori
+          </button>
+          <button
+            onClick={() => setTab('deteksi')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              tab === 'deteksi' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Copy size={14} /> Deteksi Duplikat
           </button>
         </div>
 
@@ -555,6 +564,11 @@ export default function ProdukPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Tab: Deteksi Duplikat */}
+      {tab === 'deteksi' && (
+        <CekDuplikatPanel hapusProduk={hapus} />
       )}
 
       {showScanMassal && <ScanBarcodeMassal onSelesai={() => muatProduk(1, cari, sortBy)} onTutup={() => setShowScanMassal(false)} tambahOffline={tambah} />}
