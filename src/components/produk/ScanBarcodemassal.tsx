@@ -27,6 +27,20 @@ interface Props {
 }
 
 async function lookupBarcode(barcode: string): Promise<Partial<ProdukScan> | null> {
+  // 1) Katalog barcode ZPos sendiri (50 ribuan barcode, data global panel "Katalog").
+  //    Pakai data ini dulu — konsisten dgn stok lokal; kalau ketemu tak perlu
+  //    tanya server luar. Katalog tak punya foto (user isi/upload nanti).
+  try {
+    const res = await fetch(`/api/barcode-katalog/${encodeURIComponent(barcode)}`, { cache: 'no-store' })
+    if (res.ok) {
+      const d = await res.json()
+      if (d?.nama) {
+        return { nama: d.nama, kategori: d?.kategori || 'Umum' }
+      }
+    }
+  } catch { /* offline → fallback ke Open Food Facts di bawah */ }
+
+  // 2) Fallback: Open Food Facts (barcode EAN produk industri global).
   try {
     const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
     const data = await res.json()
@@ -166,7 +180,7 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }:
               </div>
 
               <p className="text-xs text-gray-400 text-center">
-                Data nama & kategori otomatis diisi dari database produk global
+                Nama & kategori otomatis dari katalog barcode ZPos, lalu Open Food Facts
               </p>
             </div>
 
