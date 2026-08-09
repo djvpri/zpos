@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   }
 
   const [shift] = await sql`
-    SELECT id, kasir_nama, modal_awal, buka_at
+    SELECT id, nomor_shift, kasir_nama, modal_awal, buka_at
     FROM shift
     WHERE toko_id = ${toko.tokoId} AND user_id = ${targetUserId} AND aktif = true
     LIMIT 1

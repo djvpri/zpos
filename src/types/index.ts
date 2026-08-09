@@ -80,6 +80,7 @@ export interface Staff {
 
 export interface Shift {
   id: number
+  nomor_shift?: number | null
   kasir_nama: string
   modal_awal: number
   buka_at: string

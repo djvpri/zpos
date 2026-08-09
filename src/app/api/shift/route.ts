@@ -7,7 +7,7 @@ import { catatAktivitas } from '@/lib/aktivitas'
 
 const withTotals = (tokoId: number) => sql`
   SELECT
-    s.id, s.kasir_nama, s.modal_awal, s.buka_at, s.tutup_at, s.aktif,
+    s.id, s.nomor_shift, s.kasir_nama, s.modal_awal, s.buka_at, s.tutup_at, s.aktif,
     COUNT(t.id)  FILTER (WHERE t.dibatalkan IS NOT TRUE)::int          AS jumlah_transaksi,
     COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE), 0)::int  AS total_penjualan,
     COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE AND t.metode_bayar = 'Tunai'),    0)::int AS total_tunai,
@@ -60,15 +60,23 @@ export const POST = apiHandler(async (req: Request, body: { modal_awal?: number;
   `
   if (existing) return NextResponse.json({ error: 'Shift sudah aktif' }, { status: 400 })
 
+  // nomor_shift = urutan buka shift di toko ini PADA HARI INI (#1 pagi, #2 sore, ..).
+  // Reset tiap hari & per toko; `id` global tetap internal. Konkurensi kecil → ifneeded
+  // gap kecil bisa terjadi kala 2 shift dibuka barengan; jarang & tak merusak (penanda).
+  const [urutan] = await sql`
+    SELECT COALESCE(MAX(nomor_shift), 0)::int + 1 AS n
+    FROM shift WHERE toko_id = ${toko.tokoId} AND buka_at::date = CURRENT_DATE
+  `
+
   const [shift] = await sql`
-    INSERT INTO shift (toko_id, user_id, kasir_nama, modal_awal)
-    VALUES (${toko.tokoId}, ${targetUserId}, ${targetNama}, ${Math.max(0, Number(body.modal_awal ?? 0) || 0)})
+    INSERT INTO shift (toko_id, user_id, kasir_nama, modal_awal, nomor_shift)
+    VALUES (${toko.tokoId}, ${targetUserId}, ${targetNama}, ${Math.max(0, Number(body.modal_awal ?? 0) || 0)}, ${urutan.n})
     RETURNING *
   `
 
   // Audit: catat buka shift + modal awal (cek penggelembungan modal/kecurangan).
   void catatAktivitas(toko, 'shift_buka',
-    `Buka shift #${shift.id} · modal Rp ${Number(shift.modal_awal || 0).toLocaleString('id-ID')}`)
+    `Buka shift #${shift.nomor_shift ?? shift.id} · modal Rp ${Number(shift.modal_awal || 0).toLocaleString('id-ID')}`)
 
   return NextResponse.json(shift)
 }, { schema: shiftSchema })

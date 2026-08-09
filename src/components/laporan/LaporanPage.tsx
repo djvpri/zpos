@@ -406,7 +406,7 @@ export default function LaporanPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {s.aktif && <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />}
-                            <span className="font-medium text-gray-800">{s.kasir_nama}</span>
+                            <span className="font-medium text-gray-800"><span className="text-gray-400 font-normal mr-1">Shift #{s.nomor_shift ?? s.id}</span>{s.kasir_nama}</span>
                           </div>
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.aktif ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
                             {s.aktif ? 'Aktif' : 'Selesai'}
@@ -470,7 +470,7 @@ export default function LaporanPage() {
                             <td className="px-4 py-3 text-gray-700 font-medium">
                               <div className="flex items-center gap-2">
                                 {s.aktif && <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />}
-                                {s.kasir_nama}
+                                <span className="text-gray-400 font-normal">#{s.nomor_shift ?? s.id}</span>{s.kasir_nama}
                               </div>
                             </td>
                             <td className="px-4 py-3 text-gray-500 text-xs">{fmtDT(s.buka_at)}</td>

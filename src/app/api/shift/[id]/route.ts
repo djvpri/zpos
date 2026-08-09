@@ -11,7 +11,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params
   const [row] = await sql`
     SELECT
-      s.id, s.kasir_nama, s.modal_awal, s.buka_at, s.tutup_at, s.aktif,
+      s.id, s.nomor_shift, s.kasir_nama, s.modal_awal, s.buka_at, s.tutup_at, s.aktif,
       COUNT(t.id)  FILTER (WHERE t.dibatalkan IS NOT TRUE)::int          AS jumlah_transaksi,
       COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE), 0)::int  AS total_penjualan,
       COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE AND t.metode_bayar = 'Tunai'),    0)::int AS total_tunai,
@@ -50,7 +50,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   // Return detail + totals
   const [detail] = await sql`
     SELECT
-      s.id, s.kasir_nama, s.modal_awal, s.buka_at, s.tutup_at, s.aktif,
+      s.id, s.nomor_shift, s.kasir_nama, s.modal_awal, s.buka_at, s.tutup_at, s.aktif,
       COUNT(t.id)  FILTER (WHERE t.dibatalkan IS NOT TRUE)::int          AS jumlah_transaksi,
       COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE), 0)::int  AS total_penjualan,
       COALESCE(SUM(t.total) FILTER (WHERE t.dibatalkan IS NOT TRUE AND t.metode_bayar = 'Tunai'),    0)::int AS total_tunai,
