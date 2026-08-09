@@ -110,15 +110,23 @@ export const POST = apiHandler(async (req: Request, body: z.infer<typeof produkS
       const [existing] = await sql`SELECT * FROM produk WHERE client_ref = ${body.client_ref} AND toko_id = ${toko.tokoId}`
       if (existing) return NextResponse.json(existing, { status: 409 })
     }
+    // Bedakan konstraint mana yg dilanggar (PG 23505 membawa nama constraint).
+    // Ini penting: barcode bisa dicari di daftar & takada — unik violation bisa jadi
+    // dari NAMA (produk_toko_nama_unik, case-insensitive, aktif/nonaktif), bukan barcode.
+    const constraint = (e as { constraint?: string })?.constraint
     // Unique barcode (produk_toko_barcode_unik): barcode sudah dipakai produk
-    // lain dalam toko ini. Beri pesan informatif, bukan internal error 500.
-    if (body.barcode && (e as { code?: string })?.code === '23505') {
+    // lain dalam toko ini.
+    if (constraint === 'produk_toko_barcode_unik') {
       return NextResponse.json({ error: `Barcode ${body.barcode} sudah dipakai produk lain di toko ini.` }, { status: 409 })
     }
     // Unique nama (produk_toko_nama_unik): nama sudah dipakai produk mana pun
     // (aktif/nonaktif) dalam toko ini, case-insensitive. Tolak dgn pesan jelas.
-    if ((e as { code?: string })?.code === '23505') {
+    if (constraint === 'produk_toko_nama_unik') {
       return NextResponse.json({ error: `Nama "${body.nama}" sudah dipakai produk lain di toko ini.` }, { status: 409 })
+    }
+    // Fallback generik (kalau constraint tak terdeteksi).
+    if ((e as { code?: string })?.code === '23505') {
+      return NextResponse.json({ error: `Data produk ini sudah dipakai di toko ini (kemungkinan nama yang sama).` }, { status: 409 })
     }
     throw e
   }
