@@ -10,20 +10,33 @@ export async function GET(req: Request) {
 
   const [laporan, terlaris, riwayat] = await Promise.all([
     sql`
-      SELECT date_trunc('day', created_at) AS tanggal,
-        count(*) AS jumlah_transaksi,
-        sum(total) AS total_penjualan,
-        round(avg(total)) AS rata_rata,
-        sum(diskon) AS total_diskon,
-        coalesce(sum(total) FILTER (WHERE metode_bayar = 'Tunai'), 0) AS total_tunai,
-        COALESCE((SELECT SUM(k.nominal) FROM kas_keluar k
-                  WHERE k.toko_id = ${id} AND k.void = false
-                    AND date_trunc('day', k.dibuat_at) = date_trunc('day', transaksi.created_at)), 0) AS total_pengeluaran
-      FROM transaksi
-      WHERE toko_id = ${id} AND dibatalkan = false
-      GROUP BY date_trunc('day', created_at)
-      ORDER BY tanggal DESC
-      LIMIT 7
+      SELECT t.tanggal,
+        t.jumlah_transaksi,
+        t.total_penjualan,
+        t.rata_rata,
+        t.total_diskon,
+        t.total_tunai,
+        COALESCE(k.kas_keluar, 0) AS total_pengeluaran
+      FROM (
+        SELECT date_trunc('day', created_at) AS tanggal,
+          count(*) AS jumlah_transaksi,
+          sum(total) AS total_penjualan,
+          round(avg(total)) AS rata_rata,
+          sum(diskon) AS total_diskon,
+          coalesce(sum(total) FILTER (WHERE metode_bayar = 'Tunai'), 0) AS total_tunai
+        FROM transaksi
+        WHERE toko_id = ${id} AND dibatalkan = false
+        GROUP BY date_trunc('day', created_at)
+        ORDER BY tanggal DESC
+        LIMIT 7
+      ) t
+      LEFT JOIN (
+        SELECT date_trunc('day', dibuat_at) AS tanggal, sum(nominal) AS kas_keluar
+        FROM kas_keluar
+        WHERE toko_id = ${id} AND void = false
+        GROUP BY date_trunc('day', dibuat_at)
+      ) k ON k.tanggal = t.tanggal
+      ORDER BY t.tanggal DESC
     `,
     sql`
       SELECT p.id, p.nama, p.emoji,
@@ -40,5 +53,8 @@ export async function GET(req: Request) {
     sql`SELECT * FROM transaksi WHERE toko_id = ${id} ORDER BY created_at DESC LIMIT 10`,
   ])
 
-  return NextResponse.json({ laporan, terlaris, riwayat })
+  return NextResponse.json(
+    { laporan, terlaris, riwayat },
+    { headers: { 'Cache-Control': 'no-store' } }
+  )
 }
