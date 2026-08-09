@@ -36,6 +36,6 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
   const [row] = await sql`DELETE FROM bon WHERE id = ${id} AND toko_id = ${toko.tokoId} RETURNING id`
   if (!row) return NextResponse.json({ error: 'Bon tidak ditemukan' }, { status: 404 })
 
-  void catatAktivitas(toko, 'data_hapus', `Bon #${id} dihapus permanen`)
+  void catatAktivitas(toko, 'bon_hapus', `Bon #${id} dihapus permanen`)
   return NextResponse.json({ ok: true })
 }

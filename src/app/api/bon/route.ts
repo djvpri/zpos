@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
+import { catatAktivitas } from '@/lib/aktivitas'
 import { apiHandler } from '@/lib/api-handler'
 
 // GET daftar bon. Default: yang masih aktif (selesai=false). ?semua=1 → termasuk dibayar.
@@ -61,5 +62,7 @@ export const POST = apiHandler(async (req: Request, body: { nama?: string | null
     VALUES (${toko.tokoId}, ${body.nama?.trim() || null}, ${JSON.stringify(produkObj)}, ${total})
     RETURNING id, nama, produk_json, total, selesai, created_at
   `
+  // Audit: bon digantung (dari windows kasir via kirim_bon, atau halaman bon web).
+  await catatAktivitas(toko, 'bon_gantung', `Bon #${row.id} atas nama ${body.nama?.trim() || '(tanpa nama)'} · Rp ${total.toLocaleString('id-ID')}`)
   return NextResponse.json({ ...row, produk: JSON.parse(row.produk_json) }, { status: 201 })
 })
