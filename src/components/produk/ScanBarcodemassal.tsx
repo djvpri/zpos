@@ -17,13 +17,14 @@ interface ProdukScan {
   stok: number
   kategori: string
   foto_url?: string
-  status: 'loading' | 'found' | 'manual'
+  status: 'loading' | 'found' | 'manual' | 'existing'
 }
 
 interface Props {
   onSelesai: () => void
   onTutup: () => void
   tambahOffline: (p: Omit<Produk, 'id' | 'created_at' | 'updated_at'>) => Promise<{ message: string } | null>
+  daftarBarcodeAda: Set<string>
 }
 
 async function lookupBarcode(barcode: string): Promise<Partial<ProdukScan> | null> {
@@ -54,7 +55,7 @@ async function lookupBarcode(barcode: string): Promise<Partial<ProdukScan> | nul
   } catch { return null }
 }
 
-export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }: Props) {
+export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline, daftarBarcodeAda }: Props) {
   const { kategori: daftarKategori } = useKategori()
   const [produk, setProduk] = useState<ProdukScan[]>([])
   const [showKamera, setShowKamera] = useState(false)
@@ -67,7 +68,17 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }:
   async function tambahBarcode(barcode: string) {
     const trimmed = barcode.trim()
     if (!trimmed) return
-    if (produk.find(p => p.barcode === trimmed)) return // sudah ada
+    if (produk.find(p => p.barcode === trimmed)) return // sudah ada di list
+
+    // Kalau barcode uda ada sebagai produk di toko ini → tandai 'existing':
+    // lewati (tidak simpan/ubah), hanya tampil warning. Jangan timpa harga/stok.
+    if (daftarBarcodeAda.has(trimmed)) {
+      setProduk(prev => [{
+        barcode: trimmed, nama: 'Barang ini sudah ada di tokomu', harga: 0, stok: 0,
+        kategori: '', status: 'existing'
+      }, ...prev])
+      return
+    }
 
     const newItem: ProdukScan = {
       barcode: trimmed, nama: '', harga: 0, stok: 1,
@@ -193,7 +204,7 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }:
                   <p className="text-xs text-gray-300 mt-1">Scan barcode produk untuk memulai</p>
                 </div>
               ) : produk.map(p => (
-                <div key={p.barcode} className={`rounded-xl border p-3 ${p.status === 'loading' ? 'border-gray-100 bg-gray-50' : p.nama && p.harga > 0 ? 'border-green-100 bg-green-50' : 'border-orange-100 bg-orange-50'}`}>
+                <div key={p.barcode} className={`rounded-xl border p-3 ${p.status === 'loading' ? 'border-gray-100 bg-gray-50' : p.status === 'existing' ? 'border-amber-200 bg-amber-50' : p.nama && p.harga > 0 ? 'border-green-100 bg-green-50' : 'border-orange-100 bg-orange-50'}`}>
                   <div className="flex items-start gap-2">
                     {/* Foto */}
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-white border border-gray-200 flex-shrink-0 flex items-center justify-center">
@@ -205,7 +216,15 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }:
                     </div>
 
                     <div className="flex-1 min-w-0 space-y-1.5">
-                      {p.status === 'loading' ? (
+                      {p.status === 'existing' ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs text-amber-700 font-medium">
+                            <ExclamationCircle size={12} className="inline mr-1" />
+                            Barcode <span className="font-mono">{p.barcode}</span> sudah ada di tokomu
+                          </span>
+                          <span className="text-[11px] text-amber-600">Dilewati — tidak diubah/ditimpa.</span>
+                        </div>
+                      ) : p.status === 'loading' ? (
                         <div className="flex items-center gap-2">
                           <ArrowRepeat size={14} className="animate-spin text-gray-400" />
                           <span className="text-xs text-gray-400">Mencari info produk {p.barcode}...</span>

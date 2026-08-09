@@ -571,7 +571,7 @@ export default function ProdukPage() {
         <CekDuplikatPanel hapusProduk={hapus} />
       )}
 
-      {showScanMassal && <ScanBarcodeMassal onSelesai={() => muatProduk(1, cari, sortBy)} onTutup={() => setShowScanMassal(false)} tambahOffline={tambah} />}
+      {showScanMassal && <ScanBarcodeMassal onSelesai={() => muatProduk(1, cari, sortBy)} onTutup={() => setShowScanMassal(false)} tambahOffline={tambah} daftarBarcodeAda={new Set(produk.map(p => p.barcode).filter((b): b is string => !!b))} />}
       {showImport && <ImportProduk onSelesai={() => muatProduk(1, cari, sortBy)} onTutup={() => setShowImport(false)} tambahOffline={tambah} />}
       {showKatalogImport && <ImportBarcodeKatalog onTutup={() => setShowKatalogImport(false)} />}
       {showKatalogLihat && <KatalogBarcodeModal onTutup={() => setShowKatalogLihat(false)} />}
