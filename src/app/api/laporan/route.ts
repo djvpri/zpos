@@ -36,14 +36,14 @@ export async function GET(req: Request) {
         t.rata_rata,
         t.total_diskon,
         t.total_tunai,
-        COALESCE(k.kas_keluar, 0) AS total_pengeluaran
+        COALESCE(k.kas_keluar, 0)::bigint AS total_pengeluaran
       FROM (
         SELECT date_trunc('day', created_at) AS tanggal,
-          count(*) AS jumlah_transaksi,
-          sum(total) AS total_penjualan,
-          round(avg(total)) AS rata_rata,
-          sum(diskon) AS total_diskon,
-          coalesce(sum(total) FILTER (WHERE metode_bayar = 'Tunai'), 0) AS total_tunai
+          count(*)::int AS jumlah_transaksi,
+          sum(total)::bigint AS total_penjualan,
+          round(avg(total))::bigint AS rata_rata,
+          sum(diskon)::bigint AS total_diskon,
+          coalesce(sum(total) FILTER (WHERE metode_bayar = 'Tunai'), 0)::bigint AS total_tunai
         FROM transaksi
         WHERE toko_id = ${id} AND dibatalkan = false ${t}
         GROUP BY date_trunc('day', created_at)
@@ -60,8 +60,8 @@ export async function GET(req: Request) {
     `,
     sql`
       SELECT p.id, p.nama, p.emoji,
-        coalesce(sum(dt.qty), 0) AS total_qty,
-        coalesce(sum(dt.subtotal), 0) AS total_penjualan
+        coalesce(sum(dt.qty), 0)::int AS total_qty,
+        coalesce(sum(dt.subtotal), 0)::bigint AS total_penjualan
       FROM produk p
       LEFT JOIN detail_transaksi dt ON dt.produk_id = p.id AND dt.toko_id = ${id}
         AND dt.transaksi_id IN (

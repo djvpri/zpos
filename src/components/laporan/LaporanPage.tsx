@@ -271,9 +271,9 @@ export default function LaporanPage() {
     if (!activeRange) return laporan[0]
     const agg = laporan.reduce(
       (a, l) => ({
-        jumlah_transaksi: a.jumlah_transaksi + (l.jumlah_transaksi || 0),
-        total_penjualan: a.total_penjualan + (l.total_penjualan || 0),
-        total_diskon: a.total_diskon + (l.total_diskon || 0),
+        jumlah_transaksi: a.jumlah_transaksi + Number(l.jumlah_transaksi || 0),
+        total_penjualan: a.total_penjualan + Number(l.total_penjualan || 0),
+        total_diskon: a.total_diskon + Number(l.total_diskon || 0),
       }),
       { jumlah_transaksi: 0, total_penjualan: 0, total_diskon: 0 }
     )
@@ -292,11 +292,11 @@ export default function LaporanPage() {
   // bukan cuma laporan[0] (hari pertama) supaya angka kartu cocok dgn rentang.
   const aggr = activeRange ? laporan.reduce(
     (a, l) => ({
-      jumlah_transaksi: (a.jumlah_transaksi || 0) + (l.jumlah_transaksi || 0),
-      total_penjualan: (a.total_penjualan || 0) + (l.total_penjualan || 0),
-      total_diskon: (a.total_diskon || 0) + (l.total_diskon || 0),
-      total_tunai: (a.total_tunai || 0) + (l.total_tunai || 0),
-      total_pengeluaran: (a.total_pengeluaran || 0) + (l.total_pengeluaran || 0),
+      jumlah_transaksi: (a.jumlah_transaksi || 0) + Number(l.jumlah_transaksi || 0),
+      total_penjualan: (a.total_penjualan || 0) + Number(l.total_penjualan || 0),
+      total_diskon: (a.total_diskon || 0) + Number(l.total_diskon || 0),
+      total_tunai: (a.total_tunai || 0) + Number(l.total_tunai || 0),
+      total_pengeluaran: (a.total_pengeluaran || 0) + Number(l.total_pengeluaran || 0),
       rata_rata: 0,
     }),
     { ...zeroHari }
