@@ -286,9 +286,23 @@ export default function LaporanPage() {
     }
   }
 
-  const hari = laporan[0] || { total_penjualan: 0, jumlah_transaksi: 0, rata_rata: 0, total_diskon: 0 }
-
   const activeRange = Boolean(fromDate && toDate)
+  const zeroHari = { jumlah_transaksi: 0, total_penjualan: 0, rata_rata: 0, total_diskon: 0, total_tunai: 0, total_pengeluaran: 0 }
+  // Ringkasan kartu. Saat filter aktif = agregat SELURUH baris rentang,
+  // bukan cuma laporan[0] (hari pertama) supaya angka kartu cocok dgn rentang.
+  const aggr = activeRange ? laporan.reduce(
+    (a, l) => ({
+      jumlah_transaksi: (a.jumlah_transaksi || 0) + (l.jumlah_transaksi || 0),
+      total_penjualan: (a.total_penjualan || 0) + (l.total_penjualan || 0),
+      total_diskon: (a.total_diskon || 0) + (l.total_diskon || 0),
+      total_tunai: (a.total_tunai || 0) + (l.total_tunai || 0),
+      total_pengeluaran: (a.total_pengeluaran || 0) + (l.total_pengeluaran || 0),
+      rata_rata: 0,
+    }),
+    { ...zeroHari }
+  ) : null
+  const hari = aggr ? { ...aggr, rata_rata: aggr.jumlah_transaksi ? Math.round(aggr.total_penjualan / aggr.jumlah_transaksi) : 0 }
+    : (laporan[0] || { ...zeroHari })
   const cards = [
     { label: activeRange ? 'Penjualan (Rentang)' : 'Penjualan Hari Ini', val: fmt(hari.total_penjualan || 0), icon: GraphUpArrow, color: 'indigo' },
     { label: 'Jumlah Transaksi', val: String(hari.jumlah_transaksi || 0), icon: Receipt, color: 'teal' },
