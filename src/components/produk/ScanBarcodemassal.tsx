@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { XLg, QrCodeScan, UpcScan, Trash, CheckLg, ArrowRepeat, Box, ExclamationCircle, Bag } from 'react-bootstrap-icons'
 import dynamic from 'next/dynamic'
 import { useKategori } from '@/hooks/useKategori'
@@ -24,7 +24,6 @@ interface Props {
   onSelesai: () => void
   onTutup: () => void
   tambahOffline: (p: Omit<Produk, 'id' | 'created_at' | 'updated_at'>) => Promise<{ message: string } | null>
-  daftarBarcodeAda: Set<string>
 }
 
 async function lookupBarcode(barcode: string): Promise<Partial<ProdukScan> | null> {
@@ -55,7 +54,7 @@ async function lookupBarcode(barcode: string): Promise<Partial<ProdukScan> | nul
   } catch { return null }
 }
 
-export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline, daftarBarcodeAda }: Props) {
+export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }: Props) {
   const { kategori: daftarKategori } = useKategori()
   const [produk, setProduk] = useState<ProdukScan[]>([])
   const [showKamera, setShowKamera] = useState(false)
@@ -64,6 +63,18 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline, d
   const [hasil, setHasil] = useState<{ berhasil: number; gagal: number } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [manualBarcode, setManualBarcode] = useState('')
+  // SELURUH barcode produk toko ini (bukan cuma halaman aktif) — fetch sendiri.
+  // Dipakai utk melewati barang yang sudah ada: kalau dikirim ke server tetap
+  // menimpa, jadi cegah di client dgn daftar lengkap (bukan prop paged).
+  const [barcodesAda, setBarcodesAda] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    let hidup = true
+    fetch('/api/produk/barcodes', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : { barcodes: [] }))
+      .then(d => { if (hidup) setBarcodesAda(new Set(d.barcodes || [])) })
+      .catch(() => {})
+    return () => { hidup = false }
+  }, [])
 
   async function tambahBarcode(barcode: string) {
     const trimmed = barcode.trim()
@@ -72,7 +83,7 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline, d
 
     // Kalau barcode uda ada sebagai produk di toko ini → tandai 'existing':
     // lewati (tidak simpan/ubah), hanya tampil warning. Jangan timpa harga/stok.
-    if (daftarBarcodeAda.has(trimmed)) {
+    if (barcodesAda.has(trimmed)) {
       setProduk(prev => [{
         barcode: trimmed, nama: 'Barang ini sudah ada di tokomu', harga: 0, stok: 0,
         kategori: '', status: 'existing'
