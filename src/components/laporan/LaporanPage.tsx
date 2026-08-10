@@ -76,6 +76,10 @@ export default function LaporanPage() {
   const [strukCetak, setStrukCetak] = useState<Transaksi | null>(null)
   const [lapCetak, setLapCetak] = useState<LaporanHarian | null>(null)
 
+  // Filter rentang tanggal opsional. Kosong = "hari ini" (perilaku lama).
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+
   // Info toko utk render nota (nama, alamat, telp, catatan struk).
   const { toko } = useAuth()
   const { alamat, telepon, catatan_struk } = usePengaturan()
@@ -95,9 +99,16 @@ export default function LaporanPage() {
   const [loadingLog, setLoadingLog] = useState(false)
   const [logLoaded, setLogLoaded] = useState(false)
 
-  const loadRingkasan = useCallback(async () => {
+  // Muat data ringkasan. `opts` berisi rentang tanggal (dari/sampai) bila
+  // user pilih filter; tanpa rentang = perilaku lama (hari ini + 7 hari).
+  const loadRingkasan = useCallback(async (opts?: { dari?: string; sampai?: string }) => {
+    setLoadingRingkasan(true)
+    const qs =
+      opts?.dari && opts?.sampai
+        ? `?dari=${encodeURIComponent(opts.dari)}&sampai=${encodeURIComponent(opts.sampai)}`
+        : ''
     try {
-      const res = await fetch('/api/laporan')
+      const res = await fetch(`/api/laporan${qs}`)
       if (!res.ok) throw new Error('gagal')
       const data = await res.json()
       setLaporan(data.laporan)
@@ -242,10 +253,22 @@ export default function LaporanPage() {
     }
   }
 
+  const terapkanFilter = () => {
+    if (fromDate && toDate) loadRingkasan({ dari: fromDate, sampai: toDate })
+    else alert('Pilih tanggal mulai dan akhir dahulu')
+  }
+
+  const resetFilter = () => {
+    setFromDate('')
+    setToDate('')
+    loadRingkasan()
+  }
+
   const hari = laporan[0] || { total_penjualan: 0, jumlah_transaksi: 0, rata_rata: 0, total_diskon: 0 }
 
+  const activeRange = Boolean(fromDate && toDate)
   const cards = [
-    { label: 'Penjualan Hari Ini', val: fmt(hari.total_penjualan || 0), icon: GraphUpArrow, color: 'indigo' },
+    { label: activeRange ? 'Penjualan (Rentang)' : 'Penjualan Hari Ini', val: fmt(hari.total_penjualan || 0), icon: GraphUpArrow, color: 'indigo' },
     { label: 'Jumlah Transaksi', val: String(hari.jumlah_transaksi || 0), icon: Receipt, color: 'teal' },
     { label: 'Rata-rata Transaksi', val: fmt(hari.rata_rata || 0), icon: Bag, color: 'amber' },
     { label: 'Total Diskon', val: fmt(hari.total_diskon || 0), icon: Percent, color: 'rose' },
@@ -282,14 +305,40 @@ export default function LaporanPage() {
         loadingRingkasan
           ? <div className="flex items-center justify-center h-64 text-gray-400">Memuat laporan...</div>
           : <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">Ringkasan penjualan <b className="text-gray-700">{laporan[0] ? fmtDate(laporan[0].tanggal) : ''}</b></p>
-                <button
-                  onClick={() => setLapCetak(laporan[0] || null)}
-                  disabled={!laporan[0]}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
-                  <Printer size={13} /> Cetak Laporan
-                </button>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-gray-500">
+                  Ringkasan penjualan <b className="text-gray-700">
+                    {activeRange ? `${fromDate} s/d ${toDate}` : (laporan[0] ? fmtDate(laporan[0].tanggal) : '')}
+                  </b>
+                </p>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 text-xs text-gray-500">
+                    Dari
+                    <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
+                      className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700" />
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs text-gray-500">
+                    Sampai
+                    <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
+                      className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700" />
+                  </label>
+                  <button onClick={terapkanFilter}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors">
+                    Terapkan
+                  </button>
+                  {(fromDate || toDate) && (
+                    <button onClick={resetFilter}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 transition-colors">
+                      Reset
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setLapCetak(laporan[0] || null)}
+                    disabled={!laporan[0]}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+                    <Printer size={13} /> Cetak Laporan
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
                 {cards.map(c => (
@@ -360,9 +409,11 @@ export default function LaporanPage() {
                 </div>
               </div>
 
-              {/* Laporan 7 hari */}
+              {/* Laporan per hari (default 7 hari, atau rentang yang dipilih) */}
               <div className="bg-white border border-gray-100 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">Penjualan 7 Hari Terakhir</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                  {activeRange ? `Penjualan ${fromDate} s/d ${toDate}` : 'Penjualan 7 Hari Terakhir'}
+                </h3>
                 {laporan.length === 0
                   ? <p className="text-sm text-gray-300 text-center py-8">Belum ada data</p>
                   : <table className="w-full text-sm">
