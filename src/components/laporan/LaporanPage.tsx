@@ -264,6 +264,28 @@ export default function LaporanPage() {
     loadRingkasan()
   }
 
+  // Laporan yang dicetak: tanpa filter = hari terbaru (laporan[0]); dgn
+  // filter aktif = agregat seluruh baris dlm rentang + label rentang.
+  const buildLaporanCetak = (): LaporanHarian | null => {
+    if (laporan.length === 0) return null
+    if (!activeRange) return laporan[0]
+    const agg = laporan.reduce(
+      (a, l) => ({
+        jumlah_transaksi: a.jumlah_transaksi + (l.jumlah_transaksi || 0),
+        total_penjualan: a.total_penjualan + (l.total_penjualan || 0),
+        total_diskon: a.total_diskon + (l.total_diskon || 0),
+      }),
+      { jumlah_transaksi: 0, total_penjualan: 0, total_diskon: 0 }
+    )
+    return {
+      tanggal: `${fromDate} s/d ${toDate}`,
+      jumlah_transaksi: agg.jumlah_transaksi,
+      total_penjualan: agg.total_penjualan,
+      rata_rata: agg.jumlah_transaksi ? Math.round(agg.total_penjualan / agg.jumlah_transaksi) : 0,
+      total_diskon: agg.total_diskon,
+    }
+  }
+
   const hari = laporan[0] || { total_penjualan: 0, jumlah_transaksi: 0, rata_rata: 0, total_diskon: 0 }
 
   const activeRange = Boolean(fromDate && toDate)
@@ -333,8 +355,8 @@ export default function LaporanPage() {
                     </button>
                   )}
                   <button
-                    onClick={() => setLapCetak(laporan[0] || null)}
-                    disabled={!laporan[0]}
+                    onClick={() => setLapCetak(buildLaporanCetak())}
+                    disabled={!buildLaporanCetak()}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
                     <Printer size={13} /> Cetak Laporan
                   </button>

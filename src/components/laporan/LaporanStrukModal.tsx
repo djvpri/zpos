@@ -32,7 +32,10 @@ export function LaporanStrukModal({ data, namaToko, alamat, telepon, catatan_str
     getSavedPrinterName().then(name => setSavedPrinter(name))
   })
 
-  const tanggal = fmtDate(data.tanggal)
+  const isRange = data.tanggal.includes(' s/d ')
+  // Rentang = label sudah siap pakai ("2026-08-01 s/d 2026-08-07");
+  // tanggal tunggal = format lokal.
+  const tanggal = isRange ? data.tanggal : fmtDate(data.tanggal)
 
   const toStruk = (): StrukLaporan => ({
     namaToko,
