@@ -82,7 +82,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
   function buatHtml() {
     return selectedList.map(p => {
       const gunakanBarcode = mode !== 'nama-harga' && p.barcode
-      const svg = gunakanBarcode ? barcodeToSvg(p.barcode!, 80) : ''
+      const svg = gunakanBarcode ? barcodeToSvg(p.barcode!, mode === 'barcode' ? 70 : 45) : ''
       const tampilNama = mode !== 'barcode'
       return `
       <div class="ctk-label">
@@ -130,12 +130,12 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           <div className="flex items-center gap-1.5 mb-4 flex-wrap">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Ukuran</span>
             <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-              {[40, 50, 58].map(u => (
+              {[40, 50].map(u => (
                 <button
                   key={u}
                   onClick={() => setUkuran(u)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${ukuran === u ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
-                >{u}mm</button>
+                >{u}×30</button>
               ))}
             </div>
           </div>
@@ -230,18 +230,19 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
 
       {/* Area print — disembunyikan di layar, muncul saat window.print() */}
       <style>{`
-        @page { margin: 0; }
+        @page { size: ${ukuran}mm 30mm; margin: 0; }
         @media screen { .ctk-print-area { display: none; } }
         @media print {
           body * { visibility: hidden !important; }
           .ctk-print-area, .ctk-print-area * { visibility: visible !important; }
-          .ctk-print-area { display: block !important; width: 100%; box-sizing: border-box; padding: 3mm; font-size: 0; --lbl-mm: ${ukuran}mm; }
-          .ctk-label { display: inline-block; vertical-align: top; width: var(--lbl-mm); padding: 1.5mm; box-sizing: border-box; page-break-inside: avoid; margin: 0 1mm 2mm 0; }
-          .ctk-nama { font-size: ${ukuran <= 40 ? 8 : ukuran <= 50 ? 9 : 10}px; font-weight: 700; color: #333; text-align: center; overflow: hidden; overflow-wrap: break-word; }
-          .ctk-harga { font-size: ${ukuran <= 40 ? 16 : ukuran <= 50 ? 20 : 24}px; font-weight: 800; color: #000; text-align: center; }
-          .ctk-svg { text-align: center; padding: 0 1mm; }
-          .ctk-svg svg { width: 100%; height: auto; display: inline-block; max-width: calc(var(--lbl-mm) - 3mm); }
-          .ctk-bc { text-align: center; font-size: ${ukuran <= 40 ? 8 : 10}px; }
+          .ctk-print-area { display: block !important; width: 100%; box-sizing: border-box; }
+          .ctk-label { display: flex !important; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 30mm; box-sizing: border-box; padding: 1mm 2mm; page-break-after: always; text-align: center; }
+          .ctk-label:last-child { page-break-after: auto; }
+          .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; line-height: 1.2; max-height: 8mm; overflow: hidden; }
+          .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; line-height: 1.1; }
+          .ctk-svg { text-align: center; width: 100%; padding: 0 1mm; }
+          .ctk-svg svg { width: 100%; height: auto; display: inline-block; max-width: calc(${ukuran}mm - 6mm); }
+          .ctk-bc { text-align: center; font-size: 7px; color: #555; line-height: 1; }
         }
       `}</style>
       <div ref={printRef} className="ctk-print-area" dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }} />
