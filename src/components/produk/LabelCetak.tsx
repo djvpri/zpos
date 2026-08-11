@@ -230,13 +230,13 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
 
       {/* Area print — disembunyikan di layar, muncul saat window.print() */}
       <style>{`
-        @page { size: ${ukuran}mm auto; margin: 0; }
+        @page { margin: 0; }
         @media screen { .ctk-print-area { display: none; } }
         @media print {
           body * { visibility: hidden !important; }
           .ctk-print-area, .ctk-print-area * { visibility: visible !important; }
-          .ctk-print-area { display: flex !important; flex-wrap: wrap; gap: 1mm; position: absolute; left: 0; top: 0; width: 100%; box-sizing: border-box; padding: 3mm; --lbl-mm: ${ukuran}mm; }
-          .ctk-label { width: var(--lbl-mm); padding: 1.5mm; border-bottom: 1px dashed #ccc; page-break-inside: avoid; box-sizing: border-box; }
+          .ctk-print-area { display: block !important; width: 100%; box-sizing: border-box; padding: 3mm; font-size: 0; --lbl-mm: ${ukuran}mm; }
+          .ctk-label { display: inline-block; vertical-align: top; width: var(--lbl-mm); padding: 1.5mm; box-sizing: border-box; page-break-inside: avoid; margin: 0 1mm 2mm 0; }
           .ctk-nama { font-size: ${ukuran <= 40 ? 8 : ukuran <= 50 ? 9 : 10}px; font-weight: 700; color: #333; text-align: center; overflow: hidden; overflow-wrap: break-word; }
           .ctk-harga { font-size: ${ukuran <= 40 ? 16 : ukuran <= 50 ? 20 : 24}px; font-weight: 800; color: #000; text-align: center; }
           .ctk-svg { text-align: center; padding: 0 1mm; }
