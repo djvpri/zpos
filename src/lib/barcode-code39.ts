@@ -29,8 +29,20 @@ const QUIET_BARS = 10 // ruang tenang di kanan-kiri (dalam unit)
 // validasi & mencegah typo). Total 13 digit (seperti EAN-13).
 export function generateProductBarcode(id: number): string {
   const base = `2${String(Math.abs(id)).padStart(11, '0').slice(0, 11)}`
-  const check = luhn(base)
+  const check = ean13CheckDigit(base)
   return base + String(check)
+}
+
+// Check digit EAN-13 (bobot 1-3 bergantian, posisi kanan-tanpa-check). Sangat
+// beda dari Luhn — dipakai EAN/UPC retail, agar barcode internal yang dicetak
+// ke label terbaca & divalidasi oleh scanner EAN-13.
+function ean13CheckDigit(digits12: string): number {
+  let sum = 0
+  for (let i = 0; i < 12; i++) {
+    const d = parseInt(digits12[i], 10) || 0
+    sum += (i % 2 === 0) ? d : d * 3
+  }
+  return (10 - (sum % 10)) % 10
 }
 
 // true kalau barcode ini DIBUAT internal ZPos (prefix '2' + 11 digit + Luhn),
@@ -40,35 +52,25 @@ export function generateProductBarcode(id: number): string {
 // cuma hint UI, tak memblokir apa pun.
 export function isInternalBarcode(bc?: string | null): boolean {
   if (!bc) return false
-  return /^2\d{12}$/.test(bc) && Number(luhn(bc.slice(0, 12))) === Number(bc[12])
+  return /^2\d{12}$/.test(bc) && Number(ean13CheckDigit(bc.slice(0, 12))) === Number(bc[12])
 }
 
-// Checksum Luhn (mod 10) — yang dipakai kartu, juga valid utk barcode numerik.
-// Kembalikan digit cek (0-9) supaya num + digit cek habis dibagi 10.
-// Untuk KALKULASI checksum: digit paling kanan dari `num` di-double dulu
-// (karena setelah checksum ditambah, dia jadi posisi kedua dari kanan).
-export function luhn(num: string): number {
-  let sum = 0
-  let double = true
-  for (let i = num.length - 1; i >= 0; i--) {
-    let d = parseInt(num[i], 10)
-    if (double) {
-      d *= 2
-      if (d > 9) d -= 9
-    }
-    sum += d
-    double = !double
-  }
-  return (10 - (sum % 10)) % 10
-}
-
-// Render barcode CODE39 sebagai inline SVG. Lebar otomatis mengikuti panjang.
+// Render barcode sebagai inline SVG.
+// Nilai 13-digit numerik → EAN-13 (standar retail, padat & narrow bar lebih
+// tebal di label sempit → mudah terbaca scanner). Selain itu (barcode
+// non-13) → fallback CODE39 (bar lebih renggang utk data pendek/alfanumerik).
 export function barcodeToSvg(text: string, height = 40): string {
+  const digits = text.replace(/\D/g, '')
+  if (digits.length === 13) return ean13Svg(digits, height)
+  return code39Svg(text, height)
+}
+
+// --- CODE39 (fallback utk barcode selain 13-digit numerik) ---
+function code39Svg(text: string, height: number): string {
   const cleaned = normalize(text)
   const full = `*${cleaned}*`
   let bits = ''
   for (const ch of full) {
-    // bar per char, judul narrow=1 unit, wide=2 unit; gap antar char=1 unit
     for (let i = 0; i < 9; i++) {
       bits += CODE39_PATTERNS[ch]?.[i] === '1' ? '2' : '1'
     }
@@ -83,6 +85,45 @@ export function barcodeToSvg(text: string, height = 40): string {
     if (drawing) rects += `<rect x="${x}" y="0" width="${width}" height="${height}" fill="#000"/>`
     x += width
     drawing = !drawing
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}">${rects}</svg>`
+}
+
+// --- EAN-13 (13 digit) ---
+// 95 modul, 1 modul = 1px. Narrow bar 1 modul → di label sempit lebih tebal
+// daripada Code39 utk data 13 digit.
+const EAN_L: Record<string, string> = { '0':'0001101','1':'0011001','2':'0010011','3':'0111101','4':'0100011','5':'0110001','6':'0101111','7':'0111011','8':'0110111','9':'0001011' }
+const EAN_G: Record<string, string> = { '0':'0100111','1':'0110011','2':'0011011','3':'0100001','4':'0011101','5':'0111001','6':'0000101','7':'0010001','8':'0001001','9':'0010111' }
+const EAN_R: Record<string, string> = { '0':'1110010','1':'1100110','2':'1101100','3':'1000010','4':'1011100','5':'1001110','6':'1010000','7':'1000100','8':'1001000','9':'1110100' }
+// Paritas digit pertama menentukan pola L/G 6 digit kiri.
+const EAN_PARITY: Record<string, string> = {
+  '0':'LLLLLL','1':'LLGLGG','2':'LLGGLG','3':'LLGGGL','4':'LGLLGG',
+  '5':'LGGLLG','6':'LGGGLL','7':'LGLGLG','8':'LGLGGL','9':'LGGLGL',
+}
+
+function ean13Svg(digits: string, height: number): string {
+  const first = digits[0]
+  const parity = EAN_PARITY[first] || 'LLLLLL'
+  // strings biarkan berupa parsial — pakai indexes
+  const left = digits.slice(1, 7).split('').map((d, i) => {
+    const bits = parity[i] === 'L' ? EAN_L[d] : EAN_G[d]
+    return bits
+  }).join('')
+  const right = digits.slice(7, 13).split('').map(d => EAN_R[d]).join('')
+  const stream = `101${left}01010${right}101`
+  const QUIET = 9 // ruang tenang minimum EAN
+  const w = stream.length + QUIET * 2
+  let rects = ''
+  let x = QUIET
+  let run = 0
+  for (let i = 0; i <= stream.length; i++) {
+    if (i < stream.length && stream[i] === '1') { run++; continue }
+    if (run > 0) {
+      rects += `<rect x="${x}" y="0" width="${run}" height="${height}" fill="#000"/>`
+      x += run
+      run = 0
+    }
+    if (i < stream.length) x++ // gap '0'
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}">${rects}</svg>`
 }
