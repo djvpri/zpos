@@ -230,19 +230,18 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
 
       {/* Area print — disembunyikan di layar, muncul saat window.print() */}
       <style>{`
-        @page { size: ${ukuran}mm 30mm; margin: 0; }
+        @page { margin: 0; }
         @media screen { .ctk-print-area { display: none; } }
         @media print {
           body * { visibility: hidden !important; }
           .ctk-print-area, .ctk-print-area * { visibility: visible !important; }
-          .ctk-print-area { display: block !important; width: 100%; box-sizing: border-box; }
-          .ctk-label { display: flex !important; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 30mm; box-sizing: border-box; padding: 1mm 2mm; page-break-after: always; text-align: center; }
-          .ctk-label:last-child { page-break-after: auto; }
-          .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; line-height: 1.2; max-height: 8mm; overflow: hidden; }
-          .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; line-height: 1.1; }
+          .ctk-print-area { display: flex !important; flex-wrap: wrap; position: absolute; left: 0; top: 0; width: 100%; box-sizing: border-box; padding: 3mm; --lbl-mm: ${ukuran}mm; }
+          .ctk-label { width: var(--lbl-mm); padding: 1.5mm; page-break-inside: avoid; box-sizing: border-box; }
+          .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow: hidden; overflow-wrap: break-word; }
+          .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
           .ctk-svg { text-align: center; width: 100%; padding: 0 1mm; }
-          .ctk-svg svg { width: 100%; height: auto; display: inline-block; max-width: calc(${ukuran}mm - 6mm); }
-          .ctk-bc { text-align: center; font-size: 7px; color: #555; line-height: 1; }
+          .ctk-svg svg { width: 100%; height: auto; display: inline-block; max-width: calc(var(--lbl-mm) - 3mm); }
+          .ctk-bc { text-align: center; font-size: 8px; color: #555; }
         }
       `}</style>
       <div ref={printRef} className="ctk-print-area" dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }} />
