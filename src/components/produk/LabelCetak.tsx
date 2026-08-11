@@ -82,7 +82,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
   function buatHtml() {
     return selectedList.map(p => {
       const gunakanBarcode = mode !== 'nama-harga' && p.barcode
-      const svg = gunakanBarcode ? barcodeToSvg(p.barcode!, 50) : ''
+      const svg = gunakanBarcode ? barcodeToSvg(p.barcode!, 80) : ''
       const tampilNama = mode !== 'barcode'
       return `
       <div class="ctk-label">
@@ -239,7 +239,8 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           .ctk-label { width: var(--lbl-mm); padding: 1.5mm; border-bottom: 1px dashed #ccc; page-break-inside: avoid; box-sizing: border-box; }
           .ctk-nama { font-size: ${ukuran <= 40 ? 8 : ukuran <= 50 ? 9 : 10}px; font-weight: 700; color: #333; text-align: center; overflow: hidden; overflow-wrap: break-word; }
           .ctk-harga { font-size: ${ukuran <= 40 ? 16 : ukuran <= 50 ? 20 : 24}px; font-weight: 800; color: #000; text-align: center; }
-          .ctk-svg { text-align: center; }
+          .ctk-svg { text-align: center; padding: 0 1mm; }
+          .ctk-svg svg { width: 100%; height: auto; display: inline-block; max-width: calc(var(--lbl-mm) - 3mm); }
           .ctk-bc { text-align: center; font-size: ${ukuran <= 40 ? 8 : 10}px; }
         }
       `}</style>
