@@ -27,6 +27,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
     return awal
   })
   const [mode, setMode] = useState<Mode>('lengkap')
+  const [ukuran, setUkuran] = useState<number>(50)
   const [status, setStatus] = useState<'pilih' | 'proses' | 'selesai'>('pilih')
   const [error, setError] = useState('')
   const printRef = useRef<HTMLDivElement>(null)
@@ -115,7 +116,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
 
         <div className="flex-1 overflow-y-auto p-5">
           {/* Toggle mode cetak */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-4 w-fit flex-wrap">
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-2 w-fit flex-wrap">
             {([['lengkap', 'Nama+Harga+Barcode'], ['nama-harga', 'Nama+Harga'], ['barcode', 'Barcode']] as [Mode, string][]).map(([m, lbl]) => (
               <button
                 key={m}
@@ -123,6 +124,20 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${mode === m ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
               >{lbl}</button>
             ))}
+          </div>
+
+          {/* Opsi ukuran kertas label */}
+          <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Ukuran</span>
+            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+              {[40, 50, 58].map(u => (
+                <button
+                  key={u}
+                  onClick={() => setUkuran(u)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${ukuran === u ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+                >{u}mm</button>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-start justify-between gap-3 mb-3">
@@ -177,7 +192,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           )}
 
           <div className="text-xs text-gray-400 mt-3">
-            <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Cetak via browser dialog ke printer label (58mm). Format barcode = CODE39 numerik 13 digit, diawali &#39;2&#39;, unik per produk.
+            <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Cetak via browser dialog ke printer label. Pilih ukuran kertas ({ukuran}mm aktif) di atas; format barcode = CODE39 numerik 13 digit, diawali &#39;2&#39;, unik per produk.
           </div>
         </div>
 
@@ -219,12 +234,12 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
         @media print {
           body * { visibility: hidden !important; }
           .ctk-print-area, .ctk-print-area * { visibility: visible !important; }
-          .ctk-print-area { display: flex !important; flex-wrap: wrap; gap: 2mm; position: absolute; left: 0; top: 0; width: 100%; }
-          .ctk-label { width: 58mm; padding: 2mm; border-bottom: 1px dashed #ccc; page-break-inside: avoid; box-sizing: border-box; }
-          .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow: hidden; white-space: nowrap; }
-          .ctk-harga { font-size: 20px; font-weight: 800; color: #000; text-align: center; }
+          .ctk-print-area { display: flex !important; flex-wrap: wrap; gap: 2mm; position: absolute; left: 0; top: 0; width: 100%; --lbl-mm: ${ukuran}mm; }
+          .ctk-label { width: var(--lbl-mm); padding: 2mm; border-bottom: 1px dashed #ccc; page-break-inside: avoid; box-sizing: border-box; }
+          .ctk-nama { font-size: ${ukuran <= 40 ? 8 : ukuran <= 50 ? 9 : 10}px; font-weight: 700; color: #333; text-align: center; overflow: hidden; white-space: nowrap; }
+          .ctk-harga { font-size: ${ukuran <= 40 ? 16 : ukuran <= 50 ? 20 : 24}px; font-weight: 800; color: #000; text-align: center; }
           .ctk-svg { text-align: center; }
-          .ctk-bc { text-align: center; font-size: 10px; }
+          .ctk-bc { text-align: center; font-size: ${ukuran <= 40 ? 8 : 10}px; }
         }
       `}</style>
       <div ref={printRef} className="ctk-print-area" dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }} />
