@@ -36,7 +36,7 @@ export function generateProductBarcode(id: number): string {
 // Check digit EAN-13 (bobot 1-3 bergantian, posisi kanan-tanpa-check). Sangat
 // beda dari Luhn — dipakai EAN/UPC retail, agar barcode internal yang dicetak
 // ke label terbaca & divalidasi oleh scanner EAN-13.
-function ean13CheckDigit(digits12: string): number {
+export function ean13CheckDigit(digits12: string): number {
   let sum = 0
   for (let i = 0; i < 12; i++) {
     const d = parseInt(digits12[i], 10) || 0

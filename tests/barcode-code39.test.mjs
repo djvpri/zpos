@@ -1,6 +1,6 @@
 // Test mandiri utk generator barcode CODE39 — run:
 //   node --experimental-strip-types tests/barcode-code39.test.mjs
-import { generateProductBarcode, luhn, barcodeToSvg } from '../src/lib/barcode-code39.ts'
+import { generateProductBarcode, ean13CheckDigit, barcodeToSvg } from '../src/lib/barcode-code39.ts'
 import assert from 'node:assert'
 
 let pass = 0
@@ -14,10 +14,10 @@ const b2 = generateProductBarcode(6)
 ok('13 digit', /^\d{13}$/.test(b1))
 ok('diawali 2', b1.startsWith('2'))
 ok('unjuk per id', b1 !== b2)
-ok('checksum Luhn valid', luhn(b1.slice(0, 12)) === Number(b1[12]))
+ok('checksum EAN-13 valid', ean13CheckDigit(b1.slice(0, 12)) === Number(b1[12]))
 
-// 2. luhn: nilai yang dikenal
-ok('luhn("7992739871")=3', luhn('7992739871') === 3)
+// 2. ean13CheckDigit: contoh dikenal (bobot 1-3)
+ok('ean13CheckDigit("590123412345")=7', ean13CheckDigit('590123412345') === 7)
 
 // 3. barcodeToSvg: warangka benar, ada bar, selalu diapit '*'
 const svg = barcodeToSvg('ABC')
