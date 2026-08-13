@@ -2,6 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
+  // Hanya unit test (.test.mjs). E2E .spec.ts menarget arsitektur lama (SSO ZOne,
+  // route /kasir 404) & nembak mutasi data prod — dikeluarkan dari koleksi tes.
+  testMatch: ['**/*.test.mjs'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
