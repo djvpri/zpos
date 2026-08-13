@@ -47,12 +47,15 @@ async function callGemini(prompt) {
 }
 
 function parseJson(text) {
-  try { return JSON.parse(text) }
+  // Gemini kadang balikin control character (newline mentah dsb) di dalam
+  // string JSON — tak valid utk JSON.parse. Buang dulu.
+  const clean = text.replace(/[\u0000-\u001F\u007F]/g, ' ')
+  try { return JSON.parse(clean) }
   catch {
-    const start = text.indexOf('{')
-    const end = text.lastIndexOf('}')
+    const start = clean.indexOf('{')
+    const end = clean.lastIndexOf('}')
     if (start === -1 || end === -1) throw new Error(`Bukan JSON: ${text.slice(0, 120)}`)
-    return JSON.parse(text.slice(start, end + 1))
+    return JSON.parse(clean.slice(start, end + 1))
   }
 }
 
