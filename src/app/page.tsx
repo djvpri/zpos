@@ -45,7 +45,9 @@ const DEMO_PROD = [
   { Icon: EggFried, cls: 'text-yellow-500' },
 ]
 
-export const revalidate = 300
+// Landing fetch artikel dari DB saat RUNTIME (env Railway hadir di runtime,
+// bukan saat prerender build — utk itu pakai force-dynamic).
+export const dynamic = 'force-dynamic'
 
 type LandingArtikel = { judul: string; slug: string; deskripsi: string | null; tags: string[] | null; published_at: Date }
 

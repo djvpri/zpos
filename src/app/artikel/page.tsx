@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Tips mengelola toko, kasir digital, dan UMKM dari ZPos.',
 }
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 type ArtikelCard = { judul: string; slug: string; deskripsi: string | null; tags: string[] | null; published_at: Date }
 
