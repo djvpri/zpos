@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useKategori } from '@/hooks/useKategori'
-import { Search, PlayFill, CheckCircleFill, XCircleFill, Trash, HourglassSplit, ExclamationTriangle } from 'react-bootstrap-icons'
+import { Search, CheckCircleFill, XCircleFill, Trash, HourglassSplit, ExclamationTriangle } from 'react-bootstrap-icons'
 
 interface Pasangan {
   id: number; a: number; b: number; skor: number; status: string
@@ -31,6 +31,7 @@ export default function CekDuplikatPanel({
   }, [])
 
   // Muat pasangan pending saat panel terbuka.
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- setState di dalam async fetch (setelah await), bukan sinkron; fetch-on-mount sah.
   useEffect(() => { ambil() }, [ambil])
 
   const scan = async () => {

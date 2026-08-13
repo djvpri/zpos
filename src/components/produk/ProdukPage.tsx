@@ -51,6 +51,7 @@ export default function ProdukPage() {
     } finally { setPaging(false) }
   }, [])
   // Muat page 1 saat mount & saat kata cari / urutan berubah.
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- setState di dalam async fetch (setelah await), bukan sinkron; fetch-on-mount sah.
   useEffect(() => { muatProduk(1, cari, sortBy) }, [cari, sortBy, muatProduk])
   const { kategori, tambah: tambahKat, hapus: hapusKat } = useKategori()
   const [tab, setTab] = useState<Tab>('produk')

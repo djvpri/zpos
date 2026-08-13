@@ -69,6 +69,7 @@ export default function PengeluaranPage() {
     } finally { setLoading(false) }
   }, [dari, sampai])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- setState di dalam async fetch (setelah await), bukan sinkron; fetch-on-mount sah.
   useEffect(() => { muat() }, [muat])
 
   const simpan = async () => {
