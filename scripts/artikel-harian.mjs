@@ -24,7 +24,7 @@ Tulis 1 artikel tips bisnis/UMKM singkat dalam Bahasa Indonesia, 350-500 kata. T
 "tags" WAJIB berisi minimal 5 tag. Pilih tag yang relevan dari kata kunci ini (dan tambahkan tag lain yang cocok): mesin kasir, kasir digital, pos, minimarket, toko kelontong, toko bangunan, warung, umkm, kafe, katalog produk, manajemen stok, laporan penjualan, pembayaran qris.
 Kembalikan HANYA JSON (tanpa markdown fence), format:
 {"judul":"...", "deskripsi":"1 kalimat singkat", "tags":["mesin kasir","kasir digital","pos","minimarket","umkm"], "konten":"markdown artikel"}
-Isi "konten" markdown: gunakan ## untuk subjudul, - untuk daftar, ** untuk tebal.`
+Isi "konten" markdown MURNI (JANGAN pernah pakai tag HTML seperti <strong>, <b>, <em>, <p> — bukan diperbolehkan): gunakan ** untuk tebal, * untuk miring, ## untuk subjudul, - untuk daftar.`
 
 function slugify(text) {
   return text.toLowerCase().trim()

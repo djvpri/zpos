@@ -13,9 +13,14 @@ async function getArtikel(slug: string) {
 // Renderer markdown DAPAT dipercaya (konten dari cron sendiri). Mendukung: heading, bold,
 // italic, kode, list, link, paragraf. Dipakai utk konten artikel harian otomatis.
 function renderMarkdown(md: string): string {
-  const esc = (s: string) => s
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+  // Gemini kadang balikin tag HTML mentah (mis. <strong>…</strong> bagi bold) padahal
+  // kita minta markdown. Normalisasi: <strong>/<b> → **, <em>/<i> → * (selalu ke-tebal/
+  // ke-miring kanan). Sisanya tetap di-escape di bawah → tak ada tag asing yang tersaji.
+  md = md
+    .replace(/<\s*\/?\s*b\s*>/gi, '**')
+    .replace(/<\s*\/?\s*strong\s*>/gi, '**')
+    .replace(/<\s*\/?\s*em\s*>/gi, '*')
+    .replace(/<\s*\/?\s*i\s*>/gi, '*')
 
   const lines = md.replace(/\r\n/g, '\n').split('\n')
   const out: string[] = []
@@ -31,7 +36,7 @@ function renderMarkdown(md: string): string {
     const li = line.match(/^[-*]\s+(.*)/)
     if (li) {
       if (!listOpen) { out.push('<ul>'); listOpen = true }
-      out.push(`<li>${esc(inline(li[1]))}</li>`)
+      out.push(`<li>${inline(li[1])}</li>`)
       continue
     }
 
@@ -40,26 +45,33 @@ function renderMarkdown(md: string): string {
     const h = line.match(/^(#{1,4})\s+(.*)/)
     if (h) {
       const lvl = h[1].length + 1
-      out.push(`<h${lvl}>${esc(inline(h[2]))}</h${lvl}>`)
+      out.push(`<h${lvl}>${inline(h[2])}</h${lvl}>`)
       continue
     }
     if (line === '---' || /^\*{3,}\s*$/.test(line)) { out.push('<hr/>'); continue }
 
-    out.push(`<p>${esc(inline(line))}</p>`)
+    out.push(`<p>${inline(line)}</p>`)
   }
   closeList()
   return out.join('\n')
 }
 
 function inline(s: string): string {
+  // Escape di token individual (bukan wrap hasil) — jadi HTML (mis. <strong>) hasil
+  // transformasi markdown TIDAK ikut di-escape, tapi teks/link/url aman dari injeksi.
+  const esc = (t: string) => t
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+  let t = s
   // backtick code
-  let t = s.replace(/`([^`]+)`/g, '<code>$1</code>')
+  t = t.replace(/`([^`]+)`/g, (_m: string, g: string) => `<code>${esc(g)}</code>`)
   // bold **x**
-  t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+  t = t.replace(/\*\*([^*]+)\*\*/g, (_m: string, g: string) => `<strong>${esc(g)}</strong>`)
   // italic *x*
-  t = t.replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
+  t = t.replace(/(^|[^*])\*([^*\s][^*]*)\*/g, (_m: string, pre: string, g: string) => `${pre}<em>${esc(g)}</em>`)
   // link [t](u)
-  t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+  t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m: string, txt: string, url: string) =>
+    `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(txt)}</a>`)
   return t
 }
 
