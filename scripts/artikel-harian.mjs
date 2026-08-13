@@ -19,10 +19,11 @@ for (const [k, v] of [['GEMINI_API_KEY', KEY], ['DATABASE_URL', DB_URL]]) {
 
 const sql = postgres(DB_URL, { ssl: 'require', max: 1 })
 
-const PROMPT = `Kamu penulis konten bisnis untuk produk "ZPos", aplikasi kasir digital (POS) untuk UMKM Indonesia (warung, kafe, toko kelontong, toko bangunan). Target pembaca: pemilik UMKM, non-teknis.
-Tulis 1 artikel tips bisnis/UMKM singkat dalam Bahasa Indonesia, 350-500 kata. Topik HARUS seputar mengelola toko / kasir digital / UMKM — bervariasi, JANGAN selalu sama tiap hari, dan JANGAN promosikan produk lain di luar ZPos.
+const PROMPT = `Kamu penulis konten bisnis untuk produk "ZPos", aplikasi kasir digital (POS) untuk UMKM Indonesia (warung, kafe, toko kelontong, toko bangunan, minimarket). Target pembaca: pemilik UMKM, non-teknis.
+Tulis 1 artikel tips bisnis/UMKM singkat dalam Bahasa Indonesia, 350-500 kata. Topik HARUS seputar mengelola toko / kasir digital / mesin kasir / UMKM — bervariasi, JANGAN selalu sama tiap hari, dan JANGAN promosikan produk lain di luar ZPos.
+"tags" WAJIB berisi minimal 5 tag. Pilih tag yang relevan dari kata kunci ini (dan tambahkan tag lain yang cocok): mesin kasir, kasir digital, pos, minimarket, toko kelontong, toko bangunan, warung, umkm, kafe, katalog produk, manajemen stok, laporan penjualan, pembayaran qris.
 Kembalikan HANYA JSON (tanpa markdown fence), format:
-{"judul":"...", "deskripsi":"1 kalimat singkat", "tags":["umkm","kasir"], "konten":"markdown artikel"}
+{"judul":"...", "deskripsi":"1 kalimat singkat", "tags":["mesin kasir","kasir digital","pos","minimarket","umkm"], "konten":"markdown artikel"}
 Isi "konten" markdown: gunakan ## untuk subjudul, - untuk daftar, ** untuk tebal.`
 
 function slugify(text) {
@@ -82,7 +83,9 @@ async function main() {
   if (!judul || !konten) throw new Error('Gemini hasilkan judul/konten kosong')
 
   const slug = slugify(judul)
-  const tags = Array.isArray(json.tags) ? json.tags : []
+  const tags = Array.isArray(json.tags) ? json.tags.map(String) : []
+  // Jaga-jaga: Gemini diinstruksikan min 5, tapi pastikan tak ada yang lolos <5.
+  if (tags.length < 5) throw new Error(`Tags hanya ${tags.length} (minimal 5): ${tags.join(', ')}`)
   const deskripsi = String(json.deskripsi || '').trim()
 
   const rows = await sql`

@@ -69,7 +69,11 @@ export default async function ArtikelPage() {
                     ? new Date(a.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
                     : ''}
                   {(a.tags && a.tags.length > 0) && (
-                    <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{a.tags[0]}</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {a.tags.slice(0, 3).map((t: string) => (
+                        <span key={t} className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{t}</span>
+                      ))}
+                    </div>
                   )}
                 </div>
                 <h2 className="font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">{a.judul}</h2>

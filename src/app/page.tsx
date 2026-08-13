@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Cart3, BarChartLine, Box, PhoneFill, People, LightningCharge, CheckLg, EggFill, CupStraw, DropletHalf, CircleFill, CupHot, EggFried } from 'react-bootstrap-icons'
 import ShortsWidget from '@/components/ShortsWidget'
+import sql from '@/lib/db'
 
 const features = [
   { icon: Cart3, title: 'Kasir Digital', desc: 'Proses transaksi cepat dengan tampilan yang intuitif. Support tunai, QRIS, dan transfer.' },
@@ -44,7 +45,26 @@ const DEMO_PROD = [
   { Icon: EggFried, cls: 'text-yellow-500' },
 ]
 
-export default function LandingPage() {
+export const revalidate = 300
+
+type LandingArtikel = { judul: string; slug: string; deskripsi: string | null; tags: string[] | null; published_at: Date }
+
+async function getArtikel(): Promise<LandingArtikel[]> {
+  try {
+    return await sql<LandingArtikel[]>`
+      SELECT judul, slug, deskripsi, tags, published_at
+      FROM artikel
+      ORDER BY published_at DESC
+      LIMIT 4
+    `
+  } catch {
+    return []
+  }
+}
+
+export default async function LandingPage() {
+  const artikel = await getArtikel()
+
   return (
     <div className="min-h-screen bg-white">
 
@@ -255,6 +275,46 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Artikel terbaru */}
+      {artikel.length > 0 && (
+        <section className="bg-gray-50 py-12 sm:py-20">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="flex items-end justify-between mb-8 sm:mb-12">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Tips Bisnis Terbaru</h2>
+                <p className="text-sm sm:text-base text-gray-500">Artikel baru tiap hari — bantu kelola tokomu lebih baik</p>
+              </div>
+              <Link href="/artikel" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors whitespace-nowrap">
+                Semua artikel →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              {artikel.map((a) => (
+                <Link
+                  key={a.slug}
+                  href={`/artikel/${a.slug}`}
+                  className="group bg-white rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all p-5 flex flex-col"
+                >
+                  <div className="flex items-center gap-2 mb-2.5 text-xs text-gray-400">
+                    {a.published_at
+                      ? new Date(a.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                      : ''}
+                  </div>
+                  <h3 className="font-bold text-gray-900 leading-snug mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">{a.judul}</h3>
+                  {(a.tags && a.tags.length > 0) && (
+                    <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
+                      {a.tags.slice(0, 3).map((t) => (
+                        <span key={t} className="inline-block bg-indigo-50 text-indigo-600 text-[11px] px-2 py-0.5 rounded-full">{t}</span>
+                      ))}
+                    </div>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="bg-indigo-600 py-12 sm:py-16">

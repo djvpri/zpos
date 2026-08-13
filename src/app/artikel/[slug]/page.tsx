@@ -98,7 +98,11 @@ export default async function ArtikelDetail({ params }: Props) {
             ? new Date(a.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
             : ''}
           {(a.tags && a.tags.length > 0) && (
-            <span className="ml-2 bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{a.tags[0]}</span>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {a.tags.map((t: string) => (
+                <span key={t} className="inline-block bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{t}</span>
+              ))}
+            </div>
           )}
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-6">{a.judul}</h1>
