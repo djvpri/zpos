@@ -10,6 +10,22 @@ html, body {
   padding: 0;
 }
 
+/* Artikel harian otomatis — konten markdown (dipercaya, dari cron sendiri) */
+.artikel-body {
+  color: #374151;
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+.artikel-body h2 { font-size: 1.5rem; font-weight: 700; color: #111827; margin: 1.6em 0 .6em; }
+.artikel-body h3 { font-size: 1.25rem; font-weight: 700; color: #111827; margin: 1.4em 0 .5em; }
+.artikel-body h4 { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 1.2em 0 .4em; }
+.artikel-body p { margin: 1em 0; }
+.artikel-body ul { margin: 1em 0; padding-left: 1.4em; list-style: disc; }
+.artikel-body li { margin: .4em 0; }
+.artikel-body a { color: #4f46e5; text-decoration: underline; text-underline-offset: 2px; }
+.artikel-body code { background: #f3f4f6; color: #dc2626; padding: .1em .35em; border-radius: 4px; font-size: .9em; }
+.artikel-body hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2em 0; }
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;

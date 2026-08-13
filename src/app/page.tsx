@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Cart3, BarChartLine, Box, PhoneFill, People, LightningCharge, CheckLg, EggFill, CupStraw, DropletHalf, CircleFill, CupHot, EggFried } from 'react-bootstrap-icons'
+import ShortsWidget from '@/components/ShortsWidget'
 
 const features = [
   { icon: Cart3, title: 'Kasir Digital', desc: 'Proses transaksi cepat dengan tampilan yang intuitif. Support tunai, QRIS, dan transfer.' },
@@ -57,6 +58,9 @@ export default function LandingPage() {
             <span className="font-bold text-gray-900">ZPos</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="/artikel" className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors px-2 py-1">
+              Artikel
+            </Link>
             <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors px-2 py-1">
               Masuk
             </Link>
@@ -283,6 +287,9 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Floating YouTube Shorts promo */}
+      <ShortsWidget />
 
     </div>
   )

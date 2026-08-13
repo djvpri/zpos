@@ -1,0 +1,21 @@
+name: artikel-harian
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 07:00 WIB
+  workflow_dispatch: {}
+
+jobs:
+  artikel:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: node scripts/artikel-harian.mjs
