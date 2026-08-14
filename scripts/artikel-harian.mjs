@@ -1,4 +1,4 @@
-// Artikel harian otomatis ZPos — dijalankan oleh Railway Cron (07:00 WIB).
+// Artikel harian otomatis ZPos — dijalankan oleh GitHub Actions (cron 07:00 WIB).
 // Generate 1 artikel ZPos via Gemini, INSERT ke Postgres (Railway) langsung.
 // Idempoten per-hari UTC: skip kalau sudah ada artikel terbit hari ini.
 //
