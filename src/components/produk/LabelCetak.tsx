@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { XLg, Printer, ArrowRepeat, CheckCircleFill, ExclamationCircle, Tag, Lightbulb } from 'react-bootstrap-icons'
 import { barcodeToSvg, generateProductBarcode } from '@/lib/barcode-code39'
 import { Produk } from '@/types'
@@ -46,36 +47,6 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
   const selectableF = selectable.filter(p =>
     !q || p.nama.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q))
   )
-
-  // Cetak label via iframe terpisah & bersih (bukan window.print pada body app).
-  // Body app berisi konten lain walau visibility:hidden — masih makan ruang
-  // sehingga label mundur ke halaman 2. Iframe body hanya berisi label → mulai
-  // kiri-atas halaman 1, tiap .ctk-label page-break → 1 label per halaman.
-  const CTK_CSS = `
-    @page { size: auto; margin: 0; }
-    body { margin: 0; }
-    .ctk-label { display: block; width: 100%; height: 30mm; padding: 1.5mm 2mm 0.5mm; box-sizing: border-box; page-break-after: always; text-align: center; font-family: system-ui, Arial, sans-serif; }
-    .ctk-label:last-child { page-break-after: auto; }
-    .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow-wrap: break-word; }
-    .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
-    .ctk-svg { text-align: center; width: 100%; }
-    .ctk-svg svg { height: 14mm; width: auto; display: inline-block; max-width: 100%; }
-    .ctk-bc { text-align: center; font-size: 8px; color: #555; margin-top: 0.5mm; }
-  `
-  function cetakPrint() {
-    const ifr = document.createElement('iframe')
-    ifr.style.cssText = 'position:fixed;left:-10000px;top:0;width:0;height:0;border:0;'
-    document.body.appendChild(ifr)
-    const doc = ifr.contentDocument
-    if (doc) {
-      doc.write(`<!doctype html><html><head><meta charset="utf-8"><style>${CTK_CSS}</style></head><body>${buatHtml()}</body></html>`)
-      doc.close()
-    }
-    setTimeout(() => {
-      ifr.contentWindow?.print()
-      setTimeout(() => { ifr.remove() }, 1000)
-    }, 150)
-  }
 
   // Tombol toggle: kalau SEMUA terpilih → "Kosongkan", kalau ada yang
   // belum → "Pilih Semua". Default modal buka dengan semua terpilih, jadi
@@ -253,7 +224,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           )}
           {(sudahSelesai || mode === 'nama-harga') && (
             <button
-              onClick={() => { setStatus('selesai'); setTimeout(cetakPrint, 50) }}
+              onClick={() => { setStatus('selesai'); setTimeout(() => window.print(), 60) }}
               disabled={!selectedList.length}
               className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
             >
@@ -261,6 +232,29 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
             </button>
           )}
       </div>
+      {/* Area print — portal ke body; saat print semua sibling body display:none
+          (bukan visibility) supaya tak makan ruang → label mulai kiri-atas
+          halaman 1, page-break antar label = 1 label/halaman. window.print
+          > iframe.print utk printer thermal (iframe sering cetak kosong). */}
+      <style>{`
+        @page { size: auto; margin: 0; }
+        @media print {
+          body > *:not(.ctk-print-area) { display: none !important; }
+          html, body { margin: 0 !important; }
+          .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; }
+          .ctk-label { display: block; width: 100%; height: 30mm; padding: 1.5mm 2mm 0.5mm; box-sizing: border-box; page-break-after: always; text-align: center; font-family: system-ui, Arial, sans-serif; }
+          .ctk-label:last-child { page-break-after: auto; }
+          .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow-wrap: break-word; }
+          .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
+          .ctk-svg { text-align: center; width: 100%; }
+          .ctk-svg svg { height: 14mm; width: auto; display: inline-block; max-width: 100%; }
+          .ctk-bc { text-align: center; font-size: 8px; color: #555; margin-top: 0.5mm; }
+        }
+      `}</style>
+      {typeof document !== 'undefined' && createPortal(
+        <div className="ctk-print-area" dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }} />,
+        document.body
+      )}
     </div>
     </div>
   )
