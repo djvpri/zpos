@@ -28,6 +28,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
   })
   const [mode, setMode] = useState<Mode>('lengkap')
   const [ukuran, setUkuran] = useState<number>(50)
+  const [kata, setKata] = useState('') // pencarian lihat daftar produk
   const [status, setStatus] = useState<'pilih' | 'proses' | 'selesai'>('pilih')
   const [error, setError] = useState('')
   const printRef = useRef<HTMLDivElement>(null)
@@ -40,6 +41,13 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
 
   // Daftar produk yang bisa dicetak (ekslusi pending)
   const selectable = produk.filter(p => !p._pending)
+
+  // Pencarian: filter grid tampilan (nama/barcode cocok). "Pilih semua" tetap
+  // memakai seluruh `selectable` biar tak mengubah semantik seleksi.
+  const q = kata.trim().toLowerCase()
+  const selectableF = selectable.filter(p =>
+    !q || p.nama.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q))
+  )
 
   // Tombol toggle: kalau SEMUA terpilih → "Kosongkan", kalau ada yang
   // belum → "Pilih Semua". Default modal buka dengan semua terpilih, jadi
@@ -140,6 +148,23 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
             </div>
           </div>
 
+          {/* Pencarian produk */}
+          <div className="relative mb-3">
+            <input
+              value={kata}
+              onChange={e => setKata(e.target.value)}
+              placeholder="Cari nama atau barcode produk…"
+              className="w-full rounded-xl border border-gray-200 py-2 pl-4 pr-9 text-sm focus:border-indigo-400 focus:outline-none"
+            />
+            <button
+              onClick={() => setKata('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 hover:text-gray-600"
+              aria-label="Hapus pencarian"
+            >
+              <XLg size={13} />
+            </button>
+          </div>
+
           <div className="flex items-start justify-between gap-3 mb-3">
             <p className="text-sm text-gray-600">
               {tanpaBarcode.length > 0
@@ -160,7 +185,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-72 overflow-y-auto">
-            {produk.filter(p => !p._pending).map(p => (
+            {selectableF.map(p => (
               <button
                 key={p.id}
                 onClick={() => toggle(p.id)}
@@ -176,6 +201,9 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
                 {!p.barcode && <span className="text-[9px] text-amber-600 flex-shrink-0">tanpa bc</span>}
               </button>
             ))}
+            {selectableF.length === 0 && (
+              <div className="col-span-full text-center py-8 text-sm text-gray-300">{q ? 'Produk tidak ditemukan' : 'Belum ada produk'}</div>
+            )}
           </div>
 
           {error && (
