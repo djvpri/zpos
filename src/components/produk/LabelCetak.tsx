@@ -267,9 +267,9 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           .ctk-label { width: var(--lbl-mm); padding: 1.5mm; page-break-inside: avoid; box-sizing: border-box; }
           .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow: hidden; overflow-wrap: break-word; }
           .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
-          .ctk-svg { text-align: center; width: 100%; padding: 0 1mm; }
-          .ctk-svg svg { width: 100%; height: auto; display: inline-block; max-width: calc(var(--lbl-mm) - 3mm); }
-          .ctk-bc { text-align: center; font-size: 8px; color: #555; }
+          .ctk-svg { text-align: center; width: 100%; }
+          .ctk-svg svg { height: 11mm; width: auto; display: inline-block; max-width: calc(var(--lbl-mm) - 4mm); }
+          .ctk-bc { text-align: center; font-size: 8px; color: #555; margin-top: 0.5mm; }
         }
       `}</style>
       <div ref={printRef} className="ctk-print-area" dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }} />
