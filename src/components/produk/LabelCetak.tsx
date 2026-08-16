@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { XLg, Printer, ArrowRepeat, CheckCircleFill, ExclamationCircle, Tag, Lightbulb } from 'react-bootstrap-icons'
 import { barcodeToSvg, generateProductBarcode } from '@/lib/barcode-code39'
 import { Produk } from '@/types'
@@ -258,7 +259,10 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           .ctk-bc { text-align: center; font-size: 8px; color: #555; margin-top: 0.5mm; }
         }
       `}</style>
-      <div ref={printRef} className="ctk-print-area" dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }} />
+      {typeof document !== 'undefined' && createPortal(
+        <div ref={printRef} className="ctk-print-area" dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }} />,
+        document.body
+      )}
     </div>
   )
 }
