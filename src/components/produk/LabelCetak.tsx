@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { XLg, Printer, ArrowRepeat, CheckCircleFill, ExclamationCircle, Tag, Lightbulb } from 'react-bootstrap-icons'
 import { barcodeToSvg, generateProductBarcode } from '@/lib/barcode-code39'
@@ -31,6 +31,19 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
   const [kata, setKata] = useState('') // pencarian lihat daftar produk
   const [status, setStatus] = useState<'pilih' | 'proses' | 'selesai'>('pilih')
   const [error, setError] = useState('')
+  const [printRoot, setPrintRoot] = useState<HTMLElement | null>(null)
+
+  // Aksesori print diportal ke child PERTAMA body (bukan append): saat print
+  // area mulai di atas semua konten app — bukan setelahnya — sehingga label
+  // mulai kiri-atas halaman 1 (fix halaman-1-kosong). App tetap visibility
+  // hidden saat print.
+  useEffect(() => {
+    const d = document.createElement('div')
+    d.setAttribute('data-print-root', '')
+    document.body.prepend(d)
+    setPrintRoot(d)
+    return () => { d.remove() }
+  }, [])
 
   const selectedList = produk.filter(p => terpilih[p.id] && !p._pending)
 
@@ -232,14 +245,15 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
             </button>
           )}
       </div>
-      {/* Area print — portal ke body; saat print semua sibling body display:none
-          (bukan visibility) supaya tak makan ruang → label mulai kiri-atas
-          halaman 1, page-break antar label = 1 label/halaman. window.print
-          > iframe.print utk printer thermal (iframe sering cetak kosong). */}
+      {/* Area print — portal ke child-pertama body (prepend). Saat print:
+          semua konten app visibility:hidden (TERBUKTI mencetak di printer
+          thermal, beda dgn display:none yang bikin kosong), aksesori print
+          tampil penuh di posisi asalnya = awal body = kiri-atas halaman 1,
+          page-break antar label = 1 label per halaman. */}
       <style>{`
         @page { size: auto; margin: 0; }
         @media print {
-          body > *:not(.ctk-print-area) { display: none !important; }
+          body > *:not([data-print-root]) { visibility: hidden !important; }
           html, body { margin: 0 !important; }
           .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; }
           .ctk-label { display: block; width: 100%; height: 30mm; padding: 1.5mm 2mm 0.5mm; box-sizing: border-box; page-break-after: always; text-align: center; font-family: system-ui, Arial, sans-serif; }
@@ -251,9 +265,9 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           .ctk-bc { text-align: center; font-size: 8px; color: #555; margin-top: 0.5mm; }
         }
       `}</style>
-      {typeof document !== 'undefined' && createPortal(
+      {printRoot && createPortal(
         <div className="ctk-print-area" dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }} />,
-        document.body
+        printRoot
       )}
     </div>
     </div>
