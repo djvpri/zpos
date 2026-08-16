@@ -243,7 +243,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
 
       {/* Area print — disembunyikan di layar, muncul saat window.print() */}
       <style>{`
-        @page { margin: 0; }
+        @page { size: auto; margin: 0; }
         @media screen { .ctk-print-area { display: none; } }
         @media print {
           body * { visibility: hidden !important; }
