@@ -27,7 +27,6 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
     return awal
   })
   const [mode, setMode] = useState<Mode>('lengkap')
-  const [ukuran, setUkuran] = useState<number>(50)
   const [kata, setKata] = useState('') // pencarian lihat daftar produk
   const [status, setStatus] = useState<'pilih' | 'proses' | 'selesai'>('pilih')
   const [error, setError] = useState('')
@@ -134,20 +133,6 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
             ))}
           </div>
 
-          {/* Opsi ukuran kertas label */}
-          <div className="flex items-center gap-1.5 mb-4 flex-wrap">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Ukuran</span>
-            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-              {[40, 50].map(u => (
-                <button
-                  key={u}
-                  onClick={() => setUkuran(u)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${ukuran === u ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
-                >{u}×30</button>
-              ))}
-            </div>
-          </div>
-
           {/* Pencarian produk */}
           <div className="relative mb-3">
             <input
@@ -220,7 +205,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           )}
 
           <div className="text-xs text-gray-400 mt-3">
-            <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Cetak via browser dialog ke printer label. Pilih ukuran kertas ({ukuran}mm aktif) di atas; format barcode = CODE39 numerik 13 digit, diawali &#39;2&#39;, unik per produk.
+            <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Cetak via browser dialog ke printer label. Ukuran kertas diatur lewat driver/printer (CT221B) — pastikan paper-nya label yg sesuai. Format barcode = CODE39 numerik, unik per produk.
           </div>
         </div>
 
@@ -264,11 +249,11 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           body * { visibility: hidden !important; }
           .ctk-print-area, .ctk-print-area * { visibility: visible !important; }
           .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; }
-          .ctk-label { display: inline-block; vertical-align: top; width: ${ukuran}mm; padding: 1.5mm 2mm; box-sizing: border-box; page-break-inside: avoid; text-align: center; }
+          .ctk-label { display: inline-block; vertical-align: top; width: 100%; padding: 1.5mm 2mm; box-sizing: border-box; page-break-inside: avoid; text-align: center; }
           .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow: hidden; overflow-wrap: break-word; }
           .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
           .ctk-svg { text-align: center; width: 100%; }
-          .ctk-svg svg { height: 14mm; width: auto; display: inline-block; max-width: ${ukuran}mm; }
+          .ctk-svg svg { height: 14mm; width: auto; display: inline-block; max-width: 100%; }
           .ctk-bc { text-align: center; font-size: 8px; color: #555; margin-top: 0.5mm; }
         }
       `}</style>
