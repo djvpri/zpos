@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { createPortal } from 'react-dom'
+import { useState } from 'react'
 import { XLg, Printer, ArrowRepeat, CheckCircleFill, ExclamationCircle, Tag, Lightbulb } from 'react-bootstrap-icons'
 import { barcodeToSvg, generateProductBarcode } from '@/lib/barcode-code39'
 import { Produk } from '@/types'
@@ -31,7 +30,6 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
   const [kata, setKata] = useState('') // pencarian lihat daftar produk
   const [status, setStatus] = useState<'pilih' | 'proses' | 'selesai'>('pilih')
   const [error, setError] = useState('')
-  const printRef = useRef<HTMLDivElement>(null)
 
   const selectedList = produk.filter(p => terpilih[p.id] && !p._pending)
 
@@ -48,6 +46,36 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
   const selectableF = selectable.filter(p =>
     !q || p.nama.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q))
   )
+
+  // Cetak label via iframe terpisah & bersih (bukan window.print pada body app).
+  // Body app berisi konten lain walau visibility:hidden — masih makan ruang
+  // sehingga label mundur ke halaman 2. Iframe body hanya berisi label → mulai
+  // kiri-atas halaman 1, tiap .ctk-label page-break → 1 label per halaman.
+  const CTK_CSS = `
+    @page { size: auto; margin: 0; }
+    body { margin: 0; }
+    .ctk-label { display: block; width: 100%; height: 30mm; padding: 1.5mm 2mm 0.5mm; box-sizing: border-box; page-break-after: always; text-align: center; font-family: system-ui, Arial, sans-serif; }
+    .ctk-label:last-child { page-break-after: auto; }
+    .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow-wrap: break-word; }
+    .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
+    .ctk-svg { text-align: center; width: 100%; }
+    .ctk-svg svg { height: 14mm; width: auto; display: inline-block; max-width: 100%; }
+    .ctk-bc { text-align: center; font-size: 8px; color: #555; margin-top: 0.5mm; }
+  `
+  function cetakPrint() {
+    const ifr = document.createElement('iframe')
+    ifr.style.cssText = 'position:fixed;left:-10000px;top:0;width:0;height:0;border:0;'
+    document.body.appendChild(ifr)
+    const doc = ifr.contentDocument
+    if (doc) {
+      doc.write(`<!doctype html><html><head><meta charset="utf-8"><style>${CTK_CSS}</style></head><body>${buatHtml()}</body></html>`)
+      doc.close()
+    }
+    setTimeout(() => {
+      ifr.contentWindow?.print()
+      setTimeout(() => { ifr.remove() }, 1000)
+    }, 150)
+  }
 
   // Tombol toggle: kalau SEMUA terpilih → "Kosongkan", kalau ada yang
   // belum → "Pilih Semua". Default modal buka dengan semua terpilih, jadi
@@ -99,13 +127,6 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
         ${gunakanBarcode ? `<div class="ctk-svg">${svg}</div><div class="ctk-bc">${escapeHtml(p.barcode!)}</div>` : ''}
       </div>`
     }).join('')
-  }
-
-  function print() {
-    const prevTitle = document.title
-    document.title = 'Cetak Label Produk'
-    window.print()
-    document.title = prevTitle
   }
 
   const sedangProses = status === 'proses'
@@ -232,37 +253,15 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           )}
           {(sudahSelesai || mode === 'nama-harga') && (
             <button
-              onClick={() => { setStatus('selesai'); setTimeout(print, 50) }}
+              onClick={() => { setStatus('selesai'); setTimeout(cetakPrint, 50) }}
               disabled={!selectedList.length}
               className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
             >
               <Printer size={16} className="inline mr-1" /> Cetak ({selectedList.length})
             </button>
           )}
-        </div>
       </div>
-
-      {/* Area print — disembunyikan di layar, muncul saat window.print() */}
-      <style>{`
-        @page { size: auto; margin: 0; }
-        @media screen { .ctk-print-area { display: none; } }
-        @media print {
-          body * { visibility: hidden !important; }
-          .ctk-print-area, .ctk-print-area * { visibility: visible !important; }
-          .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; }
-          .ctk-label { display: block; width: 100%; height: 30mm; padding: 1.5mm 2mm 0.5mm; box-sizing: border-box; page-break-after: always; text-align: center; }
-          .ctk-label:last-child { page-break-after: auto; }
-          .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow: hidden; overflow-wrap: break-word; }
-          .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
-          .ctk-svg { text-align: center; width: 100%; }
-          .ctk-svg svg { height: 14mm; width: auto; display: inline-block; max-width: 100%; }
-          .ctk-bc { text-align: center; font-size: 8px; color: #555; margin-top: 0.5mm; }
-        }
-      `}</style>
-      {typeof document !== 'undefined' && createPortal(
-        <div ref={printRef} className="ctk-print-area" dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }} />,
-        document.body
-      )}
+    </div>
     </div>
   )
 }
