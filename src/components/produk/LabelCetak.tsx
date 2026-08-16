@@ -253,7 +253,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
       <style>{`
         @page { size: auto; margin: 0; }
         @media print {
-          body > *:not([data-print-root]) { visibility: hidden !important; }
+          body > *:not([data-print-root]) { display: none !important; }
           html, body { margin: 0 !important; }
           .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; }
           .ctk-label { display: block; width: 100%; height: 30mm; padding: 1.5mm 2mm 0.5mm; box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; }
