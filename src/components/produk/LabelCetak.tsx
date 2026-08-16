@@ -263,8 +263,9 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
         @media print {
           body * { visibility: hidden !important; }
           .ctk-print-area, .ctk-print-area * { visibility: visible !important; }
-          .ctk-print-area { display: flex !important; flex-wrap: wrap; position: absolute; left: 0; top: 0; width: 100%; box-sizing: border-box; padding: 3mm; --lbl-mm: ${ukuran}mm; }
-          .ctk-label { width: var(--lbl-mm); padding: 1.5mm; page-break-inside: avoid; box-sizing: border-box; }
+          .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; --lbl-mm: ${ukuran}mm; }
+          .ctk-label { display: block; width: var(--lbl-mm); height: 30mm; margin: 0 auto; padding: 1.5mm; box-sizing: border-box; page-break-after: always; text-align: center; }
+          .ctk-label:last-child { page-break-after: auto; }
           .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow: hidden; overflow-wrap: break-word; }
           .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
           .ctk-svg { text-align: center; width: 100%; }
