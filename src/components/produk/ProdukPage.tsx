@@ -375,21 +375,22 @@ export default function ProdukPage() {
                   <tr key={p.id} className={`border-t border-gray-50 ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        {tampilFoto && (p.foto_thumb ? (
+                        {p.foto_thumb ? (
                           <button
                             type="button"
                             onClick={() => setFotoBesar(p)}
                             title="Lihat foto besar"
                             className="shrink-0 cursor-zoom-in"
                           >
-                            {/* eslint-disable-next-line @next/next/no-img-element -- foto thumb/data URI dinamis */}
-                            <img src={p.foto_thumb} alt={p.nama} className={`${ukuranThumbCls} rounded-lg object-cover`} />
+                            {tampilFoto ? (
+                              /* eslint-disable-next-line @next/next/no-img-element -- foto thumb/data URI dinamis */
+                              <img src={p.foto_thumb} alt={p.nama} className={`${ukuranThumbCls} rounded-lg object-cover`} />
+                            ) : (
+                              <span className="text-gray-300 w-9 text-center shrink-0" title="Lihat foto besar"><ImageFill size={20} /></span>
+                            )}
                           </button>
                         ) : (
                           <span className="text-gray-300 w-9 text-center shrink-0"><ImageFill size={20} /></span>
-                        ))}
-                        {!tampilFoto && (
-                          <span className="text-gray-200 w-9 text-center shrink-0"><ImageFill size={20} /></span>
                         )}
                         <div>
                           <div className="text-sm font-medium text-gray-800">{p.nama}</div>
