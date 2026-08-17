@@ -32,4 +32,11 @@ ok('fallback tetap menghasilkan svg', svg2.includes('<svg'))
 // 5. Konsistensi: generate id sama → barcode sama (deterministik)
 ok('deterministik', generateProductBarcode(42) === generateProductBarcode(42))
 
+// 6. Code 128-C utk numerik genap (12 digit produk) — lebih padat dari CODE39
+const svg128 = barcodeToSvg('200000003804')
+ok('128 berisi <svg', svg128.includes('<svg'))
+ok('128 berisi <rect', svg128.includes('<rect'))
+// Code128-C utk 12 digit: lebar = QUIET*2 + bit. Dekat ~ (6 simbol × 11) + start(11) + check(11) + stop(13) + 20 quiet ≈ 121. Harus jauh di bawah 500.
+ok('128 sempit (bar lebih tebal)', Number((svg128.match(/width="(\d+)"/) || [])[1]) < 400)
+
 console.log(`\nPASS: ${pass} assertion${pass === 1 ? '' : 's'}`)
