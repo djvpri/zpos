@@ -108,7 +108,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
       <div class="ctk-label">
         ${tampilNama ? `<div class="ctk-nama">${escapeHtml(p.nama)}</div>` : ''}
         ${tampilNama ? `<div class="ctk-harga">${fmt(p.harga)}</div>` : ''}
-        ${gunakanBarcode ? `<div class="ctk-svg">${svg}</div><div class="ctk-bc">${escapeHtml(p.barcode!)}</div>` : ''}
+        ${gunakanBarcode ? `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div><div class="ctk-svg">${svg}</div>` : ''}
       </div>`
     }).join('')
   }
