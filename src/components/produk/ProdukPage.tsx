@@ -59,6 +59,11 @@ export default function ProdukPage() {
   const [fotoBesar, setFotoBesar] = useState<Produk | null>(null)
   // Default TANPA foto (senada dgn kasir) — user nyalakan toggle utk lihat thumb.
   const [tampilFoto, setTampilFoto] = useState(false)
+  // Filter hide produk: sembunyikan yg harga ≤ ambangH ATAU stok ≤ ambangS (kemasan
+  // /stok habis). Ambang di-input manual, aktif via toggle.
+  const [filterAktif, setFilterAktif] = useState(false)
+  const [filterHarga, setFilterHarga] = useState('')
+  const [filterStok, setFilterStok] = useState('')
   // Ukuran tampil thumbnail di tabel: kecil/sedang/besar (cuma CSS, tak ubah file).
   const [ukuranThumb, setUkuranThumb] = useState<'kecil' | 'sedang' | 'besar'>('kecil')
   const ukuranThumbCls = ukuranThumb === 'kecil' ? 'w-9 h-9' : ukuranThumb === 'sedang' ? 'w-14 h-14' : 'w-20 h-20'
@@ -123,7 +128,12 @@ export default function ProdukPage() {
   }, [muatProduk, sortBy, usbBar, update])
   useBarcodeUsbListener(onBarcodeCari)
 
-  const tampilkanList = daftar
+  const tampilkanList = filterAktif
+    ? daftar.filter(p => !(
+        (filterHarga.trim() !== '' && (p.harga ?? 0) <= Number(filterHarga) ||
+         filterStok.trim() !== '' && (p.stok ?? 0) <= Number(filterStok))
+      ))
+    : daftar
 
   const startEdit = (p: Produk, field: 'harga' | 'stok') =>
     setEditing({ id: p.id, field })
@@ -354,6 +364,34 @@ export default function ProdukPage() {
                 </button>
               ))}
             </div>
+            <label className="flex items-center gap-1.5 shrink-0 cursor-pointer select-none text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={filterAktif}
+                onChange={e => setFilterAktif(e.target.checked)}
+                className="accent-indigo-600"
+              />
+              Sembunyikan: Harga ≤
+              <input
+                type="number"
+                min={0}
+                value={filterHarga}
+                onChange={e => setFilterHarga(e.target.value)}
+                placeholder="0"
+                disabled={!filterAktif}
+                className="w-16 border border-gray-300 rounded-md px-1.5 py-1 text-xs disabled:opacity-50"
+              />
+              atau Stok ≤
+              <input
+                type="number"
+                min={0}
+                value={filterStok}
+                onChange={e => setFilterStok(e.target.value)}
+                placeholder="0"
+                disabled={!filterAktif}
+                className="w-16 border border-gray-300 rounded-md px-1.5 py-1 text-xs disabled:opacity-50"
+              />
+            </label>
           </div>
           {scanErr && <p className="text-red-600 text-xs mb-2">{scanErr}</p>}
           {scanOk && <p className="text-green-600 text-xs mb-2">{scanOk}</p>}
