@@ -108,7 +108,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
       <div class="ctk-label">
         ${tampilNama ? `<div class="ctk-nama">${escapeHtml(p.nama)}</div>` : ''}
         ${tampilNama ? `<div class="ctk-harga">${fmt(p.harga)}</div>` : ''}
-        ${gunakanBarcode ? `<div class="ctk-svg">${svg}</div><div class="ctk-bc">${escapeHtml(p.barcode!)}</div>` : ''}
+        ${gunakanBarcode ? `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div><div class="ctk-svg">${svg}</div>` : ''}
       </div>`
     }).join('')
   }
@@ -256,8 +256,8 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           body > *:not([data-print-root]) { display: none !important; }
           html, body { margin: 0 !important; }
           .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; }
-          .ctk-label { display: block; width: 100%; height: 30mm; padding: 1.5mm 2mm 0.5mm; box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; }
-          .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow-wrap: break-word; }
+          .ctk-label { display: block; width: 100%; height: 30mm; padding: 1mm 2mm 0.5mm; box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; overflow: hidden; }
+          .ctk-nama { font-size: 8px; font-weight: 700; color: #333; text-align: center; overflow-wrap: break-word; }
           .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
           .ctk-svg { text-align: center; width: 100%; }
           .ctk-svg svg { height: 14mm; width: auto; display: inline-block; max-width: 100%; }
