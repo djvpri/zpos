@@ -73,6 +73,8 @@ export default function ProdukPage() {
   const [showCepat, setShowCepat] = useState(false)
   const [showLabel, setShowLabel] = useState(false)
   const [showTemplate, setShowTemplate] = useState(false)
+  // Cetak label/barcode utk SATU produk dari tombol per-baris.
+  const [labelSatu, setLabelSatu] = useState<Produk | null>(null)
   // Edit cepat inline: id + field sel yang sedang diedit. Nilai dibaca
   // langsung dari input DOM saat commit (uncontrolled) — meniadakan race
   // controlled+onBlur yang bikin input number macet tak bisa diketik.
@@ -458,6 +460,13 @@ export default function ProdukPage() {
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button
+                          onClick={() => setLabelSatu(p)}
+                          title="Cetak label/barcode produk ini"
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
+                        >
+                          <LayoutTextWindow size={12} /> Cetak Barcode
+                        </button>
+                        <button
                           onClick={() => setUsbBar(p)}
                           title="Scan barcode dengan scanner USB (arahkan ke produk ini)"
                           className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
@@ -579,6 +588,7 @@ export default function ProdukPage() {
       {showFoto && <UploadFotoProduk onClose={() => { setShowFoto(false); muatProduk(1, cari, sortBy) }} />}
       {showCepat && <TambahCepat onSelesai={() => { setShowCepat(false); muatProduk(1, cari, sortBy) }} onTutup={() => setShowCepat(false)} />}
       {showLabel && <LabelCetak produk={produk} onSelesai={() => { setShowLabel(false); muatProduk(1, cari, sortBy) }} onTutup={() => setShowLabel(false)} update={update} />}
+      {labelSatu && <LabelCetak produk={[labelSatu]} onSelesai={() => { setLabelSatu(null); muatProduk(1, cari, sortBy) }} onTutup={() => setLabelSatu(null)} update={update} />}
       {showTemplate && <TemplateProduk onSelesai={() => { setShowTemplate(false); muatProduk(1, cari, sortBy) }} onTutup={() => setShowTemplate(false)} />}
       {modal && (
         <ProdukModal
