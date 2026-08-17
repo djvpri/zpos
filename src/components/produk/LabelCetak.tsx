@@ -261,7 +261,7 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
           .ctk-svg { text-align: center; width: 100%; }
           .ctk-svg svg { height: 14mm; width: auto; display: inline-block; max-width: 100%; }
-          .ctk-bc { text-align: center; font-size: 8px; color: #555; margin-top: 0.5mm; }
+          .ctk-bc { text-align: center; font-size: 10px; font-weight: 700; color: #000; margin-top: 0.5mm; }
         }
       `}</style>
       {printRoot && createPortal(
