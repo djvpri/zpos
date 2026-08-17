@@ -256,11 +256,11 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           body > *:not([data-print-root]) { display: none !important; }
           html, body { margin: 0 !important; }
           .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; }
-          .ctk-label { display: block; width: 100%; height: 30mm; padding: 1.5mm 2mm 0.5mm; box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; }
-          .ctk-nama { font-size: 9px; font-weight: 700; color: #333; text-align: center; overflow-wrap: break-word; }
-          .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
+          .ctk-label { display: block; width: 100%; height: 30mm; padding: 1mm 2mm 0.5mm; box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; }
+          .ctk-nama { font-size: 8px; font-weight: 700; color: #333; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .ctk-harga { font-size: 15px; font-weight: 800; color: #000; text-align: center; }
           .ctk-svg { text-align: center; width: 100%; }
-          .ctk-svg svg { height: 14mm; width: auto; display: inline-block; max-width: 100%; }
+          .ctk-svg svg { width: 100%; height: auto; display: inline-block; }
           .ctk-bc { text-align: center; font-size: 8px; color: #555; margin-top: 0.5mm; }
         }
       `}</style>
