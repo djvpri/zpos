@@ -64,6 +64,9 @@ export default function ProdukPage() {
   const [filterAktif, setFilterAktif] = useState(false)
   const [filterHarga, setFilterHarga] = useState('')
   const [filterStok, setFilterStok] = useState('')
+  // Operator per kondisi: 'le' = ≤ (sembunyikan yg kecil), 'gt' = > (sembunyikan yg besar).
+  const [opHarga, setOpHarga] = useState<'le' | 'gt'>('le')
+  const [opStok, setOpStok] = useState<'le' | 'gt'>('le')
   // Ukuran tampil thumbnail di tabel: kecil/sedang/besar (cuma CSS, tak ubah file).
   const [ukuranThumb, setUkuranThumb] = useState<'kecil' | 'sedang' | 'besar'>('kecil')
   const ukuranThumbCls = ukuranThumb === 'kecil' ? 'w-9 h-9' : ukuranThumb === 'sedang' ? 'w-14 h-14' : 'w-20 h-20'
@@ -128,11 +131,14 @@ export default function ProdukPage() {
   }, [muatProduk, sortBy, usbBar, update])
   useBarcodeUsbListener(onBarcodeCari)
 
+  const kenaFilter = (v: number | null | undefined, op: 'le' | 'gt', ambang: string) => {
+    if (ambang.trim() === '') return false
+    const n = Number(v ?? 0)
+    const t = Number(ambang)
+    return op === 'gt' ? n > t : n <= t
+  }
   const tampilkanList = filterAktif
-    ? daftar.filter(p => !(
-        (filterHarga.trim() !== '' && (p.harga ?? 0) <= Number(filterHarga) ||
-         filterStok.trim() !== '' && (p.stok ?? 0) <= Number(filterStok))
-      ))
+    ? daftar.filter(p => !(kenaFilter(p.harga, opHarga, filterHarga) || kenaFilter(p.stok, opStok, filterStok)))
     : daftar
 
   const startEdit = (p: Produk, field: 'harga' | 'stok') =>
@@ -371,7 +377,16 @@ export default function ProdukPage() {
                 onChange={e => setFilterAktif(e.target.checked)}
                 className="accent-indigo-600"
               />
-              Sembunyikan: Harga ≤
+              Sembunyikan: Harga
+              <select
+                value={opHarga}
+                onChange={e => setOpHarga(e.target.value as 'le' | 'gt')}
+                disabled={!filterAktif}
+                className="border border-gray-300 rounded-md px-1 py-1 text-xs disabled:opacity-50"
+              >
+                <option value="le">≤</option>
+                <option value="gt">&gt;</option>
+              </select>
               <input
                 type="number"
                 min={0}
@@ -381,7 +396,16 @@ export default function ProdukPage() {
                 disabled={!filterAktif}
                 className="w-16 border border-gray-300 rounded-md px-1.5 py-1 text-xs disabled:opacity-50"
               />
-              atau Stok ≤
+              atau Stok
+              <select
+                value={opStok}
+                onChange={e => setOpStok(e.target.value as 'le' | 'gt')}
+                disabled={!filterAktif}
+                className="border border-gray-300 rounded-md px-1 py-1 text-xs disabled:opacity-50"
+              >
+                <option value="le">≤</option>
+                <option value="gt">&gt;</option>
+              </select>
               <input
                 type="number"
                 min={0}
