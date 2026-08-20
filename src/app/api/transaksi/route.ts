@@ -22,14 +22,17 @@ export async function POST(req: Request) {
   if (existing) return NextResponse.json(existing, { status: 409 })
 
   // Shift: kalau client kirim `trx.shift_id` (kasir Tauri, shift per kasir lokal),
-  // validasi dulu — harus milik toko ini & masih aktif. Tidak valid → fallback
-  // ke shift aktif user token (pakai web). Ini mencegah attach ke shift toko lain
-  // atau shift yang sudah ditutup (transaksi offline lama tetap masuk, tanpa shift).
+  // validasi dulu — harus milik toko ini (boleh shift yang sudah tutup; transaksi
+  // OFFLINE yang terkirim belakangan harus tetap masuk shift aslinya, walau shift
+  // itu sudah ditutup berhari-hari lalu). Hanya cek toko_id, BUKAN `aktif=true`
+  // (kasus offline seminggu/sebulan: tiap shift ditutup harian, tapi transaksi
+  // offline menumpuk & harus menempel ke shift tanggal transaksi itu dibuatnya).
+  // Kalau shift_id invalid/tak ada → fallback ke shift aktif user token (web).
   let shiftId: number | null = null
   if (trx.shift_id) {
     const [s] = await sql`
       SELECT id FROM shift
-      WHERE id = ${Number(trx.shift_id)} AND toko_id = ${toko.tokoId} AND aktif = true
+      WHERE id = ${Number(trx.shift_id)} AND toko_id = ${toko.tokoId}
       LIMIT 1
     `
     if (s) shiftId = s.id
