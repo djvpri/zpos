@@ -35,7 +35,7 @@ export async function GET(req: Request) {
   return NextResponse.json(filtered)
 }
 
-export const POST = apiHandler(async (req: Request, body: { modal_awal?: number; user_id?: number }) => {
+export const POST = apiHandler(async (req: Request, body: { modal_awal?: number; user_id?: number; buka_at?: string }) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -68,9 +68,18 @@ export const POST = apiHandler(async (req: Request, body: { modal_awal?: number;
     FROM shift WHERE toko_id = ${toko.tokoId} AND buka_at::date = CURRENT_DATE
   `
 
+  // `buka_at` opsional utk replay shift OFFLINE kasir (Fase 2): shift lokal yang
+  // ditutup offline di-post belakangan harus tercatat di tanggal aslinya, bukan
+  // tanggal online. Validasi ISO; kalau tak ada/kosong → default now() (DB).
+  let bukaAt: Date | null = null
+  if (body.buka_at) {
+    const d = new Date(body.buka_at)
+    if (!Number.isNaN(d.getTime())) bukaAt = d
+  }
+
   const [shift] = await sql`
-    INSERT INTO shift (toko_id, user_id, kasir_nama, modal_awal, nomor_shift)
-    VALUES (${toko.tokoId}, ${targetUserId}, ${targetNama}, ${Math.max(0, Number(body.modal_awal ?? 0) || 0)}, ${urutan.n})
+    INSERT INTO shift (toko_id, user_id, kasir_nama, modal_awal, nomor_shift${bukaAt ? sql`, buka_at` : sql``})
+    VALUES (${toko.tokoId}, ${targetUserId}, ${targetNama}, ${Math.max(0, Number(body.modal_awal ?? 0) || 0)}, ${urutan.n}${bukaAt ? sql`, ${bukaAt}` : sql``})
     RETURNING *
   `
 
