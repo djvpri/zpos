@@ -3,7 +3,7 @@ import './globals.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
 export const metadata: Metadata = {
-  title: 'ZPos',
+  title: 'Z1 Pos',
   description: 'Aplikasi kasir digital by Zomet',
 }
 

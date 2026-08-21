@@ -115,7 +115,7 @@ export function buildEscPos(s: StrukData): string {
   cmd += ALIGN_CENTER
   if (s.catatan) cmd += s.catatan + LF
   cmd += '* Terima kasih *' + LF
-  cmd += 'Powered by ZPOS' + LF
+  cmd += 'Powered by Z1 Pos' + LF
   cmd += LF + LF + LF
 
   cmd += CUT
@@ -158,7 +158,7 @@ export function buildEscPosLaporan(s: StrukLaporan): string {
   cmd += line()
   cmd += ALIGN_CENTER
   if (s.catatan) cmd += s.catatan + LF
-  cmd += 'Dicetak via ZPOS' + LF
+  cmd += 'Dicetak via Z1 Pos' + LF
   cmd += LF + LF + LF
   cmd += CUT
   return cmd

@@ -148,7 +148,7 @@ export default function DemoConfigPage() {
             <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center">
               <ShieldCheck size={18} />
             </div>
-            <span className="font-bold">ZPos Admin</span>
+            <span className="font-bold">Z1 Pos Admin</span>
           </div>
           <button onClick={logout} className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
             <BoxArrowRight size={15} /> Keluar

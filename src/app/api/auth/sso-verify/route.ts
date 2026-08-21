@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (payload.app !== 'zpos') {
-      return NextResponse.json({ error: 'Token ini bukan untuk ZPOS' }, { status: 400 })
+      return NextResponse.json({ error: 'Token ini bukan untuk Z1 Pos' }, { status: 400 })
     }
 
     const email = String(payload.email || '').trim().toLowerCase()
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json({
-        error: `Email ${email} sudah dikenali Z One, tapi belum terdaftar sebagai user di ZPOS. Minta admin menambahkannya lewat Z One → Kelola App → ZPOS (pilih toko terlebih dahulu).`,
+        error: `Email ${email} sudah dikenali Z One, tapi belum terdaftar sebagai user di Z1 Pos. Minta admin menambahkannya lewat Z One → Kelola App → Z1 Pos (pilih toko terlebih dahulu).`,
         code: 'USER_NOT_FOUND',
       }, { status: 404 })
     }

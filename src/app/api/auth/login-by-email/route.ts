@@ -22,7 +22,7 @@ export const POST = apiHandler(async (_req: Request, body: { email: string }) =>
   `
 
   if (!user) {
-    return NextResponse.json({ error: 'Email tidak terdaftar sebagai user ZPOS' }, { status: 404 })
+    return NextResponse.json({ error: 'Email tidak terdaftar sebagai user Z1 Pos' }, { status: 404 })
   }
 
   const token = await signToken({

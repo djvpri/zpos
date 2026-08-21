@@ -304,7 +304,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
               <UpcScan size={12} /> Barcode <span className="text-gray-300">(opsional)</span>
               {isInternalBarcode(form.barcode) && (
                 <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 ml-1">
-                  Internal ZPos
+                  Internal Z1 Pos
                 </span>
               )}
             </label>
@@ -338,7 +338,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
             {isInternalBarcode(form.barcode) && (
               <p className="text-[11px] text-amber-600 mt-1.5 flex items-start gap-1">
                 <ExclamationTriangle size={12} className="shrink-0 mt-0.5" />
-                Ini barcode buatan ZPos (dipakai utk produk tanpa barcode). Kalau barang ini punya barcode asli kemasan, scan kamera untuk menggantinya.
+                Ini barcode buatan Z1 Pos (dipakai utk produk tanpa barcode). Kalau barang ini punya barcode asli kemasan, scan kamera untuk menggantinya.
               </p>
             )}
           </div>

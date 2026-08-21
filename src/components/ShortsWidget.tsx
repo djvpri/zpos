@@ -42,7 +42,7 @@ export default function ShortsWidget() {
             </button>
             <iframe
               src={`https://www.youtube-nocookie.com/embed/${SHORTS_ID}`}
-              title="Video promo ZPos"
+              title="Video promo Z1 Pos"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               className="w-full h-full border-0 block"

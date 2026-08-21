@@ -60,7 +60,7 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
     baris.push(`Bayar (${metode_bayar}): ${fmt(bayar)}`)
     baris.push(`Kembali: ${fmt(kembali)}`)
     if (toko?.catatan_struk) baris.push(toko.catatan_struk)
-    baris.push('Powered by ZPOS')
+    baris.push('Powered by Z1 Pos')
     return baris.join('\n')
   }
 
@@ -170,7 +170,7 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
           <div className="text-center text-xs text-gray-400 space-y-1">
             {toko?.catatan_struk && <div>{toko.catatan_struk}</div>}
             <div>* Terima kasih sudah berbelanja *</div>
-            <div className="text-gray-300 mt-1">Powered by ZPOS</div>
+            <div className="text-gray-300 mt-1">Powered by Z1 Pos</div>
           </div>
         </div>
 

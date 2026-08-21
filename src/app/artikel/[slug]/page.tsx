@@ -80,7 +80,7 @@ type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const a = await getArtikel(slug)
-  return { title: `${a?.judul ?? 'Artikel'} | ZPos`, description: a?.deskripsi ?? undefined }
+  return { title: `${a?.judul ?? 'Artikel'} | Z1 Pos`, description: a?.deskripsi ?? undefined }
 }
 
 export default async function ArtikelDetail({ params }: Props) {
@@ -96,7 +96,7 @@ export default async function ArtikelDetail({ params }: Props) {
             <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center">
               <span className="text-white text-sm font-bold">Z</span>
             </div>
-            <span className="font-bold text-gray-900">ZPos</span>
+            <span className="font-bold text-gray-900">Z1 Pos</span>
           </Link>
           <Link href="/artikel" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
             ← Artikel

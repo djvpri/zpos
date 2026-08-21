@@ -16,7 +16,7 @@ function SsoContent() {
     if (!token) {
       Promise.resolve().then(() => {
         setStatus('error')
-        setMsg('Token tidak ditemukan. Buka ZPOS lewat Z One lagi.')
+        setMsg('Token tidak ditemukan. Buka Z1 Pos lewat Z One lagi.')
       })
       return
     }
@@ -39,7 +39,7 @@ function SsoContent() {
       })
       .catch(() => {
         setStatus('error')
-        setMsg('Tidak dapat terhubung ke server ZPOS')
+        setMsg('Tidak dapat terhubung ke server Z1 Pos')
       })
   }, [token, device, router])
 

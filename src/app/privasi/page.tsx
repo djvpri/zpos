@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'react-bootstrap-icons'
 
-export const metadata = { title: 'Kebijakan Privasi · ZPos' }
+export const metadata = { title: 'Kebijakan Privasi · Z1 Pos' }
 
 export default function PrivasiPage() {
   return (

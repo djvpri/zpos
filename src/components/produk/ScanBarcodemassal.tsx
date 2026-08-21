@@ -202,7 +202,7 @@ export default function ScanBarcodeMassal({ onSelesai, onTutup, tambahOffline }:
               </div>
 
               <p className="text-xs text-gray-400 text-center">
-                Nama & kategori otomatis dari katalog barcode ZPos, lalu Open Food Facts
+                Nama & kategori otomatis dari katalog barcode Z1 Pos, lalu Open Food Facts
               </p>
             </div>
 

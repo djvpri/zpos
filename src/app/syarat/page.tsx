@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'react-bootstrap-icons'
 
-export const metadata = { title: 'Syarat & Ketentuan · ZPos' }
+export const metadata = { title: 'Syarat & Ketentuan · Z1 Pos' }
 
 export default function SyaratPage() {
   return (
@@ -17,7 +17,7 @@ export default function SyaratPage() {
         <div className="prose prose-sm max-w-none text-gray-600 space-y-5 leading-relaxed">
           <section>
             <h2 className="font-semibold text-gray-900">1. Penerimaan</h2>
-            <p>Dengan mendaftar dan menggunakan ZPos (&quot;Layanan&quot;), Anda menyetujui Syarat &amp; Ketentuan ini. Jika tidak setuju, mohon tidak menggunakan Layanan.</p>
+            <p>Dengan mendaftar dan menggunakan Z1 Pos (&quot;Layanan&quot;), Anda menyetujui Syarat &amp; Ketentuan ini. Jika tidak setuju, mohon tidak menggunakan Layanan.</p>
           </section>
 
           <section>

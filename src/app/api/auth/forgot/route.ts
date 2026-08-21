@@ -37,11 +37,11 @@ export const POST = apiHandler(async (req: Request, body: { email: string }) => 
       body: JSON.stringify({
         from,
         to: user.email,
-        subject: 'Reset Password ZPos',
+        subject: 'Reset Password Z1 Pos',
         html: `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
             <h2 style="color:#111">Reset Password</h2>
-            <p>Halo ${user.nama}, kami menerima permintaan reset password akun ZPos Anda.</p>
+            <p>Halo ${user.nama}, kami menerima permintaan reset password akun Z1 Pos Anda.</p>
             <p>Klik tombol di bawah untuk membuat password baru. Tautan berlaku 1 jam.</p>
             <p style="margin:24px 0">
               <a href="${link}" style="background:#4f46e5;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600">Reset Password</a>

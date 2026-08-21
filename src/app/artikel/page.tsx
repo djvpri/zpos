@@ -3,8 +3,8 @@ import type { Metadata } from 'next'
 import sql from '@/lib/db'
 
 export const metadata: Metadata = {
-  title: 'Artikel & Tips Bisnis | ZPos',
-  description: 'Tips mengelola toko, kasir digital, dan UMKM dari ZPos.',
+  title: 'Artikel & Tips Bisnis | Z1 Pos',
+  description: 'Tips mengelola toko, kasir digital, dan UMKM dari Z1 Pos.',
 }
 
 export const dynamic = 'force-dynamic'
@@ -35,7 +35,7 @@ export default async function ArtikelPage() {
             <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center">
               <span className="text-white text-sm font-bold">Z</span>
             </div>
-            <span className="font-bold text-gray-900">ZPos</span>
+            <span className="font-bold text-gray-900">Z1 Pos</span>
           </Link>
           <Link href="/" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
             ← Kembali
@@ -88,7 +88,7 @@ export default async function ArtikelPage() {
 
       <footer className="border-t border-gray-100 py-6">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center text-xs text-gray-400">
-          © 2026 ZPos. Dibuat dengan cinta untuk UMKM Indonesia.
+          © 2026 Z1 Pos. Dibuat dengan cinta untuk UMKM Indonesia.
         </div>
       </footer>
     </div>

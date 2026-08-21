@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
           <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center mx-auto mb-3">
             <ShieldCheck className="text-white" size={24} />
           </div>
-          <h1 className="text-2xl font-bold text-white">ZPos Admin</h1>
+          <h1 className="text-2xl font-bold text-white">Z1 Pos Admin</h1>
           <p className="text-gray-400 text-sm mt-1">Panel administrator platform</p>
         </div>
 

@@ -64,7 +64,7 @@ export function LaporanStrukModal({ data, namaToko, alamat, telepon, catatan_str
     baris.push('--------------------------------')
     baris.push(`TOTAL: ${fmt(data.total_penjualan || 0)}`)
     if (catatan_struk) baris.push(catatan_struk)
-    baris.push('Dicetak via ZPOS')
+    baris.push('Dicetak via Z1 Pos')
     return baris.join('\n')
   }
 
@@ -138,7 +138,7 @@ export function LaporanStrukModal({ data, namaToko, alamat, telepon, catatan_str
 
             <div className="text-center text-xs text-gray-400 space-y-1">
               {catatan_struk && <div>{catatan_struk}</div>}
-              <div className="text-gray-300 mt-1">Dicetak via ZPOS</div>
+              <div className="text-gray-300 mt-1">Dicetak via Z1 Pos</div>
             </div>
           </div>
         </div>
