@@ -11,6 +11,8 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      ZADV_KEYWORD_URL: ${{ secrets.ZADV_KEYWORD_URL }}
+      ZADV_KEYWORD_KEY: ${{ secrets.ZADV_KEYWORD_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
