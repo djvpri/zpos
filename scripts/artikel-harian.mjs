@@ -19,12 +19,47 @@ for (const [k, v] of [['GEMINI_API_KEY', KEY], ['DATABASE_URL', DB_URL]]) {
 
 const sql = postgres(DB_URL, { ssl: 'require', max: 1 })
 
-const PROMPT = `Kamu penulis konten bisnis untuk produk "ZPos", aplikasi kasir digital (POS) untuk UMKM Indonesia (warung, kafe, toko kelontong, toko bangunan, minimarket). Target pembaca: pemilik UMKM, non-teknis.
-Tulis 1 artikel tips bisnis/UMKM singkat dalam Bahasa Indonesia, 350-500 kata. Topik HARUS seputar mengelola toko / kasir digital / mesin kasir / UMKM — bervariasi, JANGAN selalu sama tiap hari, dan JANGAN promosikan produk lain di luar ZPos.
-"tags" WAJIB berisi minimal 5 tag. Pilih tag yang relevan dari kata kunci ini (dan tambahkan tag lain yang cocok): mesin kasir, kasir digital, pos, minimarket, toko kelontong, toko bangunan, warung, umkm, kafe, katalog produk, manajemen stok, laporan penjualan, pembayaran qris.
+const DEFAULT_KEYWORDS = [
+  'mesin kasir','kasir digital','pos','minimarket','toko kelontong','toko bangunan',
+  'warung','umkm','kafe','katalog produk','manajemen stok','laporan penjualan','pembayaran qris'
+]
+
+// Timpa/amplifikasi kata kunci dgn entry ZPos di Zadv 'kelola app' (kalau ada).
+// Sumber: GET {ZADV_KEYWORD_URL}/api/apps (public), ambil PromoApp nama ZPos ->
+// (filter cocok 'Z1 Pos' / 'ZPos'). Kirim X-Cross-App-Secret (ZADV_KEYWORD_KEY) utk
+// bypass auth JWT Zadv. Fallback ke default saat gagal.
+async function fetchZposKeywords() {
+  const base = process.env.ZADV_KEYWORD_URL
+  if (!base) return null
+  try {
+    const res = await fetch(`${base}/api/apps`, {
+      headers: { 'x-cross-app-secret': process.env.ZADV_KEYWORD_KEY || '' },
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) return null
+    const apps = await res.json()
+    const zpos = (Array.isArray(apps) ? apps : []).find(
+      (a) => a?.aktif !== false && /z1\s*pos|zpos/i.test(String(a?.nama || ''))
+    )
+    if (!zpos) return null
+    const kw = [zpos.nama, zpos.tagline, ...(zpos.fitur || [])]
+      .map((s) => String(s || '').trim()).filter(Boolean)
+    return kw.length ? kw : null
+  } catch {
+    return null // cron jangan gagal krn Zadv down - pakai keyword default
+  }
+}
+
+function buildPrompt(keywords) {
+  const kw = keywords && keywords.length ? keywords : DEFAULT_KEYWORDS
+  const daftar = kw.join(', ')
+  return `Kamu penulis konten bisnis untuk produk "ZPos", aplikasi kasir digital (POS) untuk UMKM Indonesia (warung, kafe, toko kelontong, toko bangunan, minimarket). Target pembaca: pemilik UMKM, non-teknis.
+Tulis 1 artikel tips bisnis/UMKM singkat dalam Bahasa Indonesia, 350-500 kata. Topik HARUS seputar mengelola toko / kasir digital / mesin kasir / UMKM - bervariasi, JANGAN selalu sama tiap hari, dan JANGAN promosikan produk lain di luar ZPos.
+"tags" WAJIB berisi minimal 5 tag. Pilih tag yang relevan dari kata kunci ini (dan tambahkan tag lain yang cocok): ${daftar}.
 Kembalikan HANYA JSON (tanpa markdown fence), format:
 {"judul":"...", "deskripsi":"1 kalimat singkat", "tags":["mesin kasir","kasir digital","pos","minimarket","umkm"], "konten":"markdown artikel"}
-Isi "konten" markdown MURNI (JANGAN pernah pakai tag HTML seperti <strong>, <b>, <em>, <p> — bukan diperbolehkan): gunakan ** untuk tebal, * untuk miring, ## untuk subjudul, - untuk daftar.`
+Isi "konten" markdown MURNI (JANGAN pernah pakai tag HTML seperti <strong>, <b>, <em>, <p>): gunakan ** utk tebal, * utk miring, ## utk subjudul, - utk daftar.`
+}
 
 function slugify(text) {
   return text.toLowerCase().trim()
@@ -77,7 +112,7 @@ async function main() {
     return
   }
 
-  const json = parseJson(await callGemini(PROMPT))
+  const json = parseJson(await callGemini(buildPrompt(await fetchZposKeywords())))
   const judul = String(json.judul || '').trim()
   const konten = String(json.konten || '').trim()
   if (!judul || !konten) throw new Error('Gemini hasilkan judul/konten kosong')
