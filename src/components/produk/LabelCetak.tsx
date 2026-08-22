@@ -346,7 +346,7 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
           tampil penuh di posisi asalnya = awal body = kiri-atas halaman 1,
           page-break antar label = 1 label per halaman. */}
       <style>{`
-        @page { size: auto; margin: 0; }
+        @page { size: var(--ctk-w, 50mm) var(--ctk-h, 30mm); margin: 0; }
         @media print {
           body > *:not([data-print-root]) { display: none !important; }
           html, body { margin: 0 !important; }
