@@ -34,10 +34,6 @@ const UKURAN_PRESET: { label: string; uk: UkuranLabel }[] = [
   { label: '60 × 40 mm',  uk: { w: 60, h: 40 } },
   { label: '30 × 20 mm',  uk: { w: 30, h: 20 } },
 ]
-// Tinggi barcode (mm) mengikuti tinggi label — sisakan ruang nama+harga+nomor.
-function bcHeight(h: number): number {
-  return Math.min(22, Math.max(8, h - 16))
-}
 
 // Modal label cetak gabungan: pilih produk → auto-generate barcode utk yg
 // belum punya → pilih mode cetak (barcode / nama+harga / nama+harga+barcode)
@@ -180,7 +176,7 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      style={{ '--ctk-h': `${ukuran.h}mm`, '--ctk-w': `${ukuran.w}mm`, '--ctk-bc': `${bcHeight(ukuran.h)}mm` } as CSSProperties}
+      style={{ '--ctk-h': `${ukuran.h}mm`, '--ctk-w': `${ukuran.w}mm`, '--ctk-bc': `${Math.max(4, ukuran.h * 0.47)}mm` } as CSSProperties}
     >
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -355,12 +351,12 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
           body > *:not([data-print-root]) { display: none !important; }
           html, body { margin: 0 !important; }
           .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; }
-          .ctk-label { display: block; width: 100%; height: var(--ctk-h, 30mm); padding: 1mm 2mm 0.5mm; box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; overflow: hidden; }
-          .ctk-nama { font-size: 8px; font-weight: 700; color: #333; text-align: center; overflow-wrap: break-word; }
-          .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
-          .ctk-svg { text-align: center; width: 100%; }
+          .ctk-label { display: block; width: 100%; height: var(--ctk-h, 30mm); padding: calc(var(--ctk-h) * 0.02) calc(var(--ctk-w) * 0.04) 0.5mm; box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; overflow: hidden; }
+          .ctk-nama { font-size: calc(var(--ctk-h) * 0.085); font-weight: 700; color: #333; text-align: center; overflow-wrap: break-word; line-height: 1.1; }
+          .ctk-harga { font-size: calc(var(--ctk-h) * 0.17); font-weight: 800; color: #000; text-align: center; line-height: 1.2; }
+          .ctk-svg { text-align: center; width: 100%; margin-top: calc(var(--ctk-h) * 0.02); }
           .ctk-svg svg { height: var(--ctk-bc, 14mm); width: auto; display: inline-block; max-width: 100%; }
-          .ctk-bc { text-align: center; font-size: 10px; font-weight: 700; color: #000; margin-top: 0.5mm; }
+          .ctk-bc { text-align: center; font-size: calc(var(--ctk-h) * 0.095); font-weight: 700; color: #000; margin-top: calc(var(--ctk-h) * 0.015); }
         }
       `}</style>
       {printRoot && createPortal(
