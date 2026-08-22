@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { XLg, Printer, ArrowRepeat, CheckCircleFill, ExclamationCircle, Tag, Lightbulb } from 'react-bootstrap-icons'
 import { barcodeToSvg, generateProductBarcode } from '@/lib/barcode-code39'
@@ -12,15 +12,30 @@ interface Props {
   onSelesai: () => void
   onTutup: () => void
   update: (id: number, p: Partial<Produk>) => Promise<{ message?: string } | null>
+  ukuran?: UkuranLabel   // opsional; bila di-set, modal ini pakai W×H label lain (default 50×30)
 }
 
+type UkuranLabel = { w: number; h: number }
+
 type Mode = 'barcode' | 'nama-harga' | 'lengkap'
+
+// Preset ukuran label (mm). Barcode height dihitung proporsional thd tinggi label.
+const UKURAN_PRESET: { label: string; uk: UkuranLabel }[] = [
+  { label: '50 × 30 mm',  uk: { w: 50, h: 30 } },
+  { label: '40 × 30 mm',  uk: { w: 40, h: 30 } },
+  { label: '60 × 40 mm',  uk: { w: 60, h: 40 } },
+  { label: '30 × 20 mm',  uk: { w: 30, h: 20 } },
+]
+// Tinggi barcode (mm) mengikuti tinggi label — sisakan ruang nama+harga+nomor.
+function bcHeight(h: number): number {
+  return Math.min(22, Math.max(8, h - 16))
+}
 
 // Modal label cetak gabungan: pilih produk → auto-generate barcode utk yg
 // belum punya → pilih mode cetak (barcode / nama+harga / nama+harga+barcode)
 // → cetak label via printer (browser dialog). Menggantikan BarcodeLabel +
 // StickerHarga jadi satu fitur.
-export default function LabelCetak({ produk, onTutup, update }: Props) {
+export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp }: Props) {
   const tanpaBarcode = produk.filter(p => !p.barcode && !p._pending)
   const [terpilih, setTerpilih] = useState<Record<number, boolean>>(() => {
     const awal: Record<number, boolean> = {}
@@ -29,6 +44,8 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
   })
   const [mode, setMode] = useState<Mode>('lengkap')
   const [kata, setKata] = useState('') // pencarian lihat daftar produk
+  const [ukuran, setUkuran] = useState<UkuranLabel>(ukuranProp ?? { w: 50, h: 30 })
+  const [custom, setCustom] = useState<UkuranLabel>({ w: 40, h: 30 }) // input custom W×H
   const [status, setStatus] = useState<'pilih' | 'proses' | 'selesai'>('pilih')
   const [error, setError] = useState('')
   const [printRoot, setPrintRoot] = useState<HTMLElement | null>(null)
@@ -117,7 +134,10 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
   const sudahSelesai = status === 'selesai'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      style={{ '--ctk-h': `${ukuran.h}mm`, '--ctk-w': `${ukuran.w}mm`, '--ctk-bc': `${bcHeight(ukuran.h)}mm` } as CSSProperties}
+    >
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
@@ -128,6 +148,40 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
+          {/* Ukuran label (mm) — pilih preset atau custom. Waktu cetak, atur juga
+              ukuran paper yg sama di dialog printer/driver. */}
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="text-xs font-semibold text-gray-500">Ukuran label:</span>
+            <div className="flex gap-1 flex-wrap">
+              {UKURAN_PRESET.map(p => (
+                <button
+                  key={`${p.uk.w}x${p.uk.h}`}
+                  onClick={() => setUkuran(p.uk)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${ukuran.w === p.uk.w && ukuran.h === p.uk.h ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-indigo-200'}`}
+                >{p.label}</button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1 text-xs">
+              <span className="text-gray-400">Custom</span>
+              <input
+                type="number" value={custom.w} min={20} max={100}
+                onChange={e => setCustom(c => ({ ...c, w: Math.max(10, Number(e.target.value) || 50) }))}
+                className="w-14 rounded border border-gray-200 py-1 px-1.5 text-center focus:border-indigo-400 focus:outline-none"
+              />
+              <span className="text-gray-400">×</span>
+              <input
+                type="number" value={custom.h} min={15} max={60}
+                onChange={e => setCustom(c => ({ ...c, h: Math.max(10, Number(e.target.value) || 30) }))}
+                className="w-14 rounded border border-gray-200 py-1 px-1.5 text-center focus:border-indigo-400 focus:outline-none"
+              />
+              <span className="text-gray-400">mm</span>
+              <button
+                onClick={() => setUkuran(custom)}
+                className="px-2.5 py-1 rounded-lg text-xs font-medium border border-gray-200 text-gray-500 hover:border-indigo-200"
+              >Pakai</button>
+            </div>
+          </div>
+
           {/* Toggle mode cetak */}
           <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-2 w-fit flex-wrap">
             {([['lengkap', 'Nama+Harga+Barcode'], ['nama-harga', 'Nama+Harga'], ['barcode', 'Barcode']] as [Mode, string][]).map(([m, lbl]) => (
@@ -256,11 +310,11 @@ export default function LabelCetak({ produk, onTutup, update }: Props) {
           body > *:not([data-print-root]) { display: none !important; }
           html, body { margin: 0 !important; }
           .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; }
-          .ctk-label { display: block; width: 100%; height: 30mm; padding: 1mm 2mm 0.5mm; box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; overflow: hidden; }
+          .ctk-label { display: block; width: 100%; height: var(--ctk-h, 30mm); padding: 1mm 2mm 0.5mm; box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; overflow: hidden; }
           .ctk-nama { font-size: 8px; font-weight: 700; color: #333; text-align: center; overflow-wrap: break-word; }
           .ctk-harga { font-size: 18px; font-weight: 800; color: #000; text-align: center; }
           .ctk-svg { text-align: center; width: 100%; }
-          .ctk-svg svg { height: 14mm; width: auto; display: inline-block; max-width: 100%; }
+          .ctk-svg svg { height: var(--ctk-bc, 14mm); width: auto; display: inline-block; max-width: 100%; }
           .ctk-bc { text-align: center; font-size: 10px; font-weight: 700; color: #000; margin-top: 0.5mm; }
         }
       `}</style>
