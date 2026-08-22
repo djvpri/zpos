@@ -44,8 +44,22 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
   })
   const [mode, setMode] = useState<Mode>('lengkap')
   const [kata, setKata] = useState('') // pencarian lihat daftar produk
-  const [ukuran, setUkuran] = useState<UkuranLabel>(ukuranProp ?? { w: 50, h: 30 })
+  const [ukuran, setUkuran] = useState<UkuranLabel>(() => {
+    // Default mengikuti settingan terakhir (persist localStorage). Prop eksplisit
+    // menang; kalau tak ada prop, baca localStorage; kalau kosong → 50×30.
+    if (ukuranProp) return ukuranProp
+    try {
+      const s = localStorage.getItem('zpos_ukuran_label')
+      if (s) { const p = JSON.parse(s); if (p && Number(p.w) > 0 && Number(p.h) > 0) return { w: Number(p.w), h: Number(p.h) } }
+    } catch { /* ignore */ }
+    return { w: 50, h: 30 }
+  })
   const [custom, setCustom] = useState<UkuranLabel>({ w: 40, h: 30 }) // input custom W×H
+  // Simpan pilihan ukuran biar dipakai sebagai default di cetak berikutnya.
+  const gantiUkuran = (u: UkuranLabel) => {
+    setUkuran(u)
+    try { localStorage.setItem('zpos_ukuran_label', JSON.stringify(u)) } catch { /* ignore */ }
+  }
   const [status, setStatus] = useState<'pilih' | 'proses' | 'selesai'>('pilih')
   const [error, setError] = useState('')
   const [printRoot, setPrintRoot] = useState<HTMLElement | null>(null)
@@ -156,7 +170,7 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
               {UKURAN_PRESET.map(p => (
                 <button
                   key={`${p.uk.w}x${p.uk.h}`}
-                  onClick={() => setUkuran(p.uk)}
+                  onClick={() => gantiUkuran(p.uk)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${ukuran.w === p.uk.w && ukuran.h === p.uk.h ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-indigo-200'}`}
                 >{p.label}</button>
               ))}
@@ -176,7 +190,7 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
               />
               <span className="text-gray-400">mm</span>
               <button
-                onClick={() => setUkuran(custom)}
+                onClick={() => gantiUkuran(custom)}
                 className="px-2.5 py-1 rounded-lg text-xs font-medium border border-gray-200 text-gray-500 hover:border-indigo-200"
               >Pakai</button>
             </div>
