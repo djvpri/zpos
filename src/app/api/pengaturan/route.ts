@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const [row] = await sql`
-    SELECT pajak_persen, alamat, telepon, catatan_struk
+    SELECT pajak_persen, alamat, telepon, catatan_struk, ukuran_label
     FROM toko WHERE id = ${toko.tokoId}
   `
   return NextResponse.json({
@@ -17,15 +17,16 @@ export async function GET(req: Request) {
     alamat: row?.alamat ?? '',
     telepon: row?.telepon ?? '',
     catatan_struk: row?.catatan_struk ?? '',
+    ukuran_label: row?.ukuran_label ?? '50x30',
   })
 }
 
-export const PUT = apiHandler(async (req: Request, body: { pajak_persen?: number; alamat?: string | null; telepon?: string | null; catatan_struk?: string | null }) => {
+export const PUT = apiHandler(async (req: Request, body: { pajak_persen?: number; alamat?: string | null; telepon?: string | null; catatan_struk?: string | null; ukuran_label?: string | null }) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (toko.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { pajak_persen, alamat, telepon, catatan_struk } = body
+  const { pajak_persen, alamat, telepon, catatan_struk, ukuran_label } = body
   const persen = Math.round(Number(pajak_persen ?? 0))
   if (!Number.isFinite(persen) || persen < 0 || persen > 100) {
     return NextResponse.json({ error: 'Pajak harus 0–100%' }, { status: 400 })
@@ -36,8 +37,9 @@ export const PUT = apiHandler(async (req: Request, body: { pajak_persen?: number
       pajak_persen = ${persen},
       alamat = ${alamat?.trim() || null},
       telepon = ${telepon?.trim() || null},
-      catatan_struk = ${catatan_struk?.trim() || null}
+      catatan_struk = ${catatan_struk?.trim() || null},
+      ukuran_label = ${ukuran_label?.trim() || '50x30'}
     WHERE id = ${toko.tokoId}
   `
-  return NextResponse.json({ pajak_persen: persen, alamat, telepon, catatan_struk })
+  return NextResponse.json({ pajak_persen: persen, alamat, telepon, catatan_struk, ukuran_label: ukuran_label?.trim() || '50x30' })
 }, { schema: pengaturanSchema })

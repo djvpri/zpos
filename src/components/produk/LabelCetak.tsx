@@ -12,10 +12,18 @@ interface Props {
   onSelesai: () => void
   onTutup: () => void
   update: (id: number, p: Partial<Produk>) => Promise<{ message?: string } | null>
-  ukuran?: UkuranLabel   // opsional; bila di-set, modal ini pakai W×H label lain (default 50×30)
+  ukuranLabel?: string                          // default ukuran dari DB "WxH" (per-toko)
+  onSimpanUkuran?: (u: { w: number; h: number }) => void
 }
 
 type UkuranLabel = { w: number; h: number }
+
+// Parse string "WxH" (dari DB/localStorage) jadi angka; fallback 50×30.
+function parseUkuran(s: string | null | undefined): UkuranLabel {
+  const m = /^(\d+)x(\d+)$/.exec(s || '')
+  if (m) { const w = Number(m[1]), h = Number(m[2]); if (w > 0 && h > 0) return { w, h } }
+  return { w: 50, h: 30 }
+}
 
 type Mode = 'barcode' | 'nama-harga' | 'lengkap'
 
@@ -35,7 +43,7 @@ function bcHeight(h: number): number {
 // belum punya → pilih mode cetak (barcode / nama+harga / nama+harga+barcode)
 // → cetak label via printer (browser dialog). Menggantikan BarcodeLabel +
 // StickerHarga jadi satu fitur.
-export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp }: Props) {
+export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSimpanUkuran }: Props) {
   const tanpaBarcode = produk.filter(p => !p.barcode && !p._pending)
   const [terpilih, setTerpilih] = useState<Record<number, boolean>>(() => {
     const awal: Record<number, boolean> = {}
@@ -45,14 +53,13 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
   const [mode, setMode] = useState<Mode>('lengkap')
   const [kata, setKata] = useState('') // pencarian lihat daftar produk
   const [ukuran, setUkuran] = useState<UkuranLabel>(() => {
-    // Default mengikuti settingan terakhir (persist localStorage). Prop eksplisit
-    // menang; kalau tak ada prop, baca localStorage; kalau kosong → 50×30.
-    if (ukuranProp) return ukuranProp
+    // Default = settingan per-toko dari DB (ukuranLabel prop). Kalau user pernah
+    // mengubah di browser ini (localStorage), override lokal menang sbg cadangan.
     try {
       const s = localStorage.getItem('zpos_ukuran_label')
-      if (s) { const p = JSON.parse(s); if (p && Number(p.w) > 0 && Number(p.h) > 0) return { w: Number(p.w), h: Number(p.h) } }
+      if (s) { const p = parseUkuran(s); return p }
     } catch { /* ignore */ }
-    return { w: 50, h: 30 }
+    return parseUkuran(ukuranLabel)
   })
   // Input custom W×H sbg STRING (bukan number) — controlled-number di browser
   // nyambung angka secara lompatan & clamp via Number() di onChange ngerusak
@@ -76,10 +83,12 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
     if (pakaiRef.current) clearTimeout(pakaiRef.current)
     pakaiRef.current = setTimeout(() => setDipakai(false), 1500)
   }
-  // Simpan pilihan ukuran biar dipakai sebagai default di cetak berikutnya.
+  // Terapkan ukuran & simpan: ke DB per-toko (via callback) + localStorage
+  // cadangan biar instan/sinkron di browser ini.
   const gantiUkuran = (u: UkuranLabel) => {
     setUkuran(u)
-    try { localStorage.setItem('zpos_ukuran_label', JSON.stringify(u)) } catch { /* ignore */ }
+    try { localStorage.setItem('zpos_ukuran_label', `${u.w}x${u.h}`) } catch { /* ignore */ }
+    onSimpanUkuran?.(u)
   }
   const [status, setStatus] = useState<'pilih' | 'proses' | 'selesai'>('pilih')
   const [error, setError] = useState('')

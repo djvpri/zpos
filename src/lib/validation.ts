@@ -89,6 +89,7 @@ export const pengaturanSchema = z.object({
   alamat: z.string().nullable().optional(),
   telepon: z.string().nullable().optional(),
   catatan_struk: z.string().nullable().optional(),
+  ukuran_label: z.string().regex(/^\d+x\d+$/).nullable().optional(),
 })
 
 // ===== Admin =====

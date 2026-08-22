@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useProduk } from '@/hooks/useProduk'
 import { useKategori } from '@/hooks/useKategori'
+import { usePengaturan } from '@/hooks/usePengaturan'
 import { ProdukModal } from '@/components/produk/ProdukModal'
 import FotoLightbox from '@/components/produk/FotoLightbox'
 import CekDuplikatPanel from '@/components/produk/CekDuplikatPanel'
@@ -29,6 +30,7 @@ type Tab = 'produk' | 'kategori' | 'deteksi'
 
 export default function ProdukPage() {
   const { produk, tambah, update, hapus } = useProduk()
+  const peng = usePengaturan()
   const [cari, setCari] = useState('')
   const [sortBy, setSortBy] = useState<'nama' | 'terbaru' | 'terlama'>('nama')
   // --- Paged fetch (server-side, 6000+ produk → render instan) ---
@@ -650,8 +652,8 @@ export default function ProdukPage() {
       {showKatalogLihat && <KatalogBarcodeModal onTutup={() => setShowKatalogLihat(false)} />}
       {showFoto && <UploadFotoProduk onClose={() => { setShowFoto(false); muatProduk(1, cari, sortBy) }} />}
       {showCepat && <TambahCepat onSelesai={() => { setShowCepat(false); muatProduk(1, cari, sortBy) }} onTutup={() => setShowCepat(false)} />}
-      {showLabel && <LabelCetak produk={produk} onSelesai={() => { setShowLabel(false); muatProduk(1, cari, sortBy) }} onTutup={() => setShowLabel(false)} update={update} />}
-      {labelSatu && <LabelCetak produk={[labelSatu]} onSelesai={() => { setLabelSatu(null); muatProduk(1, cari, sortBy) }} onTutup={() => setLabelSatu(null)} update={update} />}
+      {showLabel && <LabelCetak produk={produk} ukuranLabel={peng.ukuranLabel} onSimpanUkuran={u => peng.simpan({ ukuran_label: `${u.w}x${u.h}` })} onSelesai={() => { setShowLabel(false); muatProduk(1, cari, sortBy) }} onTutup={() => setShowLabel(false)} update={update} />}
+      {labelSatu && <LabelCetak produk={[labelSatu]} ukuranLabel={peng.ukuranLabel} onSimpanUkuran={u => peng.simpan({ ukuran_label: `${u.w}x${u.h}` })} onSelesai={() => { setLabelSatu(null); muatProduk(1, cari, sortBy) }} onTutup={() => setLabelSatu(null)} update={update} />}
       {showTemplate && <TemplateProduk onSelesai={() => { setShowTemplate(false); muatProduk(1, cari, sortBy) }} onTutup={() => setShowTemplate(false)} />}
       {modal && (
         <ProdukModal
