@@ -57,8 +57,11 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
   // Input custom W×H sbg STRING (bukan number) — controlled-number di browser
   // nyambung angka secara lompatan & clamp via Number() di onChange ngerusak
   // ketikan (hps "40"→"10", ketik "25"→"1025"). Ketik bebas, parse saat apply.
-  const [cw, setCw] = useState('40')
+  const [cw, setCw] = useState('40') // inisialisasi di bawah mengikuti ukuran aktif
   const [ch, setCh] = useState('30')
+  // Sinkronkan field custom dgn ukuran aktif saat modal dibuka (default = terakhir
+  // tersimpan), biar custom menampilkan ukuran yg sebenarnya dipakai.
+  useEffect(() => { setCw(String(ukuran.w)); setCh(String(ukuran.h)) }, [ukuran.w, ukuran.h])
   const [dipakai, setDipakai] = useState(false) // feedback visual tombol Pakai
   const pakaiRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sanitize = (s: string) => s.replace(/[^\d]/g, '') // hanya digit
