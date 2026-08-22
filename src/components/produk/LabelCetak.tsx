@@ -350,13 +350,13 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
         @media print {
           body > *:not([data-print-root]) { display: none !important; }
           html, body { margin: 0 !important; }
-          .ctk-print-area { display: block !important; position: static !important; width: 100%; box-sizing: border-box; }
-          .ctk-label { display: block; width: 100%; height: var(--ctk-h, 30mm); padding: calc(var(--ctk-h) * 0.02) calc(var(--ctk-w) * 0.04) 0.5mm; box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; overflow: hidden; }
-          .ctk-nama { font-size: calc(var(--ctk-h) * 0.085); font-weight: 700; color: #333; text-align: center; overflow-wrap: break-word; line-height: 1.1; }
-          .ctk-harga { font-size: calc(var(--ctk-h) * 0.17); font-weight: 800; color: #000; text-align: center; line-height: 1.2; }
-          .ctk-svg { text-align: center; width: 100%; margin-top: calc(var(--ctk-h) * 0.02); }
-          .ctk-svg svg { height: var(--ctk-bc, 14mm); width: auto; display: inline-block; max-width: 100%; }
-          .ctk-bc { text-align: center; font-size: calc(var(--ctk-h) * 0.095); font-weight: 700; color: #000; margin-top: calc(var(--ctk-h) * 0.015); }
+          .ctk-print-area { display: block !important; position: static !important; width: var(--ctk-w, 50mm); box-sizing: border-box; page-break-inside: avoid; break-inside: avoid; }
+          .ctk-label { display: flex; flex-direction: column; justify-content: center; width: var(--ctk-w, 50mm); height: var(--ctk-h, 30mm); padding: calc(var(--ctk-h) * 0.02) calc(var(--ctk-w) * 0.04); box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; overflow: hidden; page-break-inside: avoid; break-inside: avoid; }
+          .ctk-nama { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; font-size: calc(var(--ctk-h) * 0.085); font-weight: 700; color: #333; overflow-wrap: break-word; line-height: 1.1; overflow: hidden; min-height: 0; }
+          .ctk-harga { flex: 0 0 auto; font-size: calc(var(--ctk-h) * 0.17); font-weight: 800; color: #000; line-height: 1.2; }
+          .ctk-svg { flex: 0 0 auto; text-align: center; margin-top: calc(var(--ctk-h) * 0.02); }
+          .ctk-svg svg { height: min(var(--ctk-bc, 14mm), calc(var(--ctk-h) * 0.4)); width: auto; display: inline-block; max-width: 100%; }
+          .ctk-bc { flex: 0 0 auto; font-size: calc(var(--ctk-h) * 0.095); font-weight: 700; color: #000; margin-top: calc(var(--ctk-h) * 0.015); }
         }
       `}</style>
       {printRoot && createPortal(
