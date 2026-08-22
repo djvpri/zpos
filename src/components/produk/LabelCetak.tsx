@@ -360,7 +360,11 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
         }
       `}</style>
       {printRoot && createPortal(
-        <div className="ctk-print-area" dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }} />,
+        <div
+          className="ctk-print-area"
+          style={{ '--ctk-h': `${ukuran.h}mm`, '--ctk-w': `${ukuran.w}mm`, '--ctk-bc': `${Math.max(4, ukuran.h * 0.47)}mm` } as CSSProperties}
+          dangerouslySetInnerHTML={{ __html: sudahSelesai ? buatHtml() : '' }}
+        />,
         printRoot
       )}
     </div>
