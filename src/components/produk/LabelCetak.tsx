@@ -54,7 +54,19 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
     } catch { /* ignore */ }
     return { w: 50, h: 30 }
   })
-  const [custom, setCustom] = useState<UkuranLabel>({ w: 40, h: 30 }) // input custom W×H
+  // Input custom W×H sbg STRING (bukan number) — controlled-number di browser
+  // nyambung angka secara lompatan & clamp via Number() di onChange ngerusak
+  // ketikan (hps "40"→"10", ketik "25"→"1025"). Ketik bebas, parse saat apply.
+  const [cw, setCw] = useState('40')
+  const [ch, setCh] = useState('30')
+  const sanitize = (s: string) => s.replace(/[^\d]/g, '') // hanya digit
+  // Terapkan custom: parse, clamp rentang wajar, persist.
+  const gantiCustom = () => {
+    const w = Math.min(120, Math.max(10, parseInt(cw, 10) || 50))
+    const h = Math.min(60, Math.max(10, parseInt(ch, 10) || 30))
+    setCw(String(w)); setCh(String(h))
+    gantiUkuran({ w, h })
+  }
   // Simpan pilihan ukuran biar dipakai sebagai default di cetak berikutnya.
   const gantiUkuran = (u: UkuranLabel) => {
     setUkuran(u)
@@ -178,22 +190,20 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
             <div className="flex items-center gap-1 text-xs">
               <span className="text-gray-400">Custom</span>
               <input
-                type="number" value={custom.w} min={20} max={100}
-                onBlur={() => gantiUkuran(custom)}
-                onChange={e => setCustom(c => ({ ...c, w: Math.max(10, Number(e.target.value) || 50) }))}
+                type="text" inputMode="numeric" value={cw} placeholder="40"
+                onChange={e => setCw(sanitize(e.target.value))}
                 className="w-14 rounded border border-gray-200 py-1 px-1.5 text-center focus:border-indigo-400 focus:outline-none"
               />
               <span className="text-gray-400">×</span>
               <input
-                type="number" value={custom.h} min={15} max={60}
-                onBlur={() => gantiUkuran(custom)}
-                onChange={e => setCustom(c => ({ ...c, h: Math.max(10, Number(e.target.value) || 30) }))}
+                type="text" inputMode="numeric" value={ch} placeholder="30"
+                onChange={e => setCh(sanitize(e.target.value))}
                 className="w-14 rounded border border-gray-200 py-1 px-1.5 text-center focus:border-indigo-400 focus:outline-none"
               />
               <span className="text-gray-400">mm</span>
               <button
                 type="button"
-                onClick={() => gantiUkuran(custom)}
+                onClick={gantiCustom}
                 className="px-2.5 py-1 rounded-lg text-xs font-medium border border-gray-200 text-gray-500 hover:border-indigo-200"
               >Pakai</button>
             </div>
