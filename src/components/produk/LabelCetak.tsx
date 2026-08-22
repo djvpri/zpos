@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { XLg, Printer, ArrowRepeat, CheckCircleFill, ExclamationCircle, Tag, Lightbulb } from 'react-bootstrap-icons'
 import { barcodeToSvg, generateProductBarcode } from '@/lib/barcode-code39'
@@ -59,6 +59,8 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
   // ketikan (hps "40"→"10", ketik "25"→"1025"). Ketik bebas, parse saat apply.
   const [cw, setCw] = useState('40')
   const [ch, setCh] = useState('30')
+  const [dipakai, setDipakai] = useState(false) // feedback visual tombol Pakai
+  const pakaiRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sanitize = (s: string) => s.replace(/[^\d]/g, '') // hanya digit
   // Terapkan custom: parse, clamp rentang wajar, persist.
   const gantiCustom = () => {
@@ -66,6 +68,10 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
     const h = Math.min(60, Math.max(10, parseInt(ch, 10) || 30))
     setCw(String(w)); setCh(String(h))
     gantiUkuran({ w, h })
+    // Umpan balik visual: hijau ~1.5s utk konfirmasi berhasil dipakai.
+    setDipakai(true)
+    if (pakaiRef.current) clearTimeout(pakaiRef.current)
+    pakaiRef.current = setTimeout(() => setDipakai(false), 1500)
   }
   // Simpan pilihan ukuran biar dipakai sebagai default di cetak berikutnya.
   const gantiUkuran = (u: UkuranLabel) => {
@@ -204,8 +210,8 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
               <button
                 type="button"
                 onClick={gantiCustom}
-                className="px-2.5 py-1 rounded-lg text-xs font-medium border border-gray-200 text-gray-500 hover:border-indigo-200"
-              >Pakai</button>
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors inline-flex items-center gap-1 ${dipakai ? 'border-green-500 bg-green-500 text-white' : 'border-gray-200 text-gray-600 hover:border-green-400 hover:text-green-600'}`}
+              >{dipakai ? <><CheckCircleFill size={12} /> Dipakai</> : 'Pakai'}</button>
             </div>
           </div>
 
