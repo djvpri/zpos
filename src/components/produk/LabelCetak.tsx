@@ -179,17 +179,20 @@ export default function LabelCetak({ produk, onTutup, update, ukuran: ukuranProp
               <span className="text-gray-400">Custom</span>
               <input
                 type="number" value={custom.w} min={20} max={100}
+                onBlur={() => gantiUkuran(custom)}
                 onChange={e => setCustom(c => ({ ...c, w: Math.max(10, Number(e.target.value) || 50) }))}
                 className="w-14 rounded border border-gray-200 py-1 px-1.5 text-center focus:border-indigo-400 focus:outline-none"
               />
               <span className="text-gray-400">×</span>
               <input
                 type="number" value={custom.h} min={15} max={60}
+                onBlur={() => gantiUkuran(custom)}
                 onChange={e => setCustom(c => ({ ...c, h: Math.max(10, Number(e.target.value) || 30) }))}
                 className="w-14 rounded border border-gray-200 py-1 px-1.5 text-center focus:border-indigo-400 focus:outline-none"
               />
               <span className="text-gray-400">mm</span>
               <button
+                type="button"
                 onClick={() => gantiUkuran(custom)}
                 className="px-2.5 py-1 rounded-lg text-xs font-medium border border-gray-200 text-gray-500 hover:border-indigo-200"
               >Pakai</button>
