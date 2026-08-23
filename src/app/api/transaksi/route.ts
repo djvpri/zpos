@@ -70,12 +70,17 @@ export async function POST(req: Request) {
       }))
       await t`INSERT INTO detail_transaksi ${t(rows)}`
       // Kurangi stok produk riil. Per item real (id>0). GREATEST(0) cegah minus.
+      // KECUALI transaksi TEBUS bon gantung (`trx.bon_tebus_id`): stok bon sudah
+      // di-hold (barang diambil pembeli) saat bon dibuat di POST /api/bon, jadi
+      // tebus TIDAK boleh kurangi lagi (double). Akuntansi/shift tetap dicatat.
       const real = items.filter(i => Number(i.produk_id) > 0)
-      for (const i of real) {
-        await t`
-          UPDATE produk SET stok = GREATEST(0, stok - ${Number(i.qty)}), updated_at = now()
-          WHERE id = ${Number(i.produk_id)} AND toko_id = ${toko.tokoId}
-        `
+      if (!trx.bon_tebus_id) {
+        for (const i of real) {
+          await t`
+            UPDATE produk SET stok = GREATEST(0, stok - ${Number(i.qty)}), updated_at = now()
+            WHERE id = ${Number(i.produk_id)} AND toko_id = ${toko.tokoId}
+          `
+        }
       }
     }
     return tr

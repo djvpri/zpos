@@ -54,6 +54,7 @@ export interface Transaksi {
   metode_bayar: 'Tunai' | 'QRIS' | 'Transfer'
   kasir?: string
   shift_id?: number | null // diisi kasir Tauri utk tautan shift per kasir
+  bon_tebus_id?: number | null // id bon gantung yg ditebus → stok uda di-hold saat gantung, tebus tak kurangi ulang
   dibatalkan?: boolean
   created_at?: string
   items?: DetailTransaksi[]

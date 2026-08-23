@@ -33,7 +33,28 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const id = Number((await context.params).id)
-  const [row] = await sql`DELETE FROM bon WHERE id = ${id} AND toko_id = ${toko.tokoId} RETURNING id`
+  const row = await sql.begin(async t => {
+    const [r] = await t`
+      DELETE FROM bon WHERE id = ${id} AND toko_id = ${toko.tokoId}
+      RETURNING id, selesai, produk_json
+    `
+    if (!r) return null
+    // Batal = barang bon KEMBALI → pulihkan stok (opposite dari hold di POST).
+    // Kompat: produk_json bisa string JSON (baru) atau belum → parse aman.
+    // Bon yang sudah selesai tetap dihapus tapi stok tak dikembalikan (barang uda dibawa).
+    if (!r.selesai) {
+      const produk: Record<string, number> = (() => {
+        try { return JSON.parse(r.produk_json) } catch { return {} }
+      })()
+      for (const [idStr, qty] of Object.entries(produk)) {
+        await t`
+          UPDATE produk SET stok = stok + ${Number(qty)}, updated_at = now()
+          WHERE id = ${Number(idStr)} AND toko_id = ${toko.tokoId}
+        `
+      }
+    }
+    return r
+  })
   if (!row) return NextResponse.json({ error: 'Bon tidak ditemukan' }, { status: 404 })
 
   void catatAktivitas(toko, 'bon_hapus', `Bon #${id} dihapus permanen`)

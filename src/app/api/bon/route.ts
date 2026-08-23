@@ -57,11 +57,23 @@ export const POST = apiHandler(async (req: Request, body: { nama?: string | null
   const produkObj: Record<string, number> = {}
   for (const [id, qty] of valid) produkObj[String(id)] = qty
 
-  const [row] = await sql`
-    INSERT INTO bon (toko_id, nama, produk_json, total)
-    VALUES (${toko.tokoId}, ${body.nama?.trim() || null}, ${JSON.stringify(produkObj)}, ${total})
-    RETURNING id, nama, produk_json, total, selesai, created_at
-  `
+  const row = await sql.begin(async t => {
+    const [r] = await t`
+      INSERT INTO bon (toko_id, nama, produk_json, total)
+      VALUES (${toko.tokoId}, ${body.nama?.trim() || null}, ${JSON.stringify(produkObj)}, ${total})
+      RETURNING id, nama, produk_json, total, selesai, created_at
+    `
+    // Opsi A: barang bon uda DIAMBIL pembeli saat digantung → HOLD stok kini.
+    // Kurangi stok per item (hold), GREATEST(0) cegah minus. Saat tebus (tandai
+    // selesai) stok TIDAK dikurangi ulang — transaksi bon set `trx.bon_tebus_id`.
+    for (const [idStr, qty] of Object.entries(produkObj)) {
+      await t`
+        UPDATE produk SET stok = GREATEST(0, stok - ${Number(qty)}), updated_at = now()
+        WHERE id = ${Number(idStr)} AND toko_id = ${toko.tokoId}
+      `
+    }
+    return r
+  })
   // Audit: bon digantung (dari windows kasir via kirim_bon, atau halaman bon web).
   await catatAktivitas(toko, 'bon_gantung', `Bon #${row.id} atas nama ${body.nama?.trim() || '(tanpa nama)'} · Rp ${total.toLocaleString('id-ID')}`)
   return NextResponse.json({ ...row, produk: JSON.parse(row.produk_json) }, { status: 201 })
