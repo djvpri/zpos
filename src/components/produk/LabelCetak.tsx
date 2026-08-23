@@ -162,11 +162,12 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
       const gunakanBarcode = mode !== 'nama-harga' && p.barcode
       const svg = gunakanBarcode ? barcodeToSvg(p.barcode!, (kecil || mode === 'barcode') ? 70 : 45) : ''
       const tampilNama = mode !== 'barcode' && !kecil
+      const blokBc = gunakanBarcode ? `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg">${svg}</div>` : ''
       return `
       <div class="ctk-label">
         ${tampilNama ? `<div class="ctk-nama">${escapeHtml(p.nama)}</div>` : ''}
         ${gunakanBarcode || tampilNama ? `<div class="ctk-harga">${fmt(p.harga)}</div>` : ''}
-        ${gunakanBarcode ? `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div><div class="ctk-svg">${svg}</div>` : ''}
+        ${blokBc}
       </div>`
     }).join('')
   }
