@@ -157,14 +157,15 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
   }
 
   function buatHtml() {
+    const kecil = ukuran.w <= 35 // label sempit: fokus harga+barcode, nama/nomor tak tampil
     return selectedList.map(p => {
       const gunakanBarcode = mode !== 'nama-harga' && p.barcode
-      const svg = gunakanBarcode ? barcodeToSvg(p.barcode!, mode === 'barcode' ? 70 : 45) : ''
-      const tampilNama = mode !== 'barcode'
+      const svg = gunakanBarcode ? barcodeToSvg(p.barcode!, (kecil || mode === 'barcode') ? 70 : 45) : ''
+      const tampilNama = mode !== 'barcode' && !kecil
       return `
       <div class="ctk-label">
         ${tampilNama ? `<div class="ctk-nama">${escapeHtml(p.nama)}</div>` : ''}
-        ${tampilNama ? `<div class="ctk-harga">${fmt(p.harga)}</div>` : ''}
+        ${gunakanBarcode || tampilNama ? `<div class="ctk-harga">${fmt(p.harga)}</div>` : ''}
         ${gunakanBarcode ? `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div><div class="ctk-svg">${svg}</div>` : ''}
       </div>`
     }).join('')
