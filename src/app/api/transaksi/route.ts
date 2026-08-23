@@ -81,6 +81,16 @@ export async function POST(req: Request) {
             WHERE id = ${Number(i.produk_id)} AND toko_id = ${toko.tokoId}
           `
         }
+      } else {
+        // TEBUS bon gantung: barang sudah di-hold saat gantung, jadi tebus tak
+        // kurangi stok ulang. TANDAI bon selesai otomatis di sini (atomik dgn
+        // transaksi) — kalau tidak, bon tetap aktif & ditarik balik oleh kasir
+        // (mergeBonSync) walau sudah dibayar. `tandai_bon` kasir hanya menyentuh
+        // transaksi online langsung, bukan yg lewat antrian (push_antrian_only).
+        await t`
+          UPDATE bon SET selesai = true, dibayar_at = now()
+          WHERE id = ${Number(trx.bon_tebus_id)} AND toko_id = ${toko.tokoId} AND selesai = false
+        `
       }
     }
     return tr
