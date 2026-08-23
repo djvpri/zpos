@@ -49,25 +49,37 @@ export async function POST(req: Request) {
   // waktu sinkron — supaya laporan harian tidak salah tanggal.
   const waktuJual = trx.created_at ? new Date(trx.created_at) : new Date()
 
-  const [saved] = await sql`
-    INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id, shift_id, created_at)
-    VALUES (${trx.no_transaksi}, ${trx.subtotal}, ${trx.diskon}, ${trx.pajak}, ${trx.total},
-            ${trx.bayar}, ${trx.kembali}, ${trx.metode_bayar}, ${toko.userName}, ${toko.tokoId}, ${shiftId}, ${waktuJual})
-    RETURNING *
-  `
-
-  if (items.length > 0) {
-    const rows = items.map(i => ({
-      transaksi_id: saved.id as number,
-      produk_id: i.produk_id,
-      nama_produk: i.nama_produk,
-      harga: i.harga,
-      qty: i.qty,
-      subtotal: i.subtotal,
-      toko_id: toko.tokoId,
-    }))
-    await sql`INSERT INTO detail_transaksi ${sql(rows)}`
-  }
+  // Simpan transaksi + kurangi stok produk ATOMIC (satu transaksi DB). Stok
+  // cuma produk asli (produk_id > 0); item virtual harga-bebas dilewati.
+  const saved = await sql.begin(async t => {
+    const [tr] = await t`
+      INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id, shift_id, created_at)
+      VALUES (${trx.no_transaksi}, ${trx.subtotal}, ${trx.diskon}, ${trx.pajak}, ${trx.total},
+              ${trx.bayar}, ${trx.kembali}, ${trx.metode_bayar}, ${toko.userName}, ${toko.tokoId}, ${shiftId}, ${waktuJual})
+      RETURNING *
+    `
+    if (items.length > 0) {
+      const rows = items.map(i => ({
+        transaksi_id: tr.id as number,
+        produk_id: i.produk_id,
+        nama_produk: i.nama_produk,
+        harga: i.harga,
+        qty: i.qty,
+        subtotal: i.subtotal,
+        toko_id: toko.tokoId,
+      }))
+      await t`INSERT INTO detail_transaksi ${t(rows)}`
+      // Kurangi stok produk riil. Per item real (id>0). GREATEST(0) cegah minus.
+      const real = items.filter(i => Number(i.produk_id) > 0)
+      for (const i of real) {
+        await t`
+          UPDATE produk SET stok = GREATEST(0, stok - ${Number(i.qty)}), updated_at = now()
+          WHERE id = ${Number(i.produk_id)} AND toko_id = ${toko.tokoId}
+        `
+      }
+    }
+    return tr
+  })
 
   // Audit: catat transaksi baru (metode bayar + total, utk cek kecurangan).
   void catatAktivitas(toko, 'transaksi_buat',
