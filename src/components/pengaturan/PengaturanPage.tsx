@@ -1,8 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText } from 'react-bootstrap-icons'
+import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText, Download, Laptop } from 'react-bootstrap-icons'
 import { usePengaturan } from '@/hooks/usePengaturan'
+
+// Rilis kasir diambil live dari GitHub — versi & link download selalu terbaru.
+const KASIR_REPO = 'djvpri/zpos_windows'
+
+interface KasirAsset {
+  name: string
+  url: string
+}
+interface KasirRilis {
+  versi: string
+  installer: KasirAsset | null
+  portable: KasirAsset | null
+}
 
 export default function PengaturanPage() {
   const { pajak_persen, alamat, telepon, catatan_struk, loading, simpan } = usePengaturan()
@@ -10,6 +23,36 @@ export default function PengaturanPage() {
   const [saving, setSaving] = useState(false)
   const [pesan, setPesan] = useState('')
   const [error, setError] = useState('')
+
+  // Rilis kasir terbaru — load sekali.
+  const [kasir, setKasir] = useState<KasirRilis | null>(null)
+  const [kasirErr, setKasirErr] = useState('')
+  useEffect(() => {
+    let batal = false
+    ;(async () => {
+      try {
+        const r = await fetch(`https://api.github.com/repos/${KASIR_REPO}/releases/latest`, {
+          headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'ZPos-POS/1.0' },
+        })
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        const d = await r.json()
+        if (batal) return
+        const assets: KasirAsset[] = (d.assets || []).map((a: { name: string; browser_download_url: string }) => ({
+          name: a.name,
+          url: a.browser_download_url,
+        }))
+        const versi = (d.tag_name || '').replace(/^v/, '')
+        setKasir({
+          versi,
+          installer: assets.find(a => a.name.includes('-setup.exe')) || null,
+          portable: assets.find(a => a.name === 'zpos-kasir.exe') || null,
+        })
+      } catch {
+        if (!batal) setKasirErr('Gagal memuat rilis kasir — pastikan koneksi ke GitHub tersedia.')
+      }
+    })()
+    return () => { batal = true }
+  }, [])
 
   useEffect(() => {
     Promise.resolve().then(() => setForm({ pajak_persen, alamat, telepon, catatan_struk }))
@@ -110,6 +153,69 @@ export default function PengaturanPage() {
               />
               <span className="text-sm text-gray-500">%</span>
             </div>
+          </div>
+
+          {/* Aplikasi Kasir (Z1 Kasir) */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 space-y-3">
+            <div className="flex items-center gap-2 text-gray-800">
+              <Laptop size={16} className="text-indigo-500" />
+              <span className="font-medium text-sm">Aplikasi Kasir (Z1 Kasir)</span>
+            </div>
+            <p className="text-sm text-gray-400">
+              Download aplikasi kasir desktop <b>Windows</b> versi terbaru. Versi <b>{kasir?.versi ?? '…'}</b>.
+            </p>
+
+            {kasirErr && <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{kasirErr}</div>}
+
+            {!kasir && !kasirErr && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[0, 1].map(i => (
+                  <div key={i} className="animate-pulse rounded-2xl border border-gray-100 p-4">
+                    <div className="h-4 bg-gray-100 rounded w-1/2 mb-3" />
+                    <div className="h-8 bg-gray-100 rounded" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {kasir && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {kasir.installer && (
+                  <a
+                    href={kasir.installer.url}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 rounded-2xl border border-gray-100 p-4 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                      <Download size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-gray-800 truncate">Installer</div>
+                      <div className="text-xs text-gray-400 truncate">{kasir.installer.name}</div>
+                    </div>
+                  </a>
+                )}
+                {kasir.portable && (
+                  <a
+                    href={kasir.portable.url}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 rounded-2xl border border-gray-100 p-4 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                      <Download size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-gray-800 truncate">Portable</div>
+                      <div className="text-xs text-gray-400 truncate">{kasir.portable.name}</div>
+                    </div>
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {error && <div className="bg-red-50 text-red-600 text-sm px-3 py-2.5 rounded-xl">{error}</div>}
