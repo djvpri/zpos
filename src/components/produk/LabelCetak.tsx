@@ -60,11 +60,8 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
   // Input custom W×H sbg STRING (bukan number) — controlled-number di browser
   // nyambung angka secara lompatan & clamp via Number() di onChange ngerusak
   // ketikan (hps "40"→"10", ketik "25"→"1025"). Ketik bebas, parse saat apply.
-  const [cw, setCw] = useState('40') // inisialisasi di bawah mengikuti ukuran aktif
-  const [ch, setCh] = useState('30')
-  // Sinkronkan field custom dgn ukuran aktif saat modal dibuka (default = terakhir
-  // tersimpan), biar custom menampilkan ukuran yg sebenarnya dipakai.
-  useEffect(() => { setCw(String(ukuran.w)); setCh(String(ukuran.h)) }, [ukuran.w, ukuran.h])
+  const [cw, setCw] = useState(() => String(ukuran.w)) // ikut ukuran aktif saat modal dibuka
+  const [ch, setCh] = useState(() => String(ukuran.h))
   const [dipakai, setDipakai] = useState(false) // feedback visual tombol Pakai
   const pakaiRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sanitize = (s: string) => s.replace(/[^\d]/g, '') // hanya digit
@@ -83,24 +80,24 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
   // cadangan biar instan/sinkron di browser ini.
   const gantiUkuran = (u: UkuranLabel) => {
     setUkuran(u)
+    setCw(String(u.w)); setCh(String(u.h)) // custom field ikut preset yg dipilih
     try { localStorage.setItem('zpos_ukuran_label', `${u.w}x${u.h}`) } catch { /* ignore */ }
     onSimpanUkuran?.(u)
   }
   const [status, setStatus] = useState<'pilih' | 'proses' | 'selesai'>('pilih')
   const [error, setError] = useState('')
-  const [printRoot, setPrintRoot] = useState<HTMLElement | null>(null)
-
   // Aksesori print diportal ke child PERTAMA body (bukan append): saat print
   // area mulai di atas semua konten app — bukan setelahnya — sehingga label
   // mulai kiri-atas halaman 1 (fix halaman-1-kosong). App tetap visibility
-  // hidden saat print.
-  useEffect(() => {
+  // hidden saat print. Node dibuat sekali saat mount (lazy init), dihapus di
+  // unmount — tak perlu setState dalam effect.
+  const [printRoot] = useState(() => {
     const d = document.createElement('div')
     d.setAttribute('data-print-root', '')
     document.body.prepend(d)
-    setPrintRoot(d)
-    return () => { d.remove() }
-  }, [])
+    return d
+  })
+  useEffect(() => () => { printRoot.remove() }, []) // eslint-disable-line react-hooks/exhaustive-deps -- printRoot stabil (lazy init, tak pernah berubah)
 
   const selectedList = produk.filter(p => terpilih[p.id] && !p._pending)
 
