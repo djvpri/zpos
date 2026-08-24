@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi, Shift } from '@/types'
 import { GraphUpArrow, Receipt, Bag, Percent, Ban, Download, ArrowClockwise, Trophy, Printer, CashCoin, Wallet2 } from 'react-bootstrap-icons'
@@ -93,6 +93,17 @@ export default function LaporanPage() {
   const [bon, setBon] = useState<BonRow[]>([])
   const [loadingBon, setLoadingBon] = useState(false)
   const [bonLoaded, setBonLoaded] = useState(false)
+  const [filterNama, setFilterNama] = useState('')
+  const [filterStatus, setFilterStatus] = useState<'semua' | 'aktif' | 'selesai'>('semua')
+
+  const filterBon = useMemo(() => {
+    const q = filterNama.trim().toLowerCase()
+    return bon.filter(b =>
+      (!q || (b.nama || `Bon #${b.id}`).toLowerCase().includes(q)) &&
+      (filterStatus === 'semua' ||
+        (filterStatus === 'aktif' ? !b.selesai : b.selesai))
+    )
+  }, [bon, filterNama, filterStatus])
 
   // --- Log aktivitas (audit anti-kecurangan) ---
   const [log, setLog] = useState<AktivitasRow[]>([])
@@ -601,10 +612,33 @@ export default function LaporanPage() {
             </div>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={filterNama}
+              onChange={e => setFilterNama(e.target.value)}
+              placeholder="Cari nama / no bon..."
+              className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full sm:w-56"
+            />
+            <select
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            >
+              <option value="semua">Semua Status</option>
+              <option value="aktif">Belum Dibayar</option>
+              <option value="selesai">Selesai</option>
+            </select>
+            <span className="text-xs text-gray-400 ml-auto">
+              {filterBon.length} dari {bon.length} bon
+            </span>
+          </div>
+
           {loadingBon
             ? <div className="flex items-center justify-center h-40 text-gray-400">Memuat bon...</div>
             : bon.length === 0
               ? <div className="flex items-center justify-center h-40 text-gray-400">Belum ada bon gantung</div>
+              : filterBon.length === 0
+                ? <div className="flex items-center justify-center h-40 text-gray-400">Tidak ada bon yang cocok dengan filter</div>
               : (
                 <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
                   <div className="overflow-x-auto">
@@ -620,7 +654,7 @@ export default function LaporanPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {bon.map(b => {
+                        {filterBon.map(b => {
                           const item = Object.values(b.produk).reduce((s, n) => s + n, 0)
                           return (
                             <tr key={b.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
