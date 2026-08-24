@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { fmt, fmtDateTime } from '@/lib/utils'
 import { Printer, Bluetooth, CheckLg } from 'react-bootstrap-icons'
 import { buildEscPos, printViaBluetooth, selectPrinter, isBluetoothSupported, getSavedPrinterName } from '@/lib/thermal-print'
+import { getDesainNota } from '@/lib/desain-nota'
 
 interface BonItem { produk_id: number; nama: string; harga: number; qty: number; subtotal: number }
 export interface BonNota {
@@ -21,16 +22,18 @@ interface TokoInfo { nama: string; alamat?: string; telepon?: string; catatan_st
 interface Props {
   nota: BonNota
   toko: TokoInfo
+  desain?: string
   onTutup: () => void
 }
 
 // Nota bon gantung — item + total, tanpa detail bayar/kembali (bon belum lunas).
-export function BonNotaModal({ nota, toko, onTutup }: Props) {
+export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
   const [btStatus, setBtStatus] = useState<'idle' | 'connecting' | 'printing' | 'done' | 'error'>('idle')
   const [btMsg, setBtMsg] = useState('')
   const [savedPrinter, setSavedPrinter] = useState<string | null>(null)
 
   useState(() => { getSavedPrinterName().then(setSavedPrinter) })
+  const tpl = getDesainNota(desain)
 
   const waktu = nota.created_at
     ? new Date(nota.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
@@ -54,7 +57,7 @@ export function BonNotaModal({ nota, toko, onTutup }: Props) {
       metodeBayar: 'BON',
       catatan: `${nota.selesai ? '' : 'BELUM LUNAS - '}${toko.catatan_struk || ''}`,
     }
-    const escPos = buildEscPos(data)
+    const escPos = buildEscPos(data, tpl.id)
     await printViaBluetooth(escPos, (status, msg) => {
       setBtStatus(status)
       setBtMsg(msg || '')
@@ -71,16 +74,20 @@ export function BonNotaModal({ nota, toko, onTutup }: Props) {
             <div className="text-base font-bold">{toko.nama || 'Toko'}</div>
             {toko.alamat && <div className="text-xs text-gray-500 mt-0.5 leading-snug">{toko.alamat}</div>}
             {toko.telepon && <div className="text-xs text-gray-500">Tel: {toko.telepon}</div>}
-            <div className="border-b border-dashed border-gray-300 my-3" />
-            <div className="text-xs text-gray-400">{waktu}</div>
-            <div className="text-xs text-gray-400">No: Bon #{nota.id}</div>
-            {nota.nama && <div className="text-xs text-gray-400">Nama: {nota.nama}</div>}
-            {!nota.selesai && (
-              <div className="text-xs font-bold text-amber-600 mt-1">*** BON / BELUM LUNAS ***</div>
+            <div className={`border-b ${tpl.dividerStyle === 'solid' ? 'border-solid' : 'border-dashed'} border-gray-300 my-3`} />
+            {tpl.infoSebelumItems && (
+              <div className="text-xs text-gray-400">
+                <div>{waktu}</div>
+                <div>No: Bon #{nota.id}</div>
+                {nota.nama && <div>Nama: {nota.nama}</div>}
+                {!nota.selesai && (
+                  <div className="font-bold text-amber-600 mt-1">*** BON / BELUM LUNAS ***</div>
+                )}
+              </div>
             )}
           </div>
 
-          <div className="border-b border-dashed border-gray-300 mb-3">
+          <div className={`border-b ${tpl.dividerStyle === 'solid' ? 'border-solid' : 'border-dashed'} border-gray-300 mb-3`}>
             {nota.items.map((it, i) => (
               <div key={i} className="mb-1">
                 <div className="truncate">{it.nama} x{it.qty}</div>
@@ -89,16 +96,27 @@ export function BonNotaModal({ nota, toko, onTutup }: Props) {
             ))}
           </div>
 
-          <div className="border-t border-dashed border-gray-300 pt-3 mb-4">
+          <div className={`border-t ${tpl.dividerStyle === 'solid' ? 'border-solid' : 'border-dashed'} border-gray-300 pt-3 mb-3`}>
             <div className="flex justify-between font-bold text-base">
               <span>TOTAL</span><span>{fmt(nota.total)}</span>
             </div>
           </div>
 
+          {!tpl.infoSebelumItems && (
+            <div className="text-xs text-gray-400 mb-4 space-y-0.5">
+              <div>{waktu}</div>
+              <div>No: Bon #{nota.id}</div>
+              {nota.nama && <div>Nama: {nota.nama}</div>}
+              {!nota.selesai && (
+                <div className="font-bold text-amber-600">*** BON / BELUM LUNAS ***</div>
+              )}
+            </div>
+          )}
+
           <div className="text-center text-xs text-gray-400 space-y-1">
             {toko.catatan_struk && <div>{toko.catatan_struk}</div>}
-            <div>* Terima kasih sudah berbelanja *</div>
-            <div className="text-gray-300 mt-1">Powered by Z1 Pos</div>
+            <div>*** TERIMA KASIH ***</div>
+            {tpl.footerPowered && <div className="text-gray-300 mt-1">Powered by Z1 Pos</div>}
           </div>
         </div>
 

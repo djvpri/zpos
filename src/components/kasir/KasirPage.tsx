@@ -32,7 +32,7 @@ export default function KasirPage() {
   const { simpan } = useTransaksi()
   const { kategori } = useKategori()
   const { toko, syncNow } = useAuth()
-  const { pajakPersen, alamat, telepon, catatan_struk } = usePengaturan()
+  const { pajakPersen, alamat, telepon, catatan_struk, desainNota } = usePengaturan()
   const { anggota } = useMember()
   const { getHarga } = useHargaMember()
   const { bon, loading: bonLoading, simpan: simpanBon, hapus: hapusBon, tandaiSelesai, reload: reloadBon } = useBon()
@@ -658,6 +658,7 @@ export default function KasirPage() {
       <StrukModal
         transaksi={struk}
         toko={{ nama: toko?.nama ?? '', alamat, telepon, catatan_struk }}
+        desain={desainNota}
         onTutup={() => setStruk(null)}
       />
     </>

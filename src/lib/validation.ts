@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { desainNotaIds } from '@/lib/desain-nota'
 
 // ===== Auth =====
 export const loginSchema = z.object({
@@ -90,6 +91,7 @@ export const pengaturanSchema = z.object({
   telepon: z.string().nullable().optional(),
   catatan_struk: z.string().nullable().optional(),
   ukuran_label: z.string().regex(/^\d+x\d+$/).nullable().optional(),
+  desain_nota: z.string().refine(v => desainNotaIds.includes(v), { message: 'Desain nota tidak dikenal' }).nullable().optional(),
 })
 
 // ===== Admin =====

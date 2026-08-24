@@ -5,6 +5,7 @@ import { Transaksi } from '@/types'
 import { fmt, fmtDateTime } from '@/lib/utils'
 import { Printer, Share, Bluetooth, CheckLg } from 'react-bootstrap-icons'
 import { buildEscPos, printViaBluetooth, isBluetoothSupported, selectPrinter, getSavedPrinterName, PrintStatus, StrukData } from '@/lib/thermal-print'
+import { getDesainNota } from '@/lib/desain-nota'
 
 interface TokoInfo {
   nama: string
@@ -16,13 +17,16 @@ interface TokoInfo {
 interface Props {
   transaksi: Transaksi | null
   toko?: TokoInfo
+  desain?: string
   onTutup: () => void
 }
 
-export function StrukModal({ transaksi, toko, onTutup }: Props) {
+export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
   const [btStatus, setBtStatus] = useState<PrintStatus>('idle')
   const [btMsg, setBtMsg] = useState('')
   const [savedPrinter, setSavedPrinter] = useState<string | null>(null)
+
+  const tpl = getDesainNota(desain)
 
   // Cek printer tersimpan saat modal dibuka
   useState(() => {
@@ -43,24 +47,39 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
     if (toko?.alamat) baris.push(toko.alamat)
     if (toko?.telepon) baris.push(`Tel: ${toko.telepon}`)
     baris.push('--------------------------------')
-    baris.push(waktu)
-    baris.push(`No: ${no_transaksi}`)
-    if (dibatalkan) baris.push('*** BATAL / REVERSI ***')
-    if (kasir) baris.push(`Kasir: ${kasir}`)
-    baris.push('--------------------------------')
+    // Blok info — di atas items (klasik) atau di bawah ringkasan (modern).
+    const blokInfo: string[] = [waktu, `No: ${no_transaksi}`]
+    if (tpl.showKsr && kasir) blokInfo.push(`Kasir: ${kasir}`)
+    const blokItems: string[] = []
     items?.forEach(it => {
-      baris.push(`${it.nama_produk} x${it.qty}`)
-      baris.push(`  ${fmt(it.harga * it.qty)}`)
+      blokItems.push(`${it.nama_produk} x${it.qty}`)
+      blokItems.push(`  ${fmt(it.harga * it.qty)}`)
     })
-    baris.push('--------------------------------')
-    baris.push(`Subtotal: ${fmt(subtotal)}`)
-    if (diskon > 0) baris.push(`Diskon: -${fmt(diskon)}`)
-    if (pajak > 0) baris.push(`Pajak${pajak_persen ? ` ${pajak_persen}%` : ''}: ${fmt(pajak)}`)
-    baris.push(`TOTAL: ${fmt(total)}`)
+    const blokSummary: string[] = []
+    if (tpl.totalPertama) blokSummary.push(`TOTAL: ${fmt(total)}`)
+    blokSummary.push(`Subtotal: ${fmt(subtotal)}`)
+    if (diskon > 0) blokSummary.push(`Diskon: -${fmt(diskon)}`)
+    if (pajak > 0) blokSummary.push(`Pajak${pajak_persen ? ` ${pajak_persen}%` : ''}: ${fmt(pajak)}`)
+    if (!tpl.totalPertama) blokSummary.push(`TOTAL: ${fmt(total)}`)
+    if (dibatalkan) baris.unshift('*** BATAL / REVERSI ***')
+    if (tpl.infoSebelumItems) {
+      baris.push(...blokInfo)
+      baris.push('--------------------------------')
+      baris.push(...blokItems)
+      baris.push('--------------------------------')
+      baris.push(...blokSummary)
+    } else {
+      baris.push(...blokItems)
+      baris.push('--------------------------------')
+      baris.push(...blokSummary)
+      baris.push('--------------------------------')
+      baris.push(...blokInfo)
+    }
     baris.push(`Bayar (${metode_bayar}): ${fmt(bayar)}`)
     baris.push(`Kembali: ${fmt(kembali)}`)
     if (toko?.catatan_struk) baris.push(toko.catatan_struk)
-    baris.push('Powered by Z1 Pos')
+    baris.push('*** TERIMA KASIH ***')
+    if (tpl.footerPowered) baris.push('Powered by Z1 Pos')
     return baris.join('\n')
   }
 
@@ -89,7 +108,7 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
       metodeBayar: metode_bayar,
       catatan: toko?.catatan_struk,
     }
-    const escPos = buildEscPos(data)
+    const escPos = buildEscPos(data, tpl.id)
     await printViaBluetooth(escPos, (status, msg) => {
       setBtStatus(status)
       setBtMsg(msg || '')
@@ -123,14 +142,20 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
             <div className="text-base font-bold">{toko?.nama || 'Toko'}</div>
             {toko?.alamat && <div className="text-xs text-gray-500 mt-0.5 leading-snug">{toko.alamat}</div>}
             {toko?.telepon && <div className="text-xs text-gray-500">Tel: {toko.telepon}</div>}
-            <div className="border-b border-dashed border-gray-300 my-3" />
-            <div className="text-xs text-gray-400">{waktu}</div>
-            <div className="text-xs text-gray-400">No: {no_transaksi}</div>
-            {kasir && <div className="text-xs text-gray-400">Kasir: {kasir}</div>}
+            <div className={`border-b ${tpl.dividerStyle === 'solid' ? 'border-solid' : 'border-dashed'} border-gray-300 my-3`} />
+
+            {/* Info transaksi — di atas items (klasik) atau di bawah TOTAL (modern) */}
+            {tpl.infoSebelumItems && (
+              <div className="text-xs text-gray-400">
+                <div>{waktu}</div>
+                <div>No: {no_transaksi}</div>
+                {tpl.showKsr && kasir && <div>Kasir: {kasir}</div>}
+              </div>
+            )}
           </div>
 
           {/* Items */}
-          <div className="border-b border-dashed border-gray-300 mb-3">
+          <div className={`border-b ${tpl.dividerStyle === 'solid' ? 'border-solid' : 'border-dashed'} border-gray-300 mb-3`}>
             {items?.map((it, i) => (
               <div key={i} className="mb-1">
                 <div className="truncate">{it.nama_produk} x{it.qty}</div>
@@ -139,8 +164,13 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
             ))}
           </div>
 
-          {/* Summary */}
+          {/* Summary — TOTAL bisa di atas (modern) atau di bawah (klasik) */}
           <div className="space-y-1 mb-3">
+            {tpl.totalPertama && (
+              <div className="flex justify-between font-bold text-base">
+                <span>TOTAL</span><span>{fmt(total)}</span>
+              </div>
+            )}
             <div className="flex justify-between"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
             {diskon > 0 && (
               <div className="flex justify-between text-green-600"><span>Diskon</span><span>-{fmt(diskon)}</span></div>
@@ -148,13 +178,21 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
             {pajak > 0 && (
               <div className="flex justify-between"><span>Pajak{pajak_persen ? ` ${pajak_persen}%` : ''}</span><span>{fmt(pajak)}</span></div>
             )}
+            {!tpl.totalPertama && (
+              <div className="flex justify-between font-bold text-base">
+                <span>TOTAL</span><span>{fmt(total)}</span>
+              </div>
+            )}
           </div>
 
-          <div className="border-t border-dashed border-gray-300 pt-3 mb-3">
-            <div className="flex justify-between font-bold text-base">
-              <span>TOTAL</span><span>{fmt(total)}</span>
+          {/* Info transaksi — posisi bawah (modern) */}
+          {!tpl.infoSebelumItems && (
+            <div className={`border-t ${tpl.dividerStyle === 'solid' ? 'border-solid' : 'border-dashed'} border-gray-300 pt-3 mb-3 text-xs text-gray-400 space-y-0.5`}>
+              <div>{waktu}</div>
+              <div>No: {no_transaksi}</div>
+              {tpl.showKsr && kasir && <div>Kasir: {kasir}</div>}
             </div>
-          </div>
+          )}
 
           <div className="space-y-1 mb-4">
             <div className="flex justify-between">
@@ -166,11 +204,11 @@ export function StrukModal({ transaksi, toko, onTutup }: Props) {
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Footer — seragam dgn kasir */}
           <div className="text-center text-xs text-gray-400 space-y-1">
             {toko?.catatan_struk && <div>{toko.catatan_struk}</div>}
-            <div>* Terima kasih sudah berbelanja *</div>
-            <div className="text-gray-300 mt-1">Powered by Z1 Pos</div>
+            <div>*** TERIMA KASIH ***</div>
+            {tpl.footerPowered && <div className="text-gray-300 mt-1">Powered by Z1 Pos</div>}
           </div>
         </div>
 

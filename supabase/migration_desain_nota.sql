@@ -1,0 +1,1 @@
+ALTER TABLE toko ADD COLUMN IF NOT EXISTS desain_nota text NOT NULL DEFAULT 'klasik';

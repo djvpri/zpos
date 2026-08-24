@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText, Download, Laptop } from 'react-bootstrap-icons'
+import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText, Download, Laptop, Receipt } from 'react-bootstrap-icons'
 import { usePengaturan } from '@/hooks/usePengaturan'
+import { DESAIN_NOTA } from '@/lib/desain-nota'
 
 // Rilis kasir diambil live dari GitHub — versi & link download selalu terbaru.
 const KASIR_REPO = 'djvpri/zpos_windows'
@@ -18,8 +19,8 @@ interface KasirRilis {
 }
 
 export default function PengaturanPage() {
-  const { pajak_persen, alamat, telepon, catatan_struk, loading, simpan } = usePengaturan()
-  const [form, setForm] = useState({ pajak_persen: 0, alamat: '', telepon: '', catatan_struk: '' })
+  const { pajak_persen, alamat, telepon, catatan_struk, desainNota, loading, simpan } = usePengaturan()
+  const [form, setForm] = useState({ pajak_persen: 0, alamat: '', telepon: '', catatan_struk: '', desain_nota: 'klasik' })
   const [saving, setSaving] = useState(false)
   const [pesan, setPesan] = useState('')
   const [error, setError] = useState('')
@@ -55,8 +56,8 @@ export default function PengaturanPage() {
   }, [])
 
   useEffect(() => {
-    Promise.resolve().then(() => setForm({ pajak_persen, alamat, telepon, catatan_struk }))
-  }, [pajak_persen, alamat, telepon, catatan_struk])
+    Promise.resolve().then(() => setForm({ pajak_persen, alamat, telepon, catatan_struk, desain_nota: desainNota }))
+  }, [pajak_persen, alamat, telepon, catatan_struk, desainNota])
 
   const set = (k: string, v: string | number) => setForm(f => ({ ...f, [k]: v }))
 
@@ -132,6 +133,22 @@ export default function PengaturanPage() {
                 className={inputCls}
                 maxLength={100}
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-600 flex items-center gap-1">
+                <Receipt size={11} /> Desain Nota
+              </label>
+              <p className="text-[11px] text-gray-400 mt-0.5">Dipakai seragam oleh web &amp; Z1 Kasir.</p>
+              <select
+                value={form.desain_nota}
+                onChange={e => set('desain_nota', e.target.value)}
+                className={inputCls}
+              >
+                {DESAIN_NOTA.map(d => (
+                  <option key={d.id} value={d.id}>{d.label}</option>
+                ))}
+              </select>
             </div>
           </div>
 

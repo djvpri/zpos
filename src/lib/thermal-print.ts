@@ -11,6 +11,8 @@
  * 4. RawBT forward ke printer Bluetooth yang sudah di-pair
  */
 
+import { getDesainNota } from '@/lib/desain-nota'
+
 // ESC/POS Constants
 const ESC = '\x1B'
 const GS  = '\x1D'
@@ -59,7 +61,8 @@ export interface StrukData {
   catatan?: string
 }
 
-export function buildEscPos(s: StrukData): string {
+export function buildEscPos(s: StrukData, desain: string = 'klasik'): string {
+  const tpl = getDesainNota(desain)
   let cmd = ''
 
   cmd += INIT
@@ -73,12 +76,14 @@ export function buildEscPos(s: StrukData): string {
   if (s.telepon) cmd += `Tel: ${s.telepon}` + LF
   cmd += line()
 
-  // Info transaksi
-  cmd += ALIGN_LEFT
-  cmd += s.waktu + LF
-  cmd += `No: ${s.noTransaksi}` + LF
-  if (s.kasir) cmd += `Kasir: ${s.kasir}` + LF
-  cmd += line()
+  // Info transaksi — di atas items (klasik) atau di bawah TOTAL (modern)
+  if (tpl.infoSebelumItems) {
+    cmd += ALIGN_LEFT
+    cmd += s.waktu + LF
+    cmd += `No: ${s.noTransaksi}` + LF
+    if (tpl.showKsr && s.kasir) cmd += `Kasir: ${s.kasir}` + LF
+    cmd += line()
+  }
 
   // Items
   for (const it of s.items) {
@@ -89,7 +94,13 @@ export function buildEscPos(s: StrukData): string {
   }
   cmd += line()
 
-  // Ringkasan
+  // Ringkasan — TOTAL bisa di atas (modern) atau di bawah (klasik)
+  if (tpl.totalPertama) {
+    cmd += ALIGN_CENTER + BOLD_ON + DOUBLE_ON
+    cmd += `TOTAL: Rp${s.total.toLocaleString('id-ID')}` + LF
+    cmd += DOUBLE_OFF + BOLD_OFF
+    cmd += ALIGN_LEFT
+  }
   cmd += twoCol('Subtotal', `Rp${s.subtotal.toLocaleString('id-ID')}`)
   if (s.diskon && s.diskon > 0) {
     cmd += twoCol('Diskon', `-Rp${s.diskon.toLocaleString('id-ID')}`)
@@ -98,24 +109,32 @@ export function buildEscPos(s: StrukData): string {
     const labelPajak = s.pajakPersen ? `Pajak ${s.pajakPersen}%` : 'Pajak'
     cmd += twoCol(labelPajak, `Rp${s.pajak.toLocaleString('id-ID')}`)
   }
-  cmd += line()
+  if (!tpl.totalPertama) {
+    cmd += ALIGN_CENTER + BOLD_ON + DOUBLE_ON
+    cmd += `TOTAL: Rp${s.total.toLocaleString('id-ID')}` + LF
+    cmd += DOUBLE_OFF + BOLD_OFF
+  }
 
-  // Total (besar)
-  cmd += ALIGN_CENTER + BOLD_ON + DOUBLE_ON
-  cmd += `TOTAL: Rp${s.total.toLocaleString('id-ID')}` + LF
-  cmd += DOUBLE_OFF + BOLD_OFF
+  // Info transaksi — posisi bawah (modern)
+  if (!tpl.infoSebelumItems) {
+    cmd += line()
+    cmd += ALIGN_LEFT
+    cmd += s.waktu + LF
+    cmd += `No: ${s.noTransaksi}` + LF
+    if (tpl.showKsr && s.kasir) cmd += `Kasir: ${s.kasir}` + LF
+  }
 
   cmd += line()
   cmd += ALIGN_LEFT
   cmd += twoCol(`Bayar (${s.metodeBayar})`, `Rp${s.bayar.toLocaleString('id-ID')}`)
   cmd += BOLD_ON + twoCol('Kembali', `Rp${s.kembali.toLocaleString('id-ID')}`) + BOLD_OFF
 
-  // Footer
+  // Footer — seragam dgn kasir
   cmd += line()
   cmd += ALIGN_CENTER
   if (s.catatan) cmd += s.catatan + LF
-  cmd += '* Terima kasih *' + LF
-  cmd += 'Powered by Z1 Pos' + LF
+  cmd += '*** TERIMA KASIH ***' + LF
+  if (tpl.footerPowered) cmd += 'Powered by Z1 Pos' + LF
   cmd += LF + LF + LF
 
   cmd += CUT

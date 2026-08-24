@@ -83,7 +83,7 @@ export default function LaporanPage() {
 
   // Info toko utk render nota (nama, alamat, telp, catatan struk).
   const { toko } = useAuth()
-  const { alamat, telepon, catatan_struk } = usePengaturan()
+  const { alamat, telepon, catatan_struk, desainNota } = usePengaturan()
 
   // --- Shift ---
   const [shifts, setShifts] = useState<Shift[]>([])
@@ -778,12 +778,14 @@ export default function LaporanPage() {
       <StrukModal
         transaksi={strukCetak}
         toko={{ nama: toko?.nama ?? '', alamat, telepon, catatan_struk }}
+        desain={desainNota}
         onTutup={() => setStrukCetak(null)}
       />
       {notaCetak && (
         <BonNotaModal
           nota={notaCetak}
           toko={{ nama: toko?.nama ?? '', alamat, telepon, catatan_struk }}
+          desain={desainNota}
           onTutup={() => setNotaCetak(null)}
         />
       )}
