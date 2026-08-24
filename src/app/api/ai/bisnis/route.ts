@@ -6,27 +6,59 @@ import { analisaBisnis, RingkasanBisnis } from '@/lib/gemini-bisnis'
 
 // Analisis AI atas transaksi toko (30 hari). Admin saja. GEMINI_API_KEY
 // hanya dipakai server (di lib gemini-bisnis) — tak pernah ke browser.
-// Cache hasil di memori 10 menit supaya tiap refresh tak memanggil Gemini
-// berulang (biaya ~desimal rupiah/panggilan, tapi jangan boros).
+//
+// Batasan: SETIAP TOKO 1x ANALISIS PER HARI (waktu server UTC). Alasan:
+//  - hemat biaya Gemini (jangan panggil berulang tiap refresh)
+//  - hasil sebelumnya disimpan di tabel `ai_analisis` & bisa ditampilkan
+//    lagi; klik berikutnya di hari sama mengembalikan hasil tsb, dan riwayat
+//    harian tersimpan utk dilihat user.
+// Reset tiap 00:00 UTC (= 07:00 WIB), ikut zona waktu server.
+//
+// `ponytail: filter harian pakai CURRENT_DATE UTC`. Kalau toko butuh batas
+// zona lokal (per toko), tambah kolom `timezone` di toko & ganti filter.
 
-const cache = new Map<number, { at: number; hasil: { arahan: string } | { arahan: string; error: string } }>()
-
-// Ringkasan DB → hemat token buat prompt.
 const HARI = 30
+
+async function ensureTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS ai_analisis (
+      id        serial PRIMARY KEY,
+      toko_id   integer NOT NULL,
+      user_id   integer,
+      arahan    text NOT NULL,
+      ringkasan jsonb,
+      dibuat    timestamptz NOT NULL DEFAULT now()
+    )`
+  await sql`CREATE INDEX IF NOT EXISTS idx_ai_analisis_toko ON ai_analisis (toko_id, dibuat DESC)`
+}
 
 export async function GET(req: Request) {
   const auth = await getTokoFromRequest(req)
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (auth.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  // Cache (memory, per toko) — TTL 10 menit.
-  const now = Date.now()
-  const c = cache.get(auth.tokoId)
-  if (c && now - c.at < 10 * 60 * 1000) return NextResponse.json(c.hasil)
-
-  const since = new Date(Date.now() - HARI * 24 * 60 * 60 * 1000)
-
   try {
+    await ensureTable()
+
+    // Sudah analisis hari ini? Kembalikan tanpa memanggil Gemini.
+    const [hariIni] = await sql`
+      SELECT id, arahan, ringkasan
+      FROM ai_analisis
+      WHERE toko_id = ${auth.tokoId}
+        AND dibuat::date = CURRENT_DATE
+      ORDER BY dibuat DESC
+      LIMIT 1`
+
+    if (hariIni) {
+      return NextResponse.json({
+        arahan: hariIni.arahan,
+        ringkasan: hariIni.ringkasan,
+        sudah: true,
+      })
+    }
+
+    const since = new Date(Date.now() - HARI * 24 * 60 * 60 * 1000)
+
     const [agregat] = await sql`
       SELECT
         COUNT(*)::int AS jumlah_transaksi,
@@ -97,13 +129,16 @@ export async function GET(req: Request) {
     const hasil = await analisaBisnis(ringkasan)
 
     if (hasil.error) {
-      // Jangan cache error — biarkan retry lain kali.
+      // Jangan simpan error — biarkan retry lain kali.
       return NextResponse.json(hasil, { status: 502 })
     }
 
-    cache.set(auth.tokoId, { at: now, hasil })
-    void catatAktivitas(auth, 'ai_bisnis', `Analisis AI bisnis (30 hari): ${jumlahTransaksi} trx, ${HARI} hari`)
-    return NextResponse.json({ arahan: hasil.arahan })
+    await sql`
+      INSERT INTO ai_analisis (toko_id, user_id, arahan, ringkasan)
+      VALUES (${auth.tokoId}, ${auth.userId ?? null}, ${hasil.arahan}, ${sql.json(JSON.stringify(ringkasan))})`
+
+    void catatAktivitas(auth, 'ai_bisnis', `Analisis AI bisnis (30 hari): ${jumlahTransaksi} trx`)
+    return NextResponse.json({ arahan: hasil.arahan, ringkasan, sudah: false })
   } catch (e) {
     console.error('ai/bisnis error', e)
     return NextResponse.json({ arahan: '', error: 'Gagal memuat analisis. Coba lagi.' }, { status: 500 })
