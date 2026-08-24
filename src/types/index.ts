@@ -54,6 +54,9 @@ export interface Transaksi {
   metode_bayar: 'Tunai' | 'QRIS' | 'Transfer'
   kasir?: string
   shift_id?: number | null // diisi kasir Tauri utk tautan shift per kasir
+  // Aplikasi asal transaksi: 'kasir' (Z1 Kasir desktop) / 'web' (POS browser).
+  // Backward-compat: transaksi lama & tanpa field = 'web'.
+  sumber?: string
   bon_tebus_id?: number | null // id bon gantung yg ditebus → stok uda di-hold saat gantung, tebus tak kurangi ulang
   dibatalkan?: boolean
   created_at?: string

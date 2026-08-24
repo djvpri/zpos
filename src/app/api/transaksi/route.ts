@@ -53,9 +53,10 @@ export async function POST(req: Request) {
   // cuma produk asli (produk_id > 0); item virtual harga-bebas dilewati.
   const saved = await sql.begin(async t => {
     const [tr] = await t`
-      INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id, shift_id, created_at)
+      INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id, shift_id, created_at, sumber)
       VALUES (${trx.no_transaksi}, ${trx.subtotal}, ${trx.diskon}, ${trx.pajak}, ${trx.total},
-              ${trx.bayar}, ${trx.kembali}, ${trx.metode_bayar}, ${toko.userName}, ${toko.tokoId}, ${shiftId}, ${waktuJual})
+              ${trx.bayar}, ${trx.kembali}, ${trx.metode_bayar}, ${toko.userName}, ${toko.tokoId}, ${shiftId}, ${waktuJual},
+              ${trx.sumber ?? 'web'})
       RETURNING *
     `
     if (items.length > 0) {

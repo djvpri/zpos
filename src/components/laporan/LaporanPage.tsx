@@ -421,6 +421,12 @@ export default function LaporanPage() {
                             <div className="min-w-0">
                               <div className="text-xs font-mono text-gray-500 flex items-center gap-1.5">
                                 {t.no_transaksi}
+                                {(() => {
+                                  const s = t.sumber ?? 'web'
+                                  return s === 'kasir'
+                                    ? <span className="text-[10px] bg-indigo-50 text-indigo-600 font-semibold px-1.5 py-0.5 rounded-full">Kasir</span>
+                                    : <span className="text-[10px] bg-gray-50 text-gray-500 font-semibold px-1.5 py-0.5 rounded-full">Web</span>
+                                })()}
                                 {t.dibatalkan && (
                                   <span className="text-[10px] bg-red-50 text-red-500 font-semibold px-1.5 py-0.5 rounded-full">Dibatalkan</span>
                                 )}
