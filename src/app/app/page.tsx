@@ -13,17 +13,19 @@ import LisensiPage from '@/components/lisensi/LisensiPage'
 import TokoOnlinePage from '@/components/toko-online/TokoOnlinePage'
 import StockOpnamePage from '@/components/stock-opname/StockOpnamePage'
 import PengeluaranPage from '@/components/pengeluaran/PengeluaranPage'
-import { Receipt, Box, BarChartLine, People, PersonBadge, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle, Shop, ClipboardCheck, CashCoin } from 'react-bootstrap-icons'
+import AIPage from '@/components/ai/AIPage'
+import { Receipt, Box, BarChartLine, People, PersonBadge, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle, Shop, ClipboardCheck, CashCoin, Stars } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import { fmtDate } from '@/lib/utils'
 
-type Halaman = 'kasir' | 'produk' | 'member' | 'laporan' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online' | 'stock-opname' | 'pengeluaran'
+type Halaman = 'kasir' | 'produk' | 'member' | 'laporan' | 'ai' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online' | 'stock-opname' | 'pengeluaran'
 
 const NAV_OWNER = [
   { id: 'kasir' as Halaman, icon: Receipt, label: 'Kasir' },
   { id: 'produk' as Halaman, icon: Box, label: 'Produk' },
   { id: 'member' as Halaman, icon: PersonBadge, label: 'Member' },
   { id: 'laporan' as Halaman, icon: BarChartLine, label: 'Laporan' },
+  { id: 'ai' as Halaman, icon: Stars, label: 'AI' },
   { id: 'staff' as Halaman, icon: People, label: 'Staff' },
   { id: 'lisensi' as Halaman, icon: CardChecklist, label: 'Lisensi' },
   { id: 'stock-opname' as Halaman, icon: ClipboardCheck, label: 'Stock Opname' },
@@ -169,6 +171,7 @@ export default function AppPage() {
           {halaman === 'produk' && isOwner && <ProdukPage />}
           {halaman === 'member' && isOwner && <MemberPage />}
           {halaman === 'laporan' && isOwner && <LaporanPage />}
+          {halaman === 'ai' && isOwner && <AIPage />}
           {halaman === 'staff' && isOwner && <StaffPage />}
           {halaman === 'lisensi' && isOwner && <LisensiPage />}
           {halaman === 'toko-online' && isOwner && <TokoOnlinePage />}
