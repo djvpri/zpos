@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePengaturan } from '@/hooks/usePengaturan'
 import { StrukModal } from '@/components/kasir/StrukModal'
 import { LaporanStrukModal } from '@/components/laporan/LaporanStrukModal'
+import { BonNotaModal, BonNota } from '@/components/laporan/BonNotaModal'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 const fmtDT = (d: string) => `${fmtDate(d)} ${fmtTime(d)}`
@@ -95,6 +96,8 @@ export default function LaporanPage() {
   const [bonLoaded, setBonLoaded] = useState(false)
   const [filterNama, setFilterNama] = useState('')
   const [filterStatus, setFilterStatus] = useState<'semua' | 'aktif' | 'selesai'>('semua')
+  const [notaCetak, setNotaCetak] = useState<BonNota | null>(null)
+  const [loadingNota, setLoadingNota] = useState(false)
 
   const filterBon = useMemo(() => {
     const q = filterNama.trim().toLowerCase()
@@ -175,6 +178,21 @@ export default function LaporanPage() {
     setLoadingBon(false)
     setBonLoaded(true)
   }, [bonLoaded])
+
+  // Ambil detail item bon utk dicetak sebagai nota.
+  const bukaNota = async (id: number) => {
+    setLoadingNota(true)
+    setNotaCetak(null)
+    try {
+      const res = await fetch(`/api/bon/${id}/nota`)
+      if (!res.ok) throw new Error('gagal')
+      const data = await res.json()
+      setNotaCetak(data)
+    } catch {
+      setNotaCetak(null)
+    }
+    setLoadingNota(false)
+  }
 
   const loadLog = useCallback(async () => {
     if (logLoaded) return
@@ -651,6 +669,7 @@ export default function LaporanPage() {
                           <th className="text-center px-4 py-3">Status</th>
                           <th className="text-left px-4 py-3">Dibuat</th>
                           <th className="text-left px-4 py-3">Dibayar</th>
+                          <th className="text-center px-4 py-3">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -668,6 +687,15 @@ export default function LaporanPage() {
                               </td>
                               <td className="px-4 py-3 text-gray-500 text-xs">{b.created_at ? fmtDT(b.created_at) : '-'}</td>
                               <td className="px-4 py-3 text-gray-500 text-xs">{b.dibayar_at ? fmtDT(b.dibayar_at) : '-'}</td>
+                              <td className="px-4 py-3 text-center">
+                                <button
+                                  onClick={() => bukaNota(b.id)}
+                                  disabled={loadingNota}
+                                  className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                                  title="Cetak nota">
+                                  <Printer size={14} />
+                                </button>
+                              </td>
                             </tr>
                           )
                         })}
@@ -681,7 +709,7 @@ export default function LaporanPage() {
                           <td className="px-4 py-3 text-right font-bold text-gray-900">
                             {fmt(filterBon.reduce((s, b) => s + b.total, 0))}
                           </td>
-                          <td className="px-4 py-3" colSpan={3} />
+                          <td className="px-4 py-3" colSpan={4} />
                         </tr>
                       </tfoot>
                     </table>
@@ -752,6 +780,13 @@ export default function LaporanPage() {
         toko={{ nama: toko?.nama ?? '', alamat, telepon, catatan_struk }}
         onTutup={() => setStrukCetak(null)}
       />
+      {notaCetak && (
+        <BonNotaModal
+          nota={notaCetak}
+          toko={{ nama: toko?.nama ?? '', alamat, telepon, catatan_struk }}
+          onTutup={() => setNotaCetak(null)}
+        />
+      )}
       {lapCetak && (
         <LaporanStrukModal
           data={lapCetak}
