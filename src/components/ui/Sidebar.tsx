@@ -31,12 +31,12 @@ export function Sidebar({ aktif, onNavigasi, role }: Props) {
   const nav = role === 'admin' ? NAV_OWNER : NAV_KASIR
 
   return (
-    <aside className="w-16 bg-white border-r border-gray-100 flex flex-col items-center py-4 shrink-0">
-      <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center mb-6">
+    <aside className="w-16 bg-white border-r border-gray-100 flex flex-col items-center py-4 shrink-0 h-full overflow-hidden">
+      <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center mb-6 shrink-0">
         <span className="text-white text-sm font-bold">Z</span>
       </div>
 
-      <nav className="flex flex-col items-center gap-1 w-full px-2">
+      <nav className="flex flex-col items-center gap-1 w-full px-2 overflow-y-auto min-h-0 flex-1">
         {nav.map(n => (
           <button
             key={n.id}
