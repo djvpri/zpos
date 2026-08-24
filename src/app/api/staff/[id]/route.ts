@@ -20,10 +20,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const [diri] = await sql`SELECT id FROM "user" WHERE id = ${auth.userId}`
 
   const body = await req.json().catch(() => ({}))
-  const { role, aktif, pin, password } = body
+  const { role, aktif, pin, password, nama } = body
 
-  if (role === undefined && aktif === undefined && pin === undefined && password === undefined) {
-    return NextResponse.json({ error: 'role, aktif, pin, atau password wajib diisi' }, { status: 400 })
+  if (role === undefined && aktif === undefined && pin === undefined && password === undefined && nama === undefined) {
+    return NextResponse.json({ error: 'role, aktif, pin, password, atau nama wajib diisi' }, { status: 400 })
   }
 
   const [target] = await sql`SELECT id, role FROM "user" WHERE id = ${userId} AND toko_id = ${auth.tokoId}`
@@ -74,6 +74,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await sql`UPDATE "user" SET password_hash = ${pw} WHERE id = ${userId}`
   }
 
+  if (nama !== undefined) {
+    if (typeof nama !== 'string' || !nama.trim()) {
+      return NextResponse.json({ error: 'Nama tidak boleh kosong' }, { status: 400 })
+    }
+    const bersih = nama.trim()
+    if (bersih.length > 100) {
+      return NextResponse.json({ error: 'Nama maksimal 100 karakter' }, { status: 400 })
+    }
+    await sql`UPDATE "user" SET nama = ${bersih} WHERE id = ${userId}`
+  }
+
   const [updated] = await sql`SELECT id, nama, email, role, aktif FROM "user" WHERE id = ${userId}`
 
   // Audit: perubahan role/status staff — krusial utk cek kasir mengangkat dirinya sendiri.
@@ -93,6 +104,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (password !== undefined) {
     void catatAktivitas(auth, 'staff_password',
       `${target.nama || `#${userId}`} password diset/diubah utk login web & kasir`)
+  }
+  if (nama !== undefined) {
+    void catatAktivitas(auth, 'staff_nama',
+      `${target.nama || `#${userId}`} nama diubah → ${nama.trim()}`)
   }
 
 

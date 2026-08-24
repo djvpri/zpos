@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { XLg, Trash3, Shield, Key, Lock } from 'react-bootstrap-icons'
+import { XLg, Trash3, Shield, Key, Lock, PencilSquare } from 'react-bootstrap-icons'
 import { Staff } from '@/types'
 
 // Kelola kasir & admin satu toko. User TIDAK dibuat di sini — akun dibuat
@@ -56,6 +56,27 @@ export default function StaffPage() {
     if (!confirm(`Nonaktifkan ${u.nama}?`)) return
     await fetch(`/api/staff/${u.id}`, { method: 'DELETE' })
     setStaff(s => s.map(x => x.id === u.id ? { ...x, aktif: false } : x))
+  }
+
+  // Ganti nama tampilan user (kasir/admin). Berlaku utk login & transaksi baru.
+  const gantiNama = async (u: Staff) => {
+    const nama = prompt(`Ganti nama utk ${u.nama}:`, u.nama)
+    if (nama === null) return
+    const bersih = nama.trim()
+    if (!bersih) { setError('Nama tidak boleh kosong'); return }
+    if (bersih === u.nama) return
+    if (!confirm(`Ubah nama ${u.nama} menjadi "${bersih}"? Histori transaksi lama tetap pakai nama lama.`)) return
+    const res = await fetch(`/api/staff/${u.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nama: bersih }),
+    })
+    if (res.ok) {
+      setStaff(s => s.map(x => x.id === u.id ? { ...x, nama: bersih } : x))
+    } else {
+      const d = await res.json()
+      setError(d.error || 'Gagal ganti nama')
+    }
   }
 
   // Set/reset password utk login web & setup app kasir (user yg login via
@@ -147,6 +168,13 @@ export default function StaffPage() {
                 {u.role === 'admin' ? 'Admin' : 'Kasir'}
               </span>
               <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => gantiNama(u)}
+                  title="Ganti nama"
+                  className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                >
+                  <PencilSquare size={15} />
+                </button>
                 <button
                   onClick={() => setPassword(u)}
                   title="Set/reset password (login web & setup app kasir)"
