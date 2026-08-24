@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText, Download, Laptop, Receipt } from 'react-bootstrap-icons'
 import { usePengaturan } from '@/hooks/usePengaturan'
 import { DESAIN_NOTA } from '@/lib/desain-nota'
+import { NotaPreview } from './NotaPreview'
 
 // Rilis kasir diambil live dari GitHub — versi & link download selalu terbaru.
 const KASIR_REPO = 'djvpri/zpos_windows'
@@ -151,6 +152,8 @@ export default function PengaturanPage() {
               </select>
             </div>
           </div>
+
+          <NotaPreview desain={form.desain_nota} />
 
           {/* Pajak */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 space-y-3">
