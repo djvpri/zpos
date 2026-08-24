@@ -672,6 +672,18 @@ export default function LaporanPage() {
                           )
                         })}
                       </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 border-gray-200 bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-800">Total</td>
+                          <td className="px-4 py-3 text-right text-gray-600">
+                            {filterBon.reduce((s, b) => s + Object.values(b.produk).reduce((x, n) => x + n, 0), 0)}x
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-gray-900">
+                            {fmt(filterBon.reduce((s, b) => s + b.total, 0))}
+                          </td>
+                          <td className="px-4 py-3" colSpan={3} />
+                        </tr>
+                      </tfoot>
                     </table>
                   </div>
                 </div>
