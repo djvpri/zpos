@@ -1,11 +1,60 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Stars, ArrowClockwise } from 'react-bootstrap-icons'
 
 interface HasilAI {
   arahan: string
   error?: string
+}
+
+// Render markdown MINIMAL dari output Gemini — bold `**…**` & bullet `- `/`* `.
+// Output AI kita terbatas (heading + poin pendek), jadi parser kecil cukup;
+// tak perlu dependensi markdown penuh. Tambah `marked` kalau output meluas
+// (tabel, code block) — `ponytail: parser sederhana`.
+function inlineBold(s: string) {
+  return s.split(/\*\*(.+?)\*\*/g).map((part, i) =>
+    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+  )
+}
+
+// Parse baris-demi-baris: heading bold, bullet list, paragraf. Kelompokkan
+// baris bullet berurutan jadi satu <ul>; blank = pemisah blok.
+function renderAI(arahan: string) {
+  const lines = arahan.replace(/\r/g, '').split('\n')
+  const out: ReactNode[] = []
+  let ul: string[] = []
+  let key = 0
+  const flushUl = () => {
+    if (ul.length) {
+      out.push(
+        <ul key={key++} className="list-disc pl-5 my-2 space-y-1">
+          {ul.map((li, i) => <li key={i}>{inlineBold(li)}</li>)}
+        </ul>
+      )
+      ul = []
+    }
+  }
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line) { flushUl(); continue }
+    const bullet = line.match(/^[-*]\s+(.+)/)
+    if (bullet) { ul.push(bullet[1]); continue }
+    flushUl()
+    // Heading = line yang bold penuh (bukan teks campuran).
+    const onlyBold = /^\*\*(.+?)\*\*$/.test(line)
+    if (onlyBold) {
+      out.push(
+        <div key={key++} className="font-semibold text-gray-900 mt-4 mb-1 text-[13px]">
+          {inlineBold(line)}
+        </div>
+      )
+    } else {
+      out.push(<p key={key++} className="my-1.5">{inlineBold(line)}</p>)
+    }
+  }
+  flushUl()
+  return out
 }
 
 export default function AIPage() {
@@ -64,8 +113,8 @@ export default function AIPage() {
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
             Rekomendasi untuk toko Anda
           </div>
-          <div className="prose-a:text-indigo-600 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-            {hasil.arahan}
+          <div className="text-sm text-gray-700 leading-relaxed">
+            {renderAI(hasil.arahan)}
           </div>
         </div>
       )}
