@@ -9,6 +9,7 @@ const SAMPLE = {
   no: 'TRX-20260824-0001',
   tgl: '24/08/2026 14:05',
   kasir: 'Budi',
+  member: 'Siti Aminah',
   metode: 'QRIS',
   items: [
     { nama: 'Kopi Susu Gula Aren', qty: 1, harga: 15000 },
@@ -37,6 +38,7 @@ export function NotaPreview({ desain }: { desain: string }) {
       {infoRow('No', SAMPLE.no)}
       {infoRow('Tgl', SAMPLE.tgl)}
       {tpl.showKsr && infoRow('Ksr', SAMPLE.kasir)}
+      {infoRow('Member', SAMPLE.member)}
       {infoRow('Pay', SAMPLE.metode)}
     </div>
   )
