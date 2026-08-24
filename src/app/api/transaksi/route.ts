@@ -15,6 +15,10 @@ export async function POST(req: Request) {
 
   const { trx, items }: { trx: Transaksi; items: DetailTransaksi[] } = await req.json()
 
+  // Auto-migrasi idempotent: pastikan kolom member_nama ada (riwayat nota lama
+  // tanpa kolom ini tetap berfungsi). Sama pola `desain_nota` di /api/pengaturan.
+  await sql.unsafe('ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS member_nama text')
+
   // Kalau transaksi ini sudah pernah masuk (retry dari antrian offline yang
   // sempat sukses tapi responsnya tidak sampai ke client), kembalikan baris
   // yang sudah ada — supaya sinkronisasi ulang tidak gagal atau dobel.
@@ -53,10 +57,10 @@ export async function POST(req: Request) {
   // cuma produk asli (produk_id > 0); item virtual harga-bebas dilewati.
   const saved = await sql.begin(async t => {
     const [tr] = await t`
-      INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id, shift_id, created_at, sumber)
+      INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id, shift_id, created_at, sumber, member_nama)
       VALUES (${trx.no_transaksi}, ${trx.subtotal}, ${trx.diskon}, ${trx.pajak}, ${trx.total},
               ${trx.bayar}, ${trx.kembali}, ${trx.metode_bayar}, ${toko.userName}, ${toko.tokoId}, ${shiftId}, ${waktuJual},
-              ${trx.sumber ?? 'web'})
+              ${trx.sumber ?? 'web'}, ${trx.member_nama?.trim() ? trx.member_nama.trim() : null})
       RETURNING *
     `
     if (items.length > 0) {

@@ -34,7 +34,7 @@ export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
   })
 
   if (!transaksi) return null
-  const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir, created_at, dibatalkan } = transaksi
+  const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir, member_nama, created_at, dibatalkan } = transaksi
   // Waktu cetak asli adalah created_at transaksi; utk struk baru (belum ada id)
   // dipakai waktu sekarang. Ini yang bikin reprint nota lama identik dgn aslinya.
   const waktu = created_at
@@ -50,6 +50,7 @@ export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
     // Blok info — di atas items (klasik) atau di bawah ringkasan (modern).
     const blokInfo: string[] = [waktu, `No: ${no_transaksi}`]
     if (tpl.showKsr && kasir) blokInfo.push(`Kasir: ${kasir}`)
+    if (member_nama) blokInfo.push(`Member: ${member_nama}`)
     const blokItems: string[] = []
     items?.forEach(it => {
       blokItems.push(`${it.nama_produk} x${it.qty}`)
@@ -93,6 +94,7 @@ export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
       waktu,
       noTransaksi: no_transaksi,
       kasir,
+      member: member_nama ?? undefined,
       items: (items || []).map(it => ({
         nama: it.nama_produk,
         qty: it.qty,
@@ -150,6 +152,7 @@ export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
                 <div>{waktu}</div>
                 <div>No: {no_transaksi}</div>
                 {tpl.showKsr && kasir && <div>Kasir: {kasir}</div>}
+                {member_nama && <div>Member: {member_nama}</div>}
               </div>
             )}
           </div>
@@ -191,6 +194,7 @@ export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
               <div>{waktu}</div>
               <div>No: {no_transaksi}</div>
               {tpl.showKsr && kasir && <div>Kasir: {kasir}</div>}
+              {member_nama && <div>Member: {member_nama}</div>}
             </div>
           )}
 

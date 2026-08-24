@@ -49,6 +49,7 @@ export interface StrukData {
   waktu: string
   noTransaksi: string
   kasir?: string
+  member?: string
   items: { nama: string; qty: number; harga: number }[]
   subtotal: number
   diskon?: number
@@ -82,6 +83,7 @@ export function buildEscPos(s: StrukData, desain: string = 'klasik'): string {
     cmd += s.waktu + LF
     cmd += `No: ${s.noTransaksi}` + LF
     if (tpl.showKsr && s.kasir) cmd += `Kasir: ${s.kasir}` + LF
+    if (s.member) cmd += `Member: ${s.member}` + LF
     cmd += line()
   }
 
@@ -122,6 +124,7 @@ export function buildEscPos(s: StrukData, desain: string = 'klasik'): string {
     cmd += s.waktu + LF
     cmd += `No: ${s.noTransaksi}` + LF
     if (tpl.showKsr && s.kasir) cmd += `Kasir: ${s.kasir}` + LF
+    if (s.member) cmd += `Member: ${s.member}` + LF
   }
 
   cmd += line()

@@ -49,6 +49,7 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
       waktu,
       noTransaksi: `Bon #${nota.id}`,
       kasir: nota.nama || '',
+      member: nota.nama || undefined,
       items: nota.items.map(it => ({ nama: it.nama, qty: it.qty, harga: it.harga })),
       subtotal: nota.total,
       total: nota.total,

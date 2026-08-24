@@ -239,6 +239,7 @@ export default function KasirPage() {
       kembali: metode === 'Tunai' ? kembali : 0,
       metode_bayar: metode,
       kasir: toko?.userName ?? '',
+      member_nama: memberAktif?.nama ?? null,
       created_at: new Date().toISOString(), // waktu jual sesungguhnya, dipakai kalau nanti disinkron belakangan
       items: items.map(it => ({
         produk_id: it.id > 0 ? it.id : null,  // produk virtual (id negatif) tidak punya baris di tabel produk

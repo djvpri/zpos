@@ -53,6 +53,9 @@ export interface Transaksi {
   kembali: number
   metode_bayar: 'Tunai' | 'QRIS' | 'Transfer'
   kasir?: string
+  // Nama member aktif saat transaksi (kalau kasir pilih member). String snapshot
+  // (bukan member_id/FK) supaya nota lama tetap tampil walau member dihapus.
+  member_nama?: string | null
   shift_id?: number | null // diisi kasir Tauri utk tautan shift per kasir
   // Aplikasi asal transaksi: 'kasir' (Z1 Kasir desktop) / 'web' (POS browser).
   // Backward-compat: transaksi lama & tanpa field = 'web'.
