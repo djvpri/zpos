@@ -23,6 +23,7 @@ export type Aksi =
   | 'kas_keluar'
   | 'kas_keluar_void'
   | 'bon_gantung'
+  | 'bon_edit'
   | 'bon_bayar'
   | 'bon_hapus'
   | 'staff_tambah'
@@ -59,6 +60,7 @@ const KATEGORI: Record<Aksi, string> = {
   kas_keluar: 'uang',
   kas_keluar_void: 'uang',
   bon_gantung: 'uang',
+  bon_edit: 'uang',
   bon_bayar: 'uang',
   bon_hapus: 'uang',
   staff_tambah: 'staff',
