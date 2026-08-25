@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { XLg, Printer, ArrowRepeat, CheckCircleFill, ExclamationCircle, Tag, Lightbulb } from 'react-bootstrap-icons'
 import { barcodeToSvg, generateProductBarcode } from '@/lib/barcode-code39'
+import { qrToSvg } from '@/lib/qrcode'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
 
@@ -57,6 +58,7 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
     } catch { /* ignore */ }
     return parseUkuran(ukuranLabel)
   })
+  const kecil = ukuran.w <= 35 // label sempit: fokus harga+barcode, nama/nomor tak tampil
   // Input custom W×H sbg STRING (bukan number) — controlled-number di browser
   // nyambung angka secara lompatan & clamp via Number() di onChange ngerusak
   // ketikan (hps "40"→"10", ketik "25"→"1025"). Ketik bebas, parse saat apply.
@@ -64,6 +66,10 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
   const [ch, setCh] = useState(() => String(ukuran.h))
   const [dipakai, setDipakai] = useState(false) // feedback visual tombol Pakai
   const pakaiRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // QR SVG per produk id (nanti id<0 berarti... tak, id produk >=1). Dibangun async
+  // di assignDanCetak sbg pendamping barcode 1D di label (QR lebih mudah discan
+  // saat 1D terlalu rapat di sticker kecil 25×15mm). Kosong kalau belum dibangun.
+  const [qrMap, setQrMap] = useState<Record<number, string>>({})
   const sanitize = (s: string) => s.replace(/[^\d]/g, '') // hanya digit
   // Terapkan custom: parse, clamp rentang wajar, persist.
   const gantiCustom = () => {
@@ -151,15 +157,28 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
       }
     }
     setStatus('selesai')
+    // Bangun QR utk semua produk terpilih utk pendamping barcode 1D di label.
+    // QR = backup yg lebih mudah discan ketika 1D terlalu rapat di sticker kecil.
+    const qr: Record<number, string> = {}
+    await Promise.all(selectedList.map(async p => {
+      const val = p.barcode || generateProductBarcode(p.id)
+      const s = await qrToSvg(val, kecil ? 160 : 240, kecil ? 3 : 4).catch(() => '')
+      if (s) qr[p.id] = s
+    }))
+    setQrMap(qr)
   }
 
   function buatHtml() {
-    const kecil = ukuran.w <= 35 // label sempit: fokus harga+barcode, nama/nomor tak tampil
     return selectedList.map(p => {
       const gunakanBarcode = mode !== 'nama-harga' && p.barcode
       const svg = gunakanBarcode ? barcodeToSvg(p.barcode!, (kecil || mode === 'barcode') ? 70 : 45) : ''
       const tampilNama = mode !== 'barcode' && !kecil
-      const blokBc = gunakanBarcode ? `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg">${svg}</div>` : ''
+      const qr = qrMap[p.id] || '' // pendamping 2D — mudah discan saat 1D rapat di sticker kecil
+      const blokBc = gunakanBarcode
+        ? `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="${qr ? 'ctk-dual' : 'ctk-svg'}">${
+            qr ? `<div class="ctk-qr">${qr}</div>` : ''
+          }<div class="ctk-svg">${svg}</div></div>`
+        : ''
       return `
       <div class="ctk-label${kecil ? ' ctk-small' : ''}">
         ${tampilNama ? `<div class="ctk-nama">${escapeHtml(p.nama)}</div>` : ''}
@@ -305,7 +324,7 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
           )}
 
           <div className="text-xs text-gray-400 mt-3">
-            <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Cetak via browser dialog ke printer label. Ukuran kertas diatur lewat driver/printer (CT221B) — pastikan paper-nya label yg sesuai. Format barcode = CODE39 numerik, unik per produk.
+            <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Cetak via browser dialog ke printer label. Ukuran kertas diatur lewat driver/printer (CT221B) — pastikan paper-nya label yg sesuai. Barcode auto: 13 digit → EAN-13, numerik genap → Code128, lain → CODE39. Label kini juga menyertakan <strong>QR Code</strong> (2D) di samping barcode, biar tetap bisa discan scanner/ponsel walau 1D terlalu rapat di sticker kecil.
           </div>
         </div>
 
@@ -357,6 +376,14 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
           .ctk-svg { flex: 1 1 auto; min-height: 0; text-align: center; display: flex; align-items: center; justify-content: center; margin-top: calc(var(--ctk-h) * 0.02); }
           .ctk-small .ctk-svg { margin-top: calc(var(--ctk-h) * 0.07); margin-bottom: calc(var(--ctk-h) * 0.03); padding-top: calc(var(--ctk-h) * 0.07); }
           .ctk-svg svg { width: 100%; height: auto; display: block; }
+          /* QR + barcode 1D berdampingan: dua kolom fleksibel. QR (mudah discan)
+             di kiri, barcode 1D di kanan. Saat sempit, QR lebih lebar biar tetap
+             terbaca. */
+          .ctk-dual { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; gap: calc(var(--ctk-h) * 0.03); margin-top: calc(var(--ctk-h) * 0.02); }
+          .ctk-dual .ctk-qr { flex: 0 0 45%; display: flex; align-items: center; justify-content: center; }
+          .ctk-dual .ctk-qr svg { width: 100% !important; height: auto; }
+          .ctk-dual .ctk-svg { flex: 1 1 auto; margin-top: 0; }
+          .ctk-small .ctk-dual { margin-top: calc(var(--ctk-h) * 0.05); }
           .ctk-bc { flex: 0 0 auto; font-size: calc(var(--ctk-h) * 0.095); font-weight: 700; color: #000; margin-top: calc(var(--ctk-h) * 0.015); }
         }
       `}</style>
