@@ -48,9 +48,19 @@ export const POST = apiHandler(async (req: Request, body: { nama: string; telepo
     if (!kat) return NextResponse.json({ error: 'Kategori member tidak valid' }, { status: 400 })
   }
 
+  // Nama member per toko WAJIB unik (case-insensitive) — identitas pelanggan tak
+  // boleh ambigu (dua "Bayu" bikin bon/nota salah member). Cek GLOBAL per toko
+  // (bukan cuma saat tambah) biar PUT yg rename ke nama terpakai juga ketangkep.
+  const namaFinal = body.nama.trim()
+  const [dupe] = await sql`
+    SELECT id FROM member WHERE toko_id = ${toko.tokoId} AND LOWER(TRIM(nama)) = LOWER(${namaFinal})
+    LIMIT 1
+  `
+  if (dupe) return NextResponse.json({ error: 'Nama member sudah dipakai' }, { status: 400 })
+
   const [row] = await sql`
     INSERT INTO member (nama, telepon, kategori_member_id, toko_id)
-    VALUES (${body.nama.trim()}, ${body.telepon || null}, ${kategoriId}, ${toko.tokoId})
+    VALUES (${namaFinal}, ${body.telepon || null}, ${kategoriId}, ${toko.tokoId})
     RETURNING id, nama, telepon, kategori_member_id, created_at
   `
   void catatAktivitas(toko, 'member_tambah', `Member #${row.id} "${row.nama}" didaftarkan`)

@@ -12,6 +12,13 @@ export const PUT = apiHandler(async (req: Request, body: { nama: string; telepon
   if (toko.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const id = Number((await context.params).id)
+  const namaFinal = body.nama.trim()
+  // Nama member per toko unik (case-insensitive) — cek diluar dirinya sendiri.
+  const [dupe] = await sql`
+    SELECT id FROM member WHERE toko_id = ${toko.tokoId} AND LOWER(TRIM(nama)) = LOWER(${namaFinal}) AND id <> ${id}
+    LIMIT 1
+  `
+  if (dupe) return NextResponse.json({ error: 'Nama member sudah dipakai' }, { status: 400 })
   const kategoriId = body.kategori_member_id ?? null
   if (kategoriId) {
     const [kat] = await sql`SELECT id FROM kategori_member WHERE id = ${kategoriId} AND toko_id = ${toko.tokoId}`
@@ -19,7 +26,7 @@ export const PUT = apiHandler(async (req: Request, body: { nama: string; telepon
   }
 
   const [row] = await sql`
-    UPDATE member SET nama = ${body.nama.trim()}, telepon = ${body.telepon || null}, kategori_member_id = ${kategoriId}
+    UPDATE member SET nama = ${namaFinal}, telepon = ${body.telepon || null}, kategori_member_id = ${kategoriId}
     WHERE id = ${id} AND toko_id = ${toko.tokoId}
     RETURNING id, nama, telepon, kategori_member_id, created_at
   `
