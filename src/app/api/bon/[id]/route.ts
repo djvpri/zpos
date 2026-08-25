@@ -70,7 +70,7 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
       }
       const newTotal = Math.round(body.total ?? cur.total)
       const [upd] = await t`
-        UPDATE bon SET produk_json = ${JSON.stringify(finalObj)}, total = ${newTotal}, updated_at = now()
+        UPDATE bon SET produk_json = ${JSON.stringify(finalObj)}, total = ${newTotal}
         WHERE id = ${id} AND toko_id = ${toko.tokoId}
         RETURNING id, nama, produk_json, total, selesai, created_at
       `
