@@ -189,8 +189,8 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
       // dua-duanya sekaligus di satu label.
       const blokBc = gunakanBarcode
         ? kodeTipe === '2d'
-          ? (qr ? `<div class="ctk-svg">${qr}</div>` : `<div class="ctk-svg">${barcodeToSvg(p.barcode!, (kecil || mode === 'barcode') ? 70 : 45)}</div>`)
-          : `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg">${barcodeToSvg(p.barcode!, (kecil || mode === 'barcode') ? 70 : 45)}</div>`
+          ? (qr ? `<div class="ctk-svg ctk-2d">${qr}</div>` : `<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, (kecil || mode === 'barcode') ? 70 : 45, kecil ? 2 : 1)}</div>`)
+          : `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, (kecil || mode === 'barcode') ? 70 : 45, kecil ? 2 : 1)}</div>`
         : ''
       return `
       <div class="ctk-label${kecil ? ' ctk-small' : ''}">
@@ -404,10 +404,15 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
           .ctk-svg { flex: 1 1 auto; min-height: 0; text-align: center; display: flex; align-items: center; justify-content: center; margin-top: calc(var(--ctk-h) * 0.02); }
           .ctk-small .ctk-svg { margin-top: calc(var(--ctk-h) * 0.01); margin-bottom: calc(var(--ctk-h) * 0.01); padding-top: 0; }
           .ctk-svg svg { width: 100%; height: auto; display: block; }
-          /* Label kecil (mode kecil, w<=35mm): QR/barcode isi setinggi ruang tersisa
-             (setelah harga), width auto jaga rasio 1:1 -> sebesar mungkin di label
-             sempit, tak terpotong terima kasih overflow:hidden. Harga tetap tampil. */
-          .ctk-small .ctk-svg svg { width: auto; height: 100%; max-width: 100%; }
+          /* Label kecil (mode kecil, w<=35mm):
+             1D barcode: render intrinsic (modulePx >=2, width:auto) biar bar tetap
+             kelipatan integer bulat & tak di-shrink lumer oleh container. Kalau
+             lebih lebar dr label -> overflow:hidden potong sisi kanan (bar/quiet
+             kiri & start/stop tetap utuh). */
+          .ctk-small .ctk-1d svg { width: auto; height: auto; }
+          /* 2D QR: isi setinggi ruang tersisa (setelah harga), width auto jaga
+             rasio 1:1 -> sebesar mungkin di label sempit. */
+          .ctk-small .ctk-2d svg { width: auto; height: 100%; max-width: 100%; }
           .ctk-bc { flex: 0 0 auto; font-size: calc(var(--ctk-h) * 0.095); font-weight: 700; color: #000; margin-top: calc(var(--ctk-h) * 0.015); }
         }
       `}</style>
