@@ -665,7 +665,7 @@ export default function ProdukPage() {
       {fotoBesar && <FotoLightbox produk={fotoBesar} onTutup={() => setFotoBesar(null)} />}
       {scanBar && (
         <BarcodeCameraModal
-          onScan={code => { update(scanBar.id, { barcode: code }); setScanBar(null) }}
+          onScan={code => { update(scanBar.id, { id: scanBar.id, barcode: code } as Partial<Produk>); setScanBar(null) }}
           onTutup={() => setScanBar(null)}
         />
       )}

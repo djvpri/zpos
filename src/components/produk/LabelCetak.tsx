@@ -152,7 +152,10 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
       let gagal = 0
       for (const p of perluBarcode) {
         const bc = generateProductBarcode(p.id)
-        const res = await update(p.id, { barcode: bc })
+        // Wajib sertakan id di body — produkUpdateSchema minta id positif (zod),
+        // tanpa id PUT /api/produk/:id kena 400 -> update() balik error -> salah
+        // dituding "offline". Lihat pola update() lain yg sertakan {id}.
+        const res = await update(p.id, { id: p.id, barcode: bc } as Partial<Produk>)
         if (res) gagal++
       }
       if (gagal > 0) {
