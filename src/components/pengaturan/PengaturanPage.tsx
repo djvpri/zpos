@@ -1,13 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText, Download, Laptop, Receipt } from 'react-bootstrap-icons'
+import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText, Download, Laptop, Receipt, Printer } from 'react-bootstrap-icons'
 import { usePengaturan } from '@/hooks/usePengaturan'
 import { DESAIN_NOTA } from '@/lib/desain-nota'
 import { NotaPreview } from './NotaPreview'
 
 // Rilis kasir diambil live dari GitHub — versi & link download selalu terbaru.
 const KASIR_REPO = 'djvpri/zpos_windows'
+
+// Driver printer untuk kasir — link Google Drive. Ganti nama saat ada info nama file.
+const DRIVER_LINK = [
+  { name: 'Driver Printer 1', url: 'https://drive.google.com/file/d/1E7ErLJjo6-eEyjs0srVKoRyHe04G_SQl/view?usp=drive_link' },
+  { name: 'Driver Printer 2', url: 'https://drive.google.com/file/d/1YtJmKIyzzZYdtuGQCxv34ZgMD2B8vboG/view?usp=drive_link' },
+]
 
 interface KasirAsset {
   name: string
@@ -236,6 +242,36 @@ export default function PengaturanPage() {
                 )}
               </div>
             )}
+          </div>
+
+          {/* Download Driver Printer */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 space-y-3">
+            <div className="flex items-center gap-2 text-gray-800">
+              <Printer size={16} className="text-indigo-500" />
+              <span className="font-medium text-sm">Download Driver Printer</span>
+            </div>
+            <p className="text-sm text-gray-400">
+              Instal driver berikut pada komputer kasir agar printer label &amp; struk terdeteksi.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {DRIVER_LINK.map((d, i) => (
+                <a
+                  key={d.url}
+                  href={d.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-2xl border border-gray-100 p-4 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors group"
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${i % 2 ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                    <Download size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-gray-800 truncate">{d.name}</div>
+                    <div className="text-xs text-gray-400 truncate">Google Drive</div>
+                  </div>
+                </a>
+              ))}
+            </div>
           </div>
 
           {error && <div className="bg-red-50 text-red-600 text-sm px-3 py-2.5 rounded-xl">{error}</div>}
