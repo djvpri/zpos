@@ -27,6 +27,10 @@ function parseUkuran(s: string | null | undefined): UkuranLabel {
 }
 
 type Mode = 'barcode' | 'nama-harga' | 'lengkap'
+// Tipe kode di label (mode yg mencetak kode): 1D barcode saja ATAU 2D QR saja,
+// tidak dua-duanya sekaligus. Default 1D (backward-compat: label tetap
+// barcode 1D utk pengguna yg tak pilih apa-apa).
+type KodeTipe = '1d' | '2d'
 
 // Preset ukuran label (mm). Barcode height dihitung proporsional thd tinggi label.
 const UKURAN_PRESET: { label: string; uk: UkuranLabel }[] = [
@@ -48,6 +52,7 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
     return awal
   })
   const [mode, setMode] = useState<Mode>('lengkap')
+  const [kodeTipe, setKodeTipe] = useState<KodeTipe>('1d')
   const [kata, setKata] = useState('') // pencarian lihat daftar produk
   const [ukuran, setUkuran] = useState<UkuranLabel>(() => {
     // Default = settingan per-toko dari DB (ukuranLabel prop). Kalau user pernah
@@ -157,27 +162,32 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
       }
     }
     setStatus('selesai')
-    // Bangun QR utk semua produk terpilih utk pendamping barcode 1D di label.
-    // QR = backup yg lebih mudah discan ketika 1D terlalu rapat di sticker kecil.
-    const qr: Record<number, string> = {}
-    await Promise.all(selectedList.map(async p => {
-      const val = p.barcode || generateProductBarcode(p.id)
-      const s = await qrToSvg(val, kecil ? 160 : 240, kecil ? 3 : 4).catch(() => '')
-      if (s) qr[p.id] = s
-    }))
-    setQrMap(qr)
+    // Bangun QR hanya kalau mode 2D dipilih. Kalau 1D, tak perlu kerja ekstra.
+    if (kodeTipe === '2d') {
+      // QR = kode 2D tunggal di label (tanpa barcode 1D).
+      const qr: Record<number, string> = {}
+      await Promise.all(selectedList.map(async p => {
+        const val = p.barcode || generateProductBarcode(p.id)
+        const s = await qrToSvg(val, kecil ? 160 : 240, kecil ? 3 : 4).catch(() => '')
+        if (s) qr[p.id] = s
+      }))
+      setQrMap(qr)
+    } else {
+      setQrMap({})
+    }
   }
 
   function buatHtml() {
     return selectedList.map(p => {
       const gunakanBarcode = mode !== 'nama-harga' && p.barcode
-      const svg = gunakanBarcode ? barcodeToSvg(p.barcode!, (kecil || mode === 'barcode') ? 70 : 45) : ''
       const tampilNama = mode !== 'barcode' && !kecil
-      const qr = qrMap[p.id] || '' // pendamping 2D — mudah discan saat 1D rapat di sticker kecil
+      const qr = kodeTipe === '2d' ? qrMap[p.id] || '' : ''
+      // Render kode sesuai tipe: 1D = barcode saja, 2D = QR saja. Tidak
+      // dua-duanya sekaligus di satu label.
       const blokBc = gunakanBarcode
-        ? `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="${qr ? 'ctk-dual' : 'ctk-svg'}">${
-            qr ? `<div class="ctk-qr">${qr}</div>` : ''
-          }<div class="ctk-svg">${svg}</div></div>`
+        ? kodeTipe === '2d'
+          ? (qr ? `<div class="ctk-svg">${qr}</div>` : `<div class="ctk-svg">${barcodeToSvg(p.barcode!, (kecil || mode === 'barcode') ? 70 : 45)}</div>`)
+          : `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg">${barcodeToSvg(p.barcode!, (kecil || mode === 'barcode') ? 70 : 45)}</div>`
         : ''
       return `
       <div class="ctk-label${kecil ? ' ctk-small' : ''}">
@@ -252,6 +262,21 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
             ))}
           </div>
 
+          {/* Tipe kode di label — hanya tampil utk mode yg mencetak kode.
+              Pilih satu: 1D barcode saja ATAU 2D QR saja, tak dua-duanya. */}
+          {(mode === 'lengkap' || mode === 'barcode') && (
+            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-2 w-fit flex-wrap">
+              <span className="px-2 text-xs font-medium text-gray-400">Kode:</span>
+              {([['1d', '1D Barcode'], ['2d', '2D QR']] as [KodeTipe, string][]).map(([t, lbl]) => (
+                <button
+                  key={t}
+                  onClick={() => setKodeTipe(t)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${kodeTipe === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+                >{lbl}</button>
+              ))}
+            </div>
+          )}
+
           {/* Pencarian produk */}
           <div className="relative mb-3">
             <input
@@ -324,7 +349,7 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
           )}
 
           <div className="text-xs text-gray-400 mt-3">
-            <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Cetak via browser dialog ke printer label. Ukuran kertas diatur lewat driver/printer (CT221B) — pastikan paper-nya label yg sesuai. Barcode auto: 13 digit → EAN-13, numerik genap → Code128, lain → CODE39. Label kini juga menyertakan <strong>QR Code</strong> (2D) di samping barcode, biar tetap bisa discan scanner/ponsel walau 1D terlalu rapat di sticker kecil.
+            <Lightbulb size={13} className="inline mr-1 -mt-0.5" />Cetak via browser dialog ke printer label. Ukuran kertas diatur lewat driver/printer (CT221B) — pastikan paper-nya label yg sesuai. Barcode auto: 13 digit → EAN-13, numerik genap → Code128, lain → CODE39. Pilih jenis kode: <strong>1D Barcode</strong> atau <strong>2D QR</strong> — satu label satu jenis kode (tak dicetak keduanya).
           </div>
         </div>
 
@@ -336,7 +361,7 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
               disabled={!selectedList.length}
               className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
             >
-              Siapkan Barcode
+              Siapkan {kodeTipe === '2d' ? 'QR' : 'Barcode'}
             </button>
           )}
           {mode === 'lengkap' && !sudahSelesai && (
@@ -345,7 +370,7 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
               disabled={!selectedList.length}
               className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
             >
-              Siapkan & Cetak (generate barcode)
+              Siapkan & Cetak (generate {kodeTipe === '2d' ? 'QR' : 'barcode'})
             </button>
           )}
           {(sudahSelesai || mode === 'nama-harga') && (
@@ -376,14 +401,6 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
           .ctk-svg { flex: 1 1 auto; min-height: 0; text-align: center; display: flex; align-items: center; justify-content: center; margin-top: calc(var(--ctk-h) * 0.02); }
           .ctk-small .ctk-svg { margin-top: calc(var(--ctk-h) * 0.07); margin-bottom: calc(var(--ctk-h) * 0.03); padding-top: calc(var(--ctk-h) * 0.07); }
           .ctk-svg svg { width: 100%; height: auto; display: block; }
-          /* QR + barcode 1D berdampingan: dua kolom fleksibel. QR (mudah discan)
-             di kiri, barcode 1D di kanan. Saat sempit, QR lebih lebar biar tetap
-             terbaca. */
-          .ctk-dual { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; gap: calc(var(--ctk-h) * 0.03); margin-top: calc(var(--ctk-h) * 0.02); }
-          .ctk-dual .ctk-qr { flex: 0 0 45%; display: flex; align-items: center; justify-content: center; }
-          .ctk-dual .ctk-qr svg { width: 100% !important; height: auto; }
-          .ctk-dual .ctk-svg { flex: 1 1 auto; margin-top: 0; }
-          .ctk-small .ctk-dual { margin-top: calc(var(--ctk-h) * 0.05); }
           .ctk-bc { flex: 0 0 auto; font-size: calc(var(--ctk-h) * 0.095); font-weight: 700; color: #000; margin-top: calc(var(--ctk-h) * 0.015); }
         }
       `}</style>
