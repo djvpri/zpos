@@ -29,9 +29,9 @@ function SsoContent() {
       .then(r => r.json())
       .then(d => {
         if (d.success) {
-          // Pakai absolute URL supaya redirect ke ZPOS sendiri,
-          // bukan ke domain Z One yang mungkin masih aktif di browser
-          window.location.replace('https://zpos.zomet.my.id' + (d.redirect || '/app'))
+          // Pakai origin aktif supaya redirect ke ZPOS sendiri (domain yg
+          // sedang melayani app, mis. z1pos.zomet.my.id), bukan absolut lama
+          window.location.replace(window.location.origin + (d.redirect || '/app'))
         } else {
           setStatus('error')
           setMsg(d.error || 'Login SSO gagal')
