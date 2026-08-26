@@ -56,17 +56,21 @@ export function isInternalBarcode(bc?: string | null): boolean {
 }
 
 // Render barcode sebagai inline SVG.
-// Nilai 13-digit numerik → EAN-13 (standar retail, padat & narrow bar lebih
-// tebal di label sempit → mudah terbaca scanner). Selain itu (barcode
-// non-13) → fallback CODE39 (bar lebih renggang utk data pendek/alfanumerik).
+// Kebijakan simbologi (agar terbaca label kecil & scanner 1D):
+//  - 13 digit numerik REAL kemasan (bukan internal) -> EAN-13 (wajib retail).
+//  - 13 digit numerik INTERNAL (prefix '2' + Luhn/EAN valid) -> Code 128-B,
+//    karena bar lebih tebal sedigit daripada EAN-13 di lebar label yg sama
+//    -> scanner 1D tetap terbaca di label KECIL (masalah EAN-13 label kecil).
+//  - Numerik genap selain 13 digit (mis. 12 digit) -> Code 128-C (paling padat).
+//  - Lainnya (alfanumerik / ganjil non-13) -> Code 128-B (ganti dr CODE39 yang
+//    bar-nya lebih tipis utk data panjang di label sempit).
 export function barcodeToSvg(text: string, height = 40): string {
   const digits = text.replace(/\D/g, '')
-  if (digits.length === 13) return ean13Svg(digits, height)
-  // Numerik genap (mis. 12 digit produk) → Code 128-C: jauh lebih padat dari
-  // CODE39 → bar lebih tebal di lebar label yg sama → tahan pudar & terbaca
-  // scanner laser. Non-numerik / panjang ganjil → CODE39.
-  if (digits.length > 0 && digits.length % 2 === 0) return code128Svg(digits, height)
-  return code39Svg(text, height)
+  // 13 digit & bukan internal -> EAN-13 retail (tetap, tak boleh diubah).
+  if (digits.length === 13 && !isInternalBarcode(text)) return ean13Svg(digits, height)
+  // Internal (13 digit prefix '2') ataupun teks lain -> Code 128-B.
+  if (digits.length > 0 && digits.length % 2 === 0 && digits.length !== 13) return code128CSvg(digits, height)
+  return code128BSvg(text, height)
 }
 
 // --- CODE39 (fallback utk barcode selain 13-digit numerik) ---
@@ -93,10 +97,13 @@ function code39Svg(text: string, height: number): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}">${rects}</svg>`
 }
 
-// --- Code 128 (fallback utk barcode numerik genap non-13) ---
+// --- Code 128 (fallback utk barcode numerik genap non-13 -> C; internal/alfanumerik -> B) ---
 // Code 128-C: tiap 2 digit = 1 simbol (11 modul), jauh lebih padat dari
 // CODE39 (9 modul per digit) → untuk 12 digit, bar ~2x lebih tebal di lebar
 // label yang sama → scanner laser tetap terbaca walau kertas agak pudar.
+// Code 128-B: tiap 1 karakter = 1 simbol (nilai ASCII-32), bisa alfanumerik
+// & panjang ganjil → dipakai label kecil utk barcode internal 13 digit & teks,
+// karena bar lebih tebal sedigit dibanding EAN-13 / CODE39.
 const C128: Record<number, string> = {
   0:'212222',1:'222122',2:'222221',3:'121223',4:'121322',5:'131222',6:'122213',7:'122312',8:'132212',9:'221213',
   10:'221312',11:'231212',12:'112232',13:'122132',14:'122231',15:'113222',16:'123122',17:'123221',18:'223211',19:'221132',
@@ -112,17 +119,16 @@ const C128: Record<number, string> = {
 }
 const C128_QUIET = 10
 
-function code128Svg(digits: string, height: number): string {
-  const vals: number[] = [105] // Start Code C
-  for (let i = 0; i < digits.length; i += 2) vals.push(parseInt(digits.slice(i, i + 2), 10))
-  let sum = 105
-  for (let i = 1; i < vals.length; i++) sum += vals[i] * i
-  vals.push(sum % 103)
-  vals.push(106) // stop
-
+// Encode daftar nilai simbol -> SVG. start=104 (B) atau 105 (C). Hitung check
+// digit (weighted sum dr start), append stop 106.
+function code128SvgFromValues(vals: number[], start: number, height: number): string {
+  let sum = start
+  for (let i = 0; i < vals.length; i++) sum += vals[i] * (i + 1)
+  const all = [start, ...vals, sum % 103, 106]
   let bits = ''
-  for (const v of vals) bits += C128[v]
-  const w = C128_QUIET * 2 + bits.length
+  let totalModul = 0
+  for (const v of all) { const p = C128[v]; bits += p; totalModul += [...p].reduce((a, d) => a + Number(d), 0) }
+  const w = C128_QUIET * 2 + totalModul
   let rects = ''
   let x = C128_QUIET
   let drawing = true
@@ -133,6 +139,22 @@ function code128Svg(digits: string, height: number): string {
     drawing = !drawing
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}">${rects}</svg>`
+}
+
+function code128CSvg(digits: string, height: number): string {
+  const vals: number[] = []
+  for (let i = 0; i < digits.length; i += 2) vals.push(parseInt(digits.slice(i, i + 2), 10))
+  return code128SvgFromValues(vals, 105, height) // Start Code C
+}
+
+// Code 128-B: tiap char -> nilai (ASCII - 32), range 0..95. Luar range -> '?' (63).
+function code128BSvg(text: string, height: number): string {
+  const vals: number[] = []
+  for (const ch of text) {
+    const c = ch.codePointAt(0) || 32
+    vals.push(c >= 32 && c <= 127 ? c - 32 : 63)
+  }
+  return code128SvgFromValues(vals, 104, height) // Start Code B
 }
 
 // --- EAN-13 (13 digit) ---
