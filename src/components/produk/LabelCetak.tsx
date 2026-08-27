@@ -189,8 +189,8 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
       // dua-duanya sekaligus di satu label.
       const blokBc = gunakanBarcode
         ? kodeTipe === '2d'
-          ? (qr ? `<div class="ctk-svg ctk-2d">${qr}</div>` : `<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, kecil ? 10 : 18, kecil ? 0.25 : 0.25)}</div>`)
-          : `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, kecil ? 10 : 18, kecil ? 0.25 : 0.25)}</div>`
+          ? (qr ? `<div class="ctk-svg ctk-2d">${qr}</div>` : `<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, kecil ? 8 : 14, kecil ? 0.15 : 0.2)}</div>`)
+          : `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, kecil ? 8 : 14, kecil ? 0.15 : 0.2)}</div>`
         : ''
       return `
       <div class="ctk-label${kecil ? ' ctk-small' : ''}">
@@ -400,7 +400,8 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
           .ctk-label { display: flex; flex-direction: column; justify-content: center; width: var(--ctk-w, 50mm); height: var(--ctk-h, 30mm); padding: calc(var(--ctk-h) * 0.02) calc(var(--ctk-w) * 0.04); box-sizing: border-box; text-align: center; font-family: system-ui, Arial, sans-serif; overflow: hidden; page-break-inside: avoid; break-inside: avoid; }
           .ctk-nama { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; font-size: calc(var(--ctk-h) * 0.085); font-weight: 700; color: #333; overflow-wrap: break-word; line-height: 1.1; overflow: hidden; min-height: 0; }
           .ctk-harga { flex: 0 0 auto; font-size: calc(var(--ctk-h) * 0.17); font-weight: 800; color: #000; line-height: 1.2; }
-          .ctk-small .ctk-harga { margin-bottom: calc(var(--ctk-h) * 0.01); font-size: calc(var(--ctk-h) * 0.13); line-height: 1.0; }
+          .ctk-small .ctk-nama { font-size: calc(var(--ctk-h) * 0.07); font-weight: 400; line-height: 1.0; }
+          .ctk-small .ctk-harga { margin-bottom: calc(var(--ctk-h) * 0.01); font-size: calc(var(--ctk-h) * 0.11); font-weight: 400; line-height: 1.0; }
           .ctk-svg { flex: 1 1 auto; min-height: 0; text-align: center; display: flex; align-items: center; justify-content: center; margin-top: calc(var(--ctk-h) * 0.02); }
           .ctk-small .ctk-svg { margin-top: calc(var(--ctk-h) * 0.01); margin-bottom: calc(var(--ctk-h) * 0.01); padding-top: 0; }
           .ctk-svg svg { width: 100%; height: auto; display: block; }
