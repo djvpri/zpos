@@ -97,6 +97,78 @@ export function barcodeToSvg(text: string, heightMm = 12, modulMm = 0.25): strin
   return code128BSvg(text, heightMm, modulMm)
 }
 
+// --- Bitmap resolusi-tinggi utk PRINT (*DPI-agnostik*, ≥ opsional) -------------
+// App komersial tak boleh hardcode DPI printer (203/300/600). SVG mm murni bisa
+// jatuh di frakcional dot -> buram saat print thermal (bar/gap 1-dot nyatu).
+// Solusi: render barcode ke <canvas> hitam-putih dgn RESOLUSI TINGGI tetap
+// (modulPx besar), lalu pasang sbg <img> dgn ukuran fisik mm + image-rendering:
+// pixelated. Browser print men-downsample dari resolusi tinggi -> tiap bar jatuh
+// pas di dot grid printer apa pun -> solid & tajam. Hanya tersedia di browser
+// (document); SSR/prerender fallback ke SVG vektor (barcodeToSvg).
+export function barcodeToPngDataUrl(text: string, heightMm = 8, modulMm = 0.2): string {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') return ''
+  const digits = text.replace(/\D/g, '')
+  const MOD = 8 // px per modul pada bitmap (resolusi tinggi; downsample utk print)
+  const runs: Array<[number, number]> = [] // [xModul, widthModul] bar hitam
+  let totalModul: number
+  let quiet: number
+  if (digits.length === 13 && !isInternalBarcode(text)) {
+    const first = digits[0]
+    const parity = EAN_PARITY[first] || 'LLLLLL'
+    const left = digits.slice(1, 7).split('').map((d, i) => (parity[i] === 'L' ? EAN_L[d] : EAN_G[d])).join('')
+    const right = digits.slice(7, 13).split('').map(d => EAN_R[d]).join('')
+    const stream = `101${left}01010${right}101`
+    quiet = 9
+    totalModul = stream.length + quiet * 2
+    let x = 0
+    let i = 0
+    while (i < stream.length) {
+      if (stream[i] === '1') {
+        let w = 0
+        while (i < stream.length && stream[i] === '1') { i++; w++ }
+        runs.push([x, w]); x += w
+      } else { i++; x++ }
+    }
+  } else if (digits.length > 0 && digits.length % 2 === 0 && digits.length !== 13) {
+    const vals: number[] = []
+    for (let i = 0; i < digits.length; i += 2) vals.push(parseInt(digits.slice(i, i + 2), 10))
+    const { bits, totalModul: tm } = code128Encoded(vals, 105)
+    totalModul = tm; quiet = C128_QUIET
+    let x = 0
+    let drawing = true
+    for (const ch of bits) {
+      const w = Number(ch)
+      if (drawing) runs.push([x, w])
+      x += w; drawing = !drawing
+    }
+  } else {
+    const vals: number[] = []
+    for (const ch of text) { const c = ch.codePointAt(0) || 32; vals.push(c >= 32 && c <= 127 ? c - 32 : 63) }
+    const { bits, totalModul: tm } = code128Encoded(vals, 104)
+    totalModul = tm; quiet = C128_QUIET
+    let x = 0
+    let drawing = true
+    for (const ch of bits) { const w = Number(ch); if (drawing) runs.push([x, w]); x += w; drawing = !drawing }
+  }
+
+  const W = (quiet * 2 + totalModul) * MOD
+  const H = Math.max(8, Math.round(heightMm / 0.125)) // tinggi dlm dot@203 utk rasio (sbtr)
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = Math.max(24, H) // cukup tinggi utk bar solid
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return ''
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.fillStyle = '#000'
+  for (const [x, w] of runs) ctx.fillRect(quiet * MOD + x * MOD, 0, w * MOD, canvas.height)
+  const url = canvas.toDataURL('image/png')
+  // <img> lebar fisik mm (agar tampil pas di label), pixelated biar downsample tegas
+  const wMm = ((quiet * 2 + totalModul) * modulMm).toFixed(2)
+  return `<img src="${url}" alt="" style="width:${wMm}mm;height:${heightMm}mm;image-rendering:pixelated;vertical-align:top"/>`
+}
+
+
+
 // --- CODE39 (fallback utk barcode selain 13-digit numerik) ---
 function code39Svg(text: string, height: number): string {
   const cleaned = normalize(text)
@@ -149,12 +221,7 @@ const C128_QUIET = 10
 // tak meng-squash (px-vs-mm mismatch yg bikin bar buram); preview layar & print
 // pakai ukuran mm yang sama -> KONSISTEN. height dlm mm.
 function code128SvgFromValues(vals: number[], start: number, heightMm: number, modulMm = 0.25): string {
-  let sum = start
-  for (let i = 0; i < vals.length; i++) sum += vals[i] * (i + 1)
-  const all = [start, ...vals, sum % 103, 106]
-  let bits = ''
-  let totalModul = 0
-  for (const v of all) { const p = C128[v]; bits += p; totalModul += Array.from(p).reduce((a, d) => a + Number(d), 0) }
+  const { bits, totalModul } = code128Encoded(vals, start)
   const wMm = (C128_QUIET * 2 + totalModul) * modulMm
   let rects = ''
   let xMm = C128_QUIET * modulMm
@@ -166,6 +233,22 @@ function code128SvgFromValues(vals: number[], start: number, heightMm: number, m
     drawing = !drawing
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${wMm}mm" height="${heightMm}mm" viewBox="0 0 ${wMm} ${heightMm}">${rects}</svg>`
+}
+
+// Code 128 -> koncatenasi bar/gap (bits, masuk mulai bar) + total modul (tanpa quiet).
+// Dipakai sbg sumber pola tunggal utk : (1) SVG vektor, (2) bitmap PNG print.
+function code128Encoded(vals: number[], start: number): { bits: string; totalModul: number } {
+  let sum = start
+  for (let i = 0; i < vals.length; i++) sum += vals[i] * (i + 1)
+  const all = [start, ...vals, sum % 103, 106]
+  let bits = ''
+  let totalModul = 0
+  for (const v of all) {
+    const p = C128[v]
+    bits += p
+    totalModul += Array.from(p).reduce((a, d) => a + Number(d), 0)
+  }
+  return { bits, totalModul }
 }
 
 function code128CSvg(digits: string, heightMm: number, modulMm = 0.25): string {

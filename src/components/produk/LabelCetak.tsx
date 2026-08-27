@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { XLg, Printer, ArrowRepeat, CheckCircleFill, ExclamationCircle, Tag, Lightbulb } from 'react-bootstrap-icons'
-import { barcodeToSvg, generateProductBarcode } from '@/lib/barcode-code39'
+import { barcodeToSvg, barcodeToPngDataUrl, generateProductBarcode } from '@/lib/barcode-code39'
 import { qrToSvg } from '@/lib/qrcode'
 import { Produk } from '@/types'
 import { fmt } from '@/lib/utils'
@@ -189,8 +189,8 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
       // dua-duanya sekaligus di satu label.
       const blokBc = gunakanBarcode
         ? kodeTipe === '2d'
-          ? (qr ? `<div class="ctk-svg ctk-2d">${qr}</div>` : `<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, kecil ? 8 : 14, kecil ? 0.15 : 0.2)}</div>`)
-          : `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, kecil ? 8 : 14, kecil ? 0.15 : 0.2)}</div>`
+          ? (qr ? `<div class="ctk-svg ctk-2d">${qr}</div>` : `<div class="ctk-svg ctk-1d">${barcodeToPngDataUrl(p.barcode!, kecil ? 8 : 14, kecil ? 0.15 : 0.2) || barcodeToSvg(p.barcode!, kecil ? 8 : 14, kecil ? 0.15 : 0.2)}</div>`)
+          : `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg ctk-1d">${barcodeToPngDataUrl(p.barcode!, kecil ? 8 : 14, kecil ? 0.15 : 0.2) || barcodeToSvg(p.barcode!, kecil ? 8 : 14, kecil ? 0.15 : 0.2)}</div>`
         : ''
       return `
       <div class="ctk-label${kecil ? ' ctk-small' : ''}">
