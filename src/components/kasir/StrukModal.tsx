@@ -161,8 +161,13 @@ export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
           <div className={`border-b ${tpl.dividerStyle === 'solid' ? 'border-solid' : 'border-dashed'} border-gray-300 mb-3`}>
             {items?.map((it, i) => (
               <div key={i} className="mb-1">
-                <div className="truncate">{it.nama_produk} x{it.qty}</div>
-                <div className="text-right whitespace-nowrap">{fmt(it.harga * it.qty)}</div>
+                <div className="flex justify-between">
+                  <span className="truncate">{it.nama_produk} x{it.qty}</span>
+                  <span className="text-right whitespace-nowrap">{fmt(it.harga * it.qty)}</span>
+                </div>
+                {tpl.showHargaSatuan && (
+                  <div className="text-[10px] text-gray-500">@{fmt(it.harga)}</div>
+                )}
               </div>
             ))}
           </div>

@@ -92,6 +92,9 @@ export function buildEscPos(s: StrukData, desain: string = 'klasik'): string {
     const total = it.harga * it.qty
     const namaLine = `${it.nama} x${it.qty}`
     cmd += namaLine + LF
+    if (tpl.showHargaSatuan) {
+      cmd += twoCol('', `@Rp${it.harga.toLocaleString('id-ID')}`)
+    }
     cmd += twoCol('', `Rp${total.toLocaleString('id-ID')}`)
   }
   cmd += line()

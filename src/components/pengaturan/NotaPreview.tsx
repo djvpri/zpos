@@ -69,9 +69,14 @@ export function NotaPreview({ desain }: { desain: string }) {
 
         <div className="space-y-1">
           {SAMPLE.items.map(it => (
-            <div key={it.nama} className="flex justify-between gap-1">
-              <span className="truncate">{it.nama}{it.qty > 1 ? <span className="text-neutral-400"> x{it.qty}</span> : ''}</span>
-              <span className="flex-shrink-0">{rp(it.harga * it.qty)}</span>
+            <div key={it.nama} className="space-y-px">
+              <div className="flex justify-between gap-1">
+                <span className="truncate">{it.nama}{it.qty > 1 ? <span className="text-neutral-400"> x{it.qty}</span> : ''}</span>
+                <span className="flex-shrink-0">{rp(it.harga * it.qty)}</span>
+              </div>
+              {tpl.showHargaSatuan && (
+                <div className="text-neutral-400">@{rp(it.harga)}</div>
+              )}
             </div>
           ))}
         </div>

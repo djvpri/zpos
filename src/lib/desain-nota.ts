@@ -18,6 +18,7 @@ export interface DesainNota {
   totalPertama: boolean             // TOTAL di baris pertama summary (sbrn ringkasan)
   dividerStyle: 'dashed' | 'solid'  // 'dashed' → garis putus-putus, 'solid' → garis penuh
   showKsr: boolean                  // tampilkan baris Kasir
+  showHargaSatuan: boolean          // tampilkan "@<harga>/item" di bawah nama barang
 }
 
 export const DESAIN_NOTA: DesainNota[] = [
@@ -29,6 +30,17 @@ export const DESAIN_NOTA: DesainNota[] = [
     totalPertama: false, // urutan: Subtotal, Diskon, TOTAL, Bayar, Kembalian
     dividerStyle: 'dashed',
     showKsr: true,
+    showHargaSatuan: false,
+  },
+  {
+    id: 'klasik2',
+    label: 'Klasik 2',
+    footerPowered: false,
+    infoSebelumItems: true,
+    totalPertama: false, // sama klasik: Subtotal, Diskon, TOTAL, Bayar, Kembalian
+    dividerStyle: 'dashed',
+    showKsr: true,
+    showHargaSatuan: true, // beda: harga satuan "@" muncul di bawah tiap nama barang
   },
   {
     id: 'modern',
@@ -38,6 +50,7 @@ export const DESAIN_NOTA: DesainNota[] = [
     totalPertama: true, // urutan: TOTAL (besar), lalu Bayar, Kembalian, Subtotal, Diskon
     dividerStyle: 'solid',
     showKsr: false,
+    showHargaSatuan: false,
   },
 ]
 
