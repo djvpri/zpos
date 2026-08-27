@@ -76,21 +76,22 @@ export function isInternalBarcode(bc?: string | null): boolean {
   return false
 }
 
-// Render barcode sebagai inline SVG.
+// Render barcode sebagai inline SVG, dimensi FISIK mm (konsisten preview & print).
 // Kebijakan simbologi (agar terbaca label kecil & scanner 1D):
 //  - 13 digit numerik REAL kemasan (bukan internal) -> EAN-13 (wajib retail).
 //  - Barcode INTERNAL v2 (8 digit, prefix '2' + 6 id + check) -> Code 128-C
-//    (padat, bar tebal, muat label kecil 25mm).
+//    (padat, modulMu cukup utk label kecil 25mm).
 //  - Barcode INTERNAL v1 lama (13 digit prefix '2') -> Code 128-B (ganjil).
 //  - Numerik genap selain di atas (mis. 12 digit) -> Code 128-C.
 //  - Lainnya (alfanumerik / ganjil non-13) -> Code 128-B.
-export function barcodeToSvg(text: string, height = 40, modulePx = 1): string {
+// modulMm = lebar modul terkecil dlm mm (default 0.2). heightMm dlm mm.
+export function barcodeToSvg(text: string, heightMm = 12, modulMm = 0.2): string {
   const digits = text.replace(/\D/g, '')
-  // 13 digit & bukan internal -> EAN-13 retail (tetap, tak boleh diubah).
-  if (digits.length === 13 && !isInternalBarcode(text)) return ean13Svg(digits, height)
-  // Internal (13 digit prefix '2') ataupun teks lain -> Code 128-B.
-  if (digits.length > 0 && digits.length % 2 === 0 && digits.length !== 13) return code128CSvg(digits, height, modulePx)
-  return code128BSvg(text, height, modulePx)
+  // 13 digit & bukan internal -> EAN-13 retail
+  if (digits.length === 13 && !isInternalBarcode(text)) return ean13Svg(digits, heightMm, modulMm)
+  // Internal v1 (13 digit) & lainnya (alfanumerik/ganjil) -> Code 128-B
+  if (digits.length > 0 && digits.length % 2 === 0 && digits.length !== 13) return code128CSvg(digits, heightMm, modulMm)
+  return code128BSvg(text, heightMm, modulMm)
 }
 
 // --- CODE39 (fallback utk barcode selain 13-digit numerik) ---
@@ -141,43 +142,43 @@ const C128_QUIET = 10
 
 // Encode daftar nilai simbol -> SVG. start=104 (B) atau 105 (C). Hitung check
 // digit (weighted sum dr start), append stop 106.
-// modulePx = lebar 1 modul dalam px (>=1). Dipakai biar bar TIDAK diskala bebas
-// oleh CSS (yg bikin printer raster-ngeblast rounding -> bar tipis tak konsisten
-// & buram). Modul px bulat -> tiap bar selalu kelipatan integer -> tajam.
-function code128SvgFromValues(vals: number[], start: number, height: number, modulePx = 1): string {
+// Output dalam satuan FISIK mm (modulMm). Dipakai biar print 1:1 — browser print
+// tak meng-squash (px-vs-mm mismatch yg bikin bar buram); preview layar & print
+// pakai ukuran mm yang sama -> KONSISTEN. height dlm mm.
+function code128SvgFromValues(vals: number[], start: number, heightMm: number, modulMm = 0.2): string {
   let sum = start
   for (let i = 0; i < vals.length; i++) sum += vals[i] * (i + 1)
   const all = [start, ...vals, sum % 103, 106]
   let bits = ''
   let totalModul = 0
   for (const v of all) { const p = C128[v]; bits += p; totalModul += Array.from(p).reduce((a, d) => a + Number(d), 0) }
-  const w = (C128_QUIET * 2 + totalModul) * modulePx
+  const wMm = (C128_QUIET * 2 + totalModul) * modulMm
   let rects = ''
-  let x = C128_QUIET * modulePx
+  let xMm = C128_QUIET * modulMm
   let drawing = true
   for (const ch of bits) {
-    const wdt = Number(ch) * modulePx
-    if (drawing) rects += `<rect x="${x}" y="0" width="${wdt}" height="${height}" fill="#000"/>`
-    x += wdt
+    const wdtMm = Number(ch) * modulMm
+    if (drawing) rects += `<rect x="${xMm}" y="0" width="${wdtMm}" height="${heightMm}" fill="#000"/>`
+    xMm += wdtMm
     drawing = !drawing
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}">${rects}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${wMm}mm" height="${heightMm}mm" viewBox="0 0 ${wMm} ${heightMm}">${rects}</svg>`
 }
 
-function code128CSvg(digits: string, height: number, modulePx = 1): string {
+function code128CSvg(digits: string, heightMm: number, modulMm = 0.2): string {
   const vals: number[] = []
   for (let i = 0; i < digits.length; i += 2) vals.push(parseInt(digits.slice(i, i + 2), 10))
-  return code128SvgFromValues(vals, 105, height, modulePx) // Start Code C
+  return code128SvgFromValues(vals, 105, heightMm, modulMm) // Start Code C
 }
 
 // Code 128-B: tiap char -> nilai (ASCII - 32), range 0..95. Luar range -> '?' (63).
-function code128BSvg(text: string, height: number, modulePx = 1): string {
+function code128BSvg(text: string, heightMm: number, modulMm = 0.2): string {
   const vals: number[] = []
   for (const ch of text) {
     const c = ch.codePointAt(0) || 32
     vals.push(c >= 32 && c <= 127 ? c - 32 : 63)
   }
-  return code128SvgFromValues(vals, 104, height, modulePx) // Start Code B
+  return code128SvgFromValues(vals, 104, heightMm, modulMm) // Start Code B
 }
 
 // --- EAN-13 (13 digit) ---
@@ -192,7 +193,7 @@ const EAN_PARITY: Record<string, string> = {
   '5':'LGGLLG','6':'LGGGLL','7':'LGLGLG','8':'LGLGGL','9':'LGGLGL',
 }
 
-function ean13Svg(digits: string, height: number): string {
+function ean13Svg(digits: string, heightMm: number, modulMm = 0.2): string {
   const first = digits[0]
   const parity = EAN_PARITY[first] || 'LLLLLL'
   // strings biarkan berupa parsial — pakai indexes
@@ -203,20 +204,22 @@ function ean13Svg(digits: string, height: number): string {
   const right = digits.slice(7, 13).split('').map(d => EAN_R[d]).join('')
   const stream = `101${left}01010${right}101`
   const QUIET = 9 // ruang tenang minimum EAN
-  const w = stream.length + QUIET * 2
+  const totalModul = stream.length + QUIET * 2
+  const wMm = totalModul * modulMm
   let rects = ''
-  let x = QUIET
+  let xMm = QUIET * modulMm
   let run = 0
+  const w = stream.length + QUIET * 2 // unit modul (viewBox murni)
   for (let i = 0; i <= stream.length; i++) {
     if (i < stream.length && stream[i] === '1') { run++; continue }
     if (run > 0) {
-      rects += `<rect x="${x}" y="0" width="${run}" height="${height}" fill="#000"/>`
-      x += run
+      rects += `<rect x="${xMm}" y="0" width="${run * modulMm}" height="${heightMm}" fill="#000"/>`
+      xMm += run * modulMm
       run = 0
     }
-    if (i < stream.length) x++ // gap '0'
+    if (i < stream.length) xMm += modulMm // gap '0'
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}">${rects}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${wMm}mm" height="${heightMm}mm" viewBox="0 0 ${totalModul} ${stream.length}">${rects}</svg>`
 }
 
 // Pastikan teks bisa di-encode CODE39: huruf besar, digit, dan -.$/+% & spasi.
