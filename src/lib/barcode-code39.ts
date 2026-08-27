@@ -209,7 +209,6 @@ function ean13Svg(digits: string, heightMm: number, modulMm = 0.2): string {
   let rects = ''
   let xMm = QUIET * modulMm
   let run = 0
-  const w = stream.length + QUIET * 2 // unit modul (viewBox murni)
   for (let i = 0; i <= stream.length; i++) {
     if (i < stream.length && stream[i] === '1') { run++; continue }
     if (run > 0) {
