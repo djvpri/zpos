@@ -26,13 +26,13 @@ const QUIET_BARS = 10 // ruang tenang di kanan-kiri (dalam unit)
 
 // Bangun angka barcode internal unik untuk produk minimarket tanpa barcode.
 // Bangun barcode internal unik utk produk tanpa barcode kemasan.
-// Format BARU (v2, 8 digit): prefix '2' + id di-pad jadi 6 digit + 1 check digit
-// EAN-8. Total 8 digit numerik -> dicetak Code 128-C (bar tebal, muat label
-// kecil 25mm dengan X-dimension >=0.25mm -> terbaca scanner 1D).
-// Mengganti format LAMA (13 digit prefix '2' + 11 digit id + check) yang
-// TIDAK muat label kecil (13 digit butuh ~33mm utk X-dim 0.25mm).
+// Format v3 (6 digit): prefix '2' + id di-pad jadi 4 digit + 1 check digit EAN.
+// Total 6 digit numerik GENAP -> dicetak Code 128-C (2 digit/simbol) = cuma
+// 3 pasang data + start/check/stop ≈ 7 bar -> bar paling sedikit & lebar modul
+// 0.25mm (2-3 dot solid) agar TERBACA scanner di label kecil 25mm.
+// (v2 8-digit & v1 13-digit masih dikenali isInternalBarcode utk produk lama.)
 export function generateProductBarcode(id: number): string {
-  const base = `2${String(Math.abs(id)).padStart(6, '0').slice(0, 6)}`
+  const base = `2${String(Math.abs(id)).padStart(4, '0').slice(0, 4)}`
   const check = eanCheckDigit(base)
   return base + String(check)
 }
@@ -62,13 +62,16 @@ export function ean13CheckDigit(digits12: string): number {
 }
 
 // true kalau barcode ini DIBUAT internal ZPos (bukan barcode kemasan asli).
-// Mengenal DUA format:
-//  - v2: '2' + 6 digit id + 1 check EAN (8 digit, Code 128-C)
+// Mengenal TIGA format:
+//  - v3: '2' + 4 digit id + 1 check EAN (6 digit, Code 128-C) — format terbaru
+//  - v2: '2' + 6 digit id + 1 check EAN (8 digit, Code 128-C) — produk yg baru
+//       dibuat antara v2..v3 (masih dikenali, tak tercetak ulang otomatis)
 //  - v1: '2' + 11 digit id + 1 check EAN (13 digit) utk produk lama yg uda tercetak
-// Dipakai UI utk hint & agar barcode lama (13 digit) tetap dikenali & di-render
-// 128-B, tanpa perlu cetak ulang otomatis.
+// Dipakai UI utk hint dan agar barcode lama tetap dikenali/di-render.
 export function isInternalBarcode(bc?: string | null): boolean {
   if (!bc) return false
+  // v3 (6 digit)
+  if (/^2\d{5}$/.test(bc)) return Number(eanCheckDigit(bc.slice(0, 5))) === Number(bc[5])
   // v2 (8 digit)
   if (/^2\d{7}$/.test(bc)) return Number(eanCheckDigit(bc.slice(0, 7))) === Number(bc[7])
   // v1 (13 digit)
@@ -79,13 +82,13 @@ export function isInternalBarcode(bc?: string | null): boolean {
 // Render barcode sebagai inline SVG, dimensi FISIK mm (konsisten preview & print).
 // Kebijakan simbologi (agar terbaca label kecil & scanner 1D):
 //  - 13 digit numerik REAL kemasan (bukan internal) -> EAN-13 (wajib retail).
-//  - Barcode INTERNAL v2 (8 digit, prefix '2' + 6 id + check) -> Code 128-C
-//    (padat, modulMu cukup utk label kecil 25mm).
-//  - Barcode INTERNAL v1 lama (13 digit prefix '2') -> Code 128-B (ganjil).
+//  - Barcode INTERNAL v3 (6 digit, prefix '2' + 4 id + check) -> Code 128-C
+//    (2 digit/simbol = 7 bar, modulMu utk label kecil 25mm).
+//  - Barcode INTERNAL v2/v1 lama (8/13 digit prefix '2') -> 128-C/128-B.
 //  - Numerik genap selain di atas (mis. 12 digit) -> Code 128-C.
 //  - Lainnya (alfanumerik / ganjil non-13) -> Code 128-B.
-// modulMm = lebar modul terkecil dlm mm (default 0.2). heightMm dlm mm.
-export function barcodeToSvg(text: string, heightMm = 12, modulMm = 0.2): string {
+// modulMm = lebar modul terkecil dlm mm (default 0.25). heightMm dlm mm.
+export function barcodeToSvg(text: string, heightMm = 12, modulMm = 0.25): string {
   const digits = text.replace(/\D/g, '')
   // 13 digit & bukan internal -> EAN-13 retail
   if (digits.length === 13 && !isInternalBarcode(text)) return ean13Svg(digits, heightMm, modulMm)
@@ -145,7 +148,7 @@ const C128_QUIET = 10
 // Output dalam satuan FISIK mm (modulMm). Dipakai biar print 1:1 — browser print
 // tak meng-squash (px-vs-mm mismatch yg bikin bar buram); preview layar & print
 // pakai ukuran mm yang sama -> KONSISTEN. height dlm mm.
-function code128SvgFromValues(vals: number[], start: number, heightMm: number, modulMm = 0.2): string {
+function code128SvgFromValues(vals: number[], start: number, heightMm: number, modulMm = 0.25): string {
   let sum = start
   for (let i = 0; i < vals.length; i++) sum += vals[i] * (i + 1)
   const all = [start, ...vals, sum % 103, 106]
@@ -165,14 +168,14 @@ function code128SvgFromValues(vals: number[], start: number, heightMm: number, m
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${wMm}mm" height="${heightMm}mm" viewBox="0 0 ${wMm} ${heightMm}">${rects}</svg>`
 }
 
-function code128CSvg(digits: string, heightMm: number, modulMm = 0.2): string {
+function code128CSvg(digits: string, heightMm: number, modulMm = 0.25): string {
   const vals: number[] = []
   for (let i = 0; i < digits.length; i += 2) vals.push(parseInt(digits.slice(i, i + 2), 10))
   return code128SvgFromValues(vals, 105, heightMm, modulMm) // Start Code C
 }
 
 // Code 128-B: tiap char -> nilai (ASCII - 32), range 0..95. Luar range -> '?' (63).
-function code128BSvg(text: string, heightMm: number, modulMm = 0.2): string {
+function code128BSvg(text: string, heightMm: number, modulMm = 0.25): string {
   const vals: number[] = []
   for (const ch of text) {
     const c = ch.codePointAt(0) || 32
@@ -193,7 +196,7 @@ const EAN_PARITY: Record<string, string> = {
   '5':'LGGLLG','6':'LGGGLL','7':'LGLGLG','8':'LGLGGL','9':'LGGLGL',
 }
 
-function ean13Svg(digits: string, heightMm: number, modulMm = 0.2): string {
+function ean13Svg(digits: string, heightMm: number, modulMm = 0.25): string {
   const first = digits[0]
   const parity = EAN_PARITY[first] || 'LLLLLL'
   // strings biarkan berupa parsial — pakai indexes

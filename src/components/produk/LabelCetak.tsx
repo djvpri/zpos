@@ -189,8 +189,8 @@ export default function LabelCetak({ produk, onTutup, update, ukuranLabel, onSim
       // dua-duanya sekaligus di satu label.
       const blokBc = gunakanBarcode
         ? kodeTipe === '2d'
-          ? (qr ? `<div class="ctk-svg ctk-2d">${qr}</div>` : `<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, kecil ? 10 : 18, kecil ? 0.2 : 0.25)}</div>`)
-          : `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, kecil ? 10 : 18, kecil ? 0.2 : 0.25)}</div>`
+          ? (qr ? `<div class="ctk-svg ctk-2d">${qr}</div>` : `<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, kecil ? 10 : 18, kecil ? 0.25 : 0.25)}</div>`)
+          : `${kecil ? '' : `<div class="ctk-bc">${escapeHtml(p.barcode!)}</div>`}<div class="ctk-svg ctk-1d">${barcodeToSvg(p.barcode!, kecil ? 10 : 18, kecil ? 0.25 : 0.25)}</div>`
         : ''
       return `
       <div class="ctk-label${kecil ? ' ctk-small' : ''}">
