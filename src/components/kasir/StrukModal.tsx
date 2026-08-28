@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Transaksi } from '@/types'
+import { Transaksi, DigitalResult } from '@/types'
 import { fmt, fmtDateTime } from '@/lib/utils'
 import { Printer, Share, Bluetooth, CheckLg } from 'react-bootstrap-icons'
 import { buildEscPos, printViaBluetooth, isBluetoothSupported, selectPrinter, getSavedPrinterName, PrintStatus, StrukData } from '@/lib/thermal-print'
@@ -34,7 +34,14 @@ export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
   })
 
   if (!transaksi) return null
-  const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir, member_nama, created_at, dibatalkan } = transaksi
+  const { items, subtotal, diskon, pajak, pajak_persen, total, bayar, kembali, metode_bayar, no_transaksi, kasir, member_nama, created_at, dibatalkan, digital } = transaksi
+  // Item digital utk struk: grup by produk_id, hanya utk transaksi baru yg server
+  // return sn/digital status. Reprint nota lama (tanpa `digital`) tetap tampil biasa.
+  const digitalByProduk: Record<number, DigitalResult[]> = {}
+  for (const d of digital ?? []) {
+    const pid = d.produk_id ?? -1
+    ;(digitalByProduk[pid] ||= []).push(d)
+  }
   // Waktu cetak asli adalah created_at transaksi; utk struk baru (belum ada id)
   // dipakai waktu sekarang. Ini yang bikin reprint nota lama identik dgn aslinya.
   const waktu = created_at
@@ -168,6 +175,15 @@ export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
                 {tpl.showHargaSatuan && (
                   <div className="text-[10px] text-gray-500">@{fmt(it.harga)}</div>
                 )}
+                {digitalByProduk[it.produk_id ?? -1]?.map((d, di) => (
+                  <div key={di} className="text-[10px] text-gray-500 leading-snug">
+                    {d.status === 'Sukses'
+                      ? <span className="text-gray-700">{d.customer_no} · SN: {d.sn ?? '-'}</span>
+                      : d.status === 'Pending'
+                        ? <span className="text-amber-600">{d.customer_no} · PENDING (cek nanti)</span>
+                        : <span className="text-red-600">{d.customer_no} · GAGAL — refund</span>}
+                  </div>
+                ))}
               </div>
             ))}
           </div>

@@ -40,6 +40,12 @@ export const produkSchema = z.object({
   // Dual pricing: nullable, undefined diterima; nilai dibersihkan server (NULL bila kosong).
   harga_grosir: z.number().positive().nullable().optional(),
   min_qty_grosir: z.number().int().min(1).nullable().optional(),
+  // Item DIGITAL (jual pulsa/tagihan via Digiflazz). `jenis` default fisik;
+  // saat digital, stok dibawa server utk dipaksa 0.
+  jenis: z.enum(['fisik', 'digital']).default('fisik'),
+  buyer_sku_code: z.string().nullable().optional(),
+  modal: z.number().nonnegative().nullable().optional(),
+  digital_brand: z.enum(['prabayar', 'pasca']).nullable().optional(),
 })
 
 export const produkUpdateSchema = produkSchema.partial().extend({

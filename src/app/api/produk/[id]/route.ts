@@ -48,10 +48,12 @@ export const PUT = apiHandler(async (req: Request, body: z.infer<typeof produkUp
   try {
     ;[row] = await sql`
       UPDATE produk
-      SET nama = ${merged.nama}, harga = ${merged.harga}, stok = ${merged.stok},
+      SET nama = ${merged.nama}, harga = ${merged.harga}, stok = ${merged.jenis === 'digital' ? 0 : merged.stok},
           emoji = ${merged.emoji ?? null}, deskripsi = ${merged.deskripsi || null}, foto_url = ${merged.foto_url || null},
           barcode = ${merged.barcode || null}, kategori_id = ${merged.kategori_id ?? null},
-          harga_grosir = ${merged.harga_grosir ?? null}, min_qty_grosir = ${merged.min_qty_grosir ?? null}
+          harga_grosir = ${merged.harga_grosir ?? null}, min_qty_grosir = ${merged.min_qty_grosir ?? null},
+          jenis = ${merged.jenis ?? 'fisik'}, buyer_sku_code = ${merged.buyer_sku_code || null},
+          modal = ${merged.modal ?? null}, digital_brand = ${merged.digital_brand || null}
       WHERE id = ${Number(id)} AND toko_id = ${toko.tokoId}
       RETURNING *
     `

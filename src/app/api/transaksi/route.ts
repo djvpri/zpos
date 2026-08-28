@@ -3,6 +3,7 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
 import { catatAktivitas } from '@/lib/aktivitas'
+import { topup, bayarPasca, type DigiflazzRow } from '@/lib/digiflazz'
 import type { Transaksi, DetailTransaksi } from '@/types'
 
 export async function POST(req: Request) {
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
       // KECUALI transaksi TEBUS bon gantung (`trx.bon_tebus_id`): stok bon sudah
       // di-hold (barang diambil pembeli) saat bon dibuat di POST /api/bon, jadi
       // tebus TIDAK boleh kurangi lagi (double). Akuntansi/shift tetap dicatat.
-      const real = items.filter(i => Number(i.produk_id) > 0)
+      const real = items.filter(i => Number(i.produk_id) > 0 && !i._digital)
       if (!trx.bon_tebus_id) {
         for (const i of real) {
           await t`
@@ -101,11 +102,63 @@ export async function POST(req: Request) {
     return tr
   })
 
+  // --- Item DIGITAL (jual pulsa/tagihan via Digiflazz) ---
+  // Prabayar: request topup SEKETIKA. Pakai status per hasil Digiflazz.
+  // Pasca: alur 2-step (inquiry → pay) TIDAK di transaksi ini — ditangani
+  // endpoint khusus /api/digiflazz (kasir lihat tagihan dulu, lalu konfirmasi).
+  const digitalItems = (items ?? []).filter(i => i._digital)
+  let trxStatus = 'Sukses'
+  const digitalRows: {
+    transaksi_id: number, produk_id: number | null, buyer_sku_code: string,
+    customer_no: string, ref_id: string, commands: string, modal: number | null,
+    harga_jual: number, status: string, sn: string | null, message: string | null
+  }[] = []
+  if (digitalItems.length > 0) {
+    for (let i = 0; i < digitalItems.length; i++) {
+      const it = digitalItems[i]
+      const d = it._digital!
+      const refId = `ZP${saved.no_transaksi}-${i + 1}`
+      // request Digiflazz; error network → trx tetap tercatat, status jadi Gagal
+      // (kasir refund manual — pola A). Jangan throw, jangan rollback.
+      let status = 'Gagal', sn: string | null = null, msg: string | null = null
+      let commands = 'topup'
+      try {
+        // pasca harus lewat inquiry dulu (endpoint /pasca/inq); di sini bayar.
+        const r = d.brand === 'pasca'
+          ? await bayarPasca(d.buyer_sku_code, d.customer_no, refId)
+          : await topup(d.buyer_sku_code, d.customer_no, refId)
+        if (d.brand === 'pasca') commands = 'pay-pasca'
+        const rd = (r?.data?.[0] ?? r?.data ?? {}) as DigiflazzRow
+        status = rd.status || (rd.rc === '00' ? 'Sukses' : rd.rc === '03' ? 'Pending' : 'Gagal')
+        sn = rd.sn ?? null
+        msg = rd.message ?? rd.desc ?? null
+        // status sudah "Sukses/Gagal/Pending"; normalisasi ke model kita
+        if (status?.toLowerCase() === 'sukses') status = 'Sukses'
+        else if (status?.toLowerCase() === 'pending') status = 'Pending'
+        else status = 'Gagal'
+      } catch (e: unknown) {
+        msg = (e as Error)?.message ?? 'Digiflazz error'
+      }
+      digitalRows.push({
+        transaksi_id: saved.id as number, produk_id: Number(it.produk_id) || null,
+        buyer_sku_code: d.buyer_sku_code, customer_no: d.customer_no, ref_id: refId,
+        commands, modal: d.modal ?? null, harga_jual: Number(it.subtotal),
+        status, sn, message: msg,
+      })
+      if (status === 'Pending' && trxStatus === 'Sukses') trxStatus = 'Pending'
+      if (status === 'Gagal') trxStatus = 'Gagal'
+    }
+  }
+  if (digitalRows.length > 0) {
+    await sql`INSERT INTO transaksi_digital ${sql(digitalRows)}`
+    await sql`UPDATE transaksi SET status = ${trxStatus} WHERE id = ${saved.id as number}`
+  }
+
   // Audit: catat transaksi baru (metode bayar + total, utk cek kecurangan).
   void catatAktivitas(toko, 'transaksi_buat',
     `${saved.no_transaksi} · ${trx.metode_bayar ?? '-'} · Rp ${Number(saved.total).toLocaleString('id-ID')} · ${items.length} item`)
 
-  return NextResponse.json(saved)
+  return NextResponse.json({ ...saved, digital: digitalRows })
 }
 
 export async function GET(req: Request) {

@@ -19,7 +19,7 @@ const BarcodeCameraModal = dynamic(
   () => import('@/components/kasir/BarcodeScanner').then(m => m.BarcodeCameraModal),
   { ssr: false }
 )
-import { Produk, ItemKeranjang, Transaksi, DetailTransaksi, Member } from '@/types'
+import { Produk, ItemKeranjang, Transaksi, DetailTransaksi, Member, DigitalResult } from '@/types'
 import { hitungPajak, hitungTotal, noTrx, fmt } from '@/lib/utils'
 import { hargaEfektif, isGrosir } from '@/lib/dual-pricing'
 import { useMember, useHargaMember } from '@/hooks/useMember'
@@ -49,6 +49,34 @@ export default function KasirPage() {
   const [tab, setTab] = useState<'produk' | 'lain'>('produk')
   const [showScanVisual, setShowScanVisual] = useState(false)
   const [virtualProduk, setVirtualProduk] = useState<Record<number, ProdukVirtual>>({})
+  // Nomor tujuan (customer_no) per item DIGITAL di keranjang, key = id produk.
+  const [customerNomor, setCustomerNomor] = useState<Record<number, string>>({})
+  // Item PASCABAYAR: id → sudah inquiry sukses & tagihan valid (syarat bayar).
+  const [pascaVerified, setPascaVerified] = useState<Record<number, boolean>>({})
+  const ubahCustomerNomor = useCallback((id: number, v: string) => {
+    setCustomerNomor(m => ({ ...m, [id]: v }))
+  }, [])
+  // Cek Tagihan (pascabayar): inquiry Digiflazz → validasi tagihan. Sukses
+  // menandai pascaVerified[id]=true (syarat bayar). Gagal tampil pesan.
+  const cekTagihanPasca = async (id: number, sku: string, nomor: string) => {
+    setPesanSimpan(null)
+    try {
+      const res = await fetch('/api/transaksi/pasca/inq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ buyer_sku_code: sku, customer_no: nomor }),
+      })
+      const rj = await res.json().catch(() => null) || {}
+      if (!res.ok || !rj.ok) {
+        setPesanSimpan({ tipe: 'gagal', teks: rj?.error ?? rj?.message ?? 'Cek tagihan gagal' })
+        return
+      }
+      setPascaVerified(m => ({ ...m, [id]: true }))
+      setPesanSimpan({ tipe: 'gagal', teks: rj?.customer_name ? `✓ ${rj.customer_name} — ${nomor}` : '✓ Tagihan valid' })
+    } catch (e: unknown) {
+      setPesanSimpan({ tipe: 'gagal', teks: (e as Error)?.message ?? 'Gagal cek tagihan (offline?)' })
+    }
+  }
   // Flash-scan: barcode tidak dikenal di katalog → minta harga utk auto-create
   const [flashScan, setFlashScan] = useState<string | null>(null)
   const [flashNama, setFlashNama] = useState('')
@@ -131,9 +159,9 @@ export default function KasirPage() {
   }
 
   const tambahKeKeranjang = useCallback((p: Produk) => {
-    if (p.stok <= 0) return
+    if (p.stok <= 0 && p.jenis !== 'digital') return
     setKeranjang(k => ({ ...k, [p.id]: (k[p.id] || 0) + 1 }))
-    kurangiStok(p.id, 1)
+    if (p.jenis !== 'digital') kurangiStok(p.id, 1)
   }, [kurangiStok])
 
   // Autofill nama & kategori dari Open Food Facts. Coverage terbatas (mayoritas
@@ -230,7 +258,26 @@ export default function KasirPage() {
 
   const bayarSekarang = async () => {
     if (items.length === 0 || (metode === 'Tunai' && kurang > 0)) return
+    // Item DIGITAL butuh koneksi ke Digiflazz MAKSIMAL real-time — TIDAK boleh
+    // lewat antrian offline. Blok bayar kalau ada item digital & sedang offline.
+    const adaDigital = items.some(i => i.jenis === 'digital')
+    if (adaDigital && typeof navigator !== 'undefined' && !navigator.onLine) {
+      setPesanSimpan({ tipe: 'gagal', teks: 'Item digital butuh koneksi — tidak bisa bayar saat offline.' })
+      return
+    }
     setPesanSimpan(null)
+
+    const digitalPayload = (it: ItemKeranjang): DetailTransaksi['_digital'] | undefined => {
+      if (it.jenis !== 'digital') return undefined
+      const nomor = (customerNomor[it.id] || '').trim()
+      if (!nomor) return undefined // keranjang panel sudah blok, defensif di sini
+      return {
+        buyer_sku_code: it.buyer_sku_code ?? '',
+        customer_no: nomor,
+        modal: it.modal ?? 0,
+        brand: it.digital_brand === 'pasca' ? 'pasca' : 'prabayar',
+      }
+    }
 
     const trxData: Transaksi = {
       no_transaksi: noTrx(),
@@ -247,6 +294,7 @@ export default function KasirPage() {
         harga: it.harga,
         qty: it.qty,
         subtotal: it.harga * it.qty,
+        _digital: digitalPayload(it),
       })),
     }
 
@@ -256,6 +304,7 @@ export default function KasirPage() {
       harga: it.harga,
       qty: it.qty,
       subtotal: it.harga * it.qty,
+      _digital: digitalPayload(it),
     }))
 
     const hasil = await simpan(trxData, details)
@@ -272,9 +321,11 @@ export default function KasirPage() {
       syncNow() // coba langsung, jaga-jaga koneksi sebenarnya sempat balik
     }
 
-    setStruk(trxData)
+    setStruk({ ...trxData, digital: (hasil.data as { digital?: DigitalResult[] } | undefined)?.digital ?? [] })
     setKeranjang({})
     setVirtualProduk({})
+    setCustomerNomor({})
+    setPascaVerified({})
     setBayar('')
     setDiskon(0)
     setMetode('Tunai')
@@ -340,6 +391,8 @@ export default function KasirPage() {
     onGantung: bukaSimpanBon,
     onListBon: () => { setShowListBon(true); reloadBon() },
     bonAktif: bon.filter(x => !x.selesai).length,
+    customerNomor, onCustomerNomor: ubahCustomerNomor,
+    pascaVerified, onCekPasca: cekTagihanPasca,
   }
 
   // Member activator: pill kecil utk memilih/melepas member transaksi. Memakai

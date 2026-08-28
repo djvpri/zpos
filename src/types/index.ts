@@ -10,6 +10,12 @@ export interface Produk {
   barcode?: string
   kategori_id: number | null
   aktif: boolean
+  // Item DIGITAL (jual pulsa/tagihan via Digiflazz): jenis='digital' → tak
+  // dihitung stok & tampil di kasir walau stok 0.
+  jenis?: 'fisik' | 'digital'
+  buyer_sku_code?: string | null
+  modal?: number | null
+  digital_brand?: 'prabayar' | 'pasca' | null
   // Dual pricing (grosir & ecer): harga_grosir + min_qty_grosir bernilai NULL/undefined
   // = produk tidak punya harga grosir (ecer saja). Saat qty di keranjang >= min_qty_grosir,
   // otomatis memakai harga_grosir sebagai harga satuan.
@@ -41,6 +47,20 @@ export interface ItemKeranjang extends Produk {
   _member?: boolean
 }
 
+// Hasil satu item digital (dari transaksi_digital) utk ditampilkan di struk.
+export interface DigitalResult {
+  produk_id?: number | null
+  buyer_sku_code: string
+  customer_no: string
+  ref_id: string
+  commands: string
+  modal?: number | null
+  harga_jual: number
+  status: string // Sukses | Pending | Gagal | Refund
+  sn?: string | null
+  message?: string | null
+}
+
 export interface Transaksi {
   id?: number
   no_transaksi: string
@@ -64,6 +84,8 @@ export interface Transaksi {
   dibatalkan?: boolean
   created_at?: string
   items?: DetailTransaksi[]
+  // Hasil item digital (transaksi_digital) yg dikirim server utk struk: sn dsb.
+  digital?: DigitalResult[]
 }
 
 export interface DetailTransaksi {
@@ -74,6 +96,14 @@ export interface DetailTransaksi {
   harga: number
   qty: number
   subtotal: number
+  // Klien-saja: payload item DIGITAL (jual pulsa/tagihan via Digiflazz).
+  // Dipakai /api/transaksi utk request topup. Tidak disimpan ke skema listrik.
+  _digital?: {
+    buyer_sku_code: string
+    customer_no: string
+    modal?: number
+    brand?: 'prabayar' | 'pasca'
+  }
 }
 
 export interface Staff {

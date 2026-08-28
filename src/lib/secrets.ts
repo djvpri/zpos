@@ -23,3 +23,11 @@ export function getDemoResetSecret(): string {
   if (!s) throw new Error('DEMO_RESET_SECRET belum di-set.')
   return s
 }
+
+// Secret khusus utk cron cek-status Digiflazz — TERPISAH dari secret lain,
+// hanya dikenal oleh cron job Railway & endpoint /api/digiflazz/cek-status.
+export function getDigiflazzCronSecret(): string {
+  const s = process.env.DIGIFLAZZ_CRON_SECRET
+  if (!s) throw new Error('DIGIFLAZZ_CRON_SECRET belum di-set.')
+  return s
+}

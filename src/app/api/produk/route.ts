@@ -93,8 +93,8 @@ export const POST = apiHandler(async (req: Request, body: z.infer<typeof produkS
   let row: Produk
   try {
     ;[row] = await sql`
-      INSERT INTO produk (nama, harga, stok, emoji, deskripsi, foto_url, barcode, kategori_id, toko_id, expired_at, stok_minimum, client_ref, harga_grosir, min_qty_grosir)
-      VALUES (${body.nama}, ${body.harga}, ${body.stok}, ${body.emoji ?? null}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId}, ${body.expired_at || null}, ${body.stok_minimum ?? 5}, ${body.client_ref || null}, ${body.harga_grosir ?? null}, ${body.min_qty_grosir ?? null})
+      INSERT INTO produk (nama, harga, stok, emoji, deskripsi, foto_url, barcode, kategori_id, toko_id, expired_at, stok_minimum, client_ref, harga_grosir, min_qty_grosir, jenis, buyer_sku_code, modal, digital_brand)
+      VALUES (${body.nama}, ${body.harga}, ${body.jenis === 'digital' ? 0 : body.stok}, ${body.emoji ?? null}, ${body.deskripsi || null}, ${body.foto_url || null}, ${body.barcode || null}, ${body.kategori_id}, ${toko.tokoId}, ${body.expired_at || null}, ${body.stok_minimum ?? 5}, ${body.client_ref || null}, ${body.harga_grosir ?? null}, ${body.min_qty_grosir ?? null}, ${body.jenis ?? 'fisik'}, ${body.buyer_sku_code || null}, ${body.modal ?? null}, ${body.digital_brand || null})
       RETURNING *
     `
 

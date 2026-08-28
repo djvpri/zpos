@@ -57,6 +57,10 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
     stok_minimum: produk?.stok_minimum ?? 5,
     harga_grosir: produk?.harga_grosir ?? '',
     min_qty_grosir: produk?.min_qty_grosir ?? '',
+    jenis: produk?.jenis || 'fisik',
+    buyer_sku_code: produk?.buyer_sku_code ?? '',
+    modal: produk?.modal ?? '',
+    digital_brand: produk?.digital_brand ?? 'prabayar',
   })
   // Saat edit: list produk TIDAK menyertakan foto_url besar (lihat GET /api/produk),
   // jadi ambil foto penuh dari endpoint per-produk untuk preview di modal.
@@ -211,7 +215,7 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       ...(produk || {}),
       nama: form.nama,
       harga: Number(form.harga) || 1,
-      stok: Number(form.stok) || 0,
+      stok: form.jenis === 'digital' ? 0 : (Number(form.stok) || 0),
       emoji: produk?.emoji || '',
       deskripsi: form.deskripsi.trim() || undefined,
       foto_url: form.foto_url || undefined,
@@ -221,6 +225,10 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
       stok_minimum: Number(form.stok_minimum) || 5,
       harga_grosir: form.harga_grosir ? Number(form.harga_grosir) : null,
       min_qty_grosir: form.min_qty_grosir ? Number(form.min_qty_grosir) : null,
+      jenis: form.jenis === 'digital' ? 'digital' : 'fisik',
+      buyer_sku_code: form.jenis === 'digital' ? form.buyer_sku_code.trim() : null,
+      modal: form.jenis === 'digital' && form.modal ? Number(form.modal) : null,
+      digital_brand: form.jenis === 'digital' ? (form.digital_brand as 'prabayar' | 'pasca') : null,
       aktif: true,
     })
     if (r?.message) setEr(r.message)
@@ -360,8 +368,51 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
             </div>
             <div>
               <label className="text-xs text-gray-500">Stok</label>
-              <input className={inputCls} type="number" value={form.stok} onChange={e => set('stok', e.target.value)} placeholder="0" />
+              <input className={inputCls} type="number" value={form.stok} disabled={form.jenis === 'digital'} onChange={e => set('stok', e.target.value)} placeholder="0" />
+              {form.jenis === 'digital' && <p className="text-[10px] text-indigo-500 mt-1">Stok dikunci 0 — milik saldo Digiflazz.</p>}
             </div>
+          </div>
+
+          {/* Item DIGITAL (jual pulsa/tagihan via Digiflazz) */}
+          <div className={`rounded-xl border p-3 space-y-2 ${form.jenis === 'digital' ? 'border-indigo-200 bg-indigo-50/50' : 'border-gray-150 bg-gray-50/50'}`}>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.jenis === 'digital'}
+                onChange={e => set('jenis', e.target.checked ? 'digital' : 'fisik')}
+                className="w-4 h-4 accent-indigo-600"
+              />
+              <span className="text-xs font-semibold text-gray-700">⚡ Item Digital <span className="font-normal text-gray-400">(jual pulsa / tagihan via Digiflazz)</span></span>
+            </label>
+            {form.jenis === 'digital' && (
+              <div className="space-y-2 pt-1">
+                <div>
+                  <label className="text-xs text-gray-500">Kode SKU Digiflazz <span className="text-red-500">*</span></label>
+                  <input
+                    className={inputCls}
+                    value={form.buyer_sku_code}
+                    onChange={e => set('buyer_sku_code', e.target.value)}
+                    placeholder="Mis. xld10 (XL 10rb), pln"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500">Modal / Harga Dasar (Rp)</label>
+                    <input className={inputCls} type="number" value={form.modal} onChange={e => set('modal', e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Tipe</label>
+                    <select className={inputCls} value={form.digital_brand} onChange={e => set('digital_brand', e.target.value)}>
+                      <option value="prabayar">Prabayar (pulsa/kuota)</option>
+                      <option value="pasca">Pascabayar (PLN/PDAM)</option>
+                    </select>
+                  </div>
+                </div>
+                <p className="text-[10px] text-indigo-500">
+                  Prabayar: isi “Harga” = harga jual ke konsumen, “Modal” = harga dasar Digiflazz (margin = selisih).
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Dual pricing grosir/ecer */}

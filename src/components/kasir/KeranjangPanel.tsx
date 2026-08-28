@@ -1,5 +1,6 @@
 'use client'
 
+import { Fragment } from 'react'
 import { ItemKeranjang } from '@/types'
 import { fmt } from '@/lib/utils'
 import { Cart3, Bag, Box, CreditCardFill, BookmarkPlus, ListUl } from 'react-bootstrap-icons'
@@ -22,14 +23,26 @@ interface Props {
   onGantung: () => void
   onListBon: () => void
   bonAktif: number
+  // Item DIGITAL: nomor tujuan per item (id produk → customer_no). Kosong/undefined
+  // utk produk fisik. Kalau item digital tak punya nomor → bayar diblokir.
+  customerNomor?: Record<number, string>
+  onCustomerNomor?: (id: number, v: string) => void
+  // Item pascabayar: wajib "Cek Tagihan" sukses sebelum bayar. Map id → verified.
+  pascaVerified?: Record<number, boolean>
+  onCekPasca?: (id: number, sku: string, nomor: string) => void
 }
 
 export function KeranjangPanel({
   items, diskon, bayar, metode, subtotal, pajak, total, kembali, kurang,
-  onUbahQty, onDiskon, onBayar, onMetode, onBayarSekarang, onGantung, onListBon, bonAktif
+  onUbahQty, onDiskon, onBayar, onMetode, onBayarSekarang, onGantung, onListBon, bonAktif,
+  customerNomor = {}, onCustomerNomor,
+  pascaVerified = {}, onCekPasca,
 }: Props) {
   const totalItem = items.reduce((s, i) => s + i.qty, 0)
-  const bisa = items.length > 0 && (metode !== 'Tunai' || kurang <= 0)
+  // Digital butuh nomor; PASCABAYAR extra butuh inquiry sukses (pascaVerified).
+  const digitalTanpaNomor = items.some(i => i.jenis === 'digital' && !(customerNomor[i.id] || '').trim())
+  const pascaBelumCek = items.some(i => i.jenis === 'digital' && i.digital_brand === 'pasca' && !pascaVerified[i.id])
+  const bisa = items.length > 0 && (metode !== 'Tunai' || kurang <= 0) && !digitalTanpaNomor && !pascaBelumCek
 
   return (
     <div className="bg-white border border-gray-100 rounded-xl flex flex-col h-full overflow-hidden">
@@ -52,7 +65,8 @@ export function KeranjangPanel({
             <span className="text-sm">Belum ada item</span>
           </div>
         ) : items.map(it => (
-          <div key={it.id} className="flex items-center gap-2 py-2.5 border-b border-gray-50 last:border-0">
+          <Fragment key={it.id}>
+          <div className="flex items-center gap-2 py-2.5 border-b border-gray-50 last:border-0">
             {it.foto_thumb || it.foto_url
               ? // eslint-disable-next-line @next/next/no-img-element -- foto dynamic (thumb/data URI)
                 <img src={it.foto_thumb || it.foto_url} alt={it.nama} className="h-9 w-9 rounded-md object-cover flex-shrink-0" loading="lazy" />
@@ -84,6 +98,33 @@ export function KeranjangPanel({
               {fmt(it.harga * it.qty)}
             </div>
           </div>
+          {it.jenis === 'digital' && (
+            <div className="w-full px-0.5 mb-2 -mt-0.5">
+              <input
+                type="text"
+                inputMode="tel"
+                value={customerNomor[it.id] || ''}
+                onChange={e => onCustomerNomor?.(it.id, e.target.value)}
+                placeholder={it.digital_brand === 'pasca' ? 'ID/NOP pelanggan (cth 530000000001)' : 'Nomor tujuan (contoh 08xx)'}
+                className="w-full text-xs border border-indigo-200 rounded-lg px-2 py-1.5 outline-none focus:border-indigo-400"
+              />
+              {it.digital_brand === 'pasca' && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <button
+                    onClick={() => {
+                      const n = (customerNomor[it.id] || '').trim()
+                      if (n && onCekPasca) onCekPasca(it.id, it.buyer_sku_code || '', n)
+                    }}
+                    className="text-[11px] text-indigo-600 border border-indigo-200 rounded-md px-2 py-1 hover:bg-indigo-50 transition-colors"
+                  >Cek Tagihan</button>
+                  {pascaVerified[it.id] && (
+                    <span className="text-[11px] text-green-700 bg-green-100 rounded-md px-2 py-1">✓ Tagihan Valid</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          </Fragment>
         ))}
       </div>
 

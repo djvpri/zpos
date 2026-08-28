@@ -58,32 +58,41 @@ export function ProdukGrid({ produk, loading, onTambah }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {list.map(p => (
-            <button
-              key={p.id}
-              data-testid="product-item"
-              onClick={() => onTambah(p)}
-              disabled={p.stok <= 0}
-              className={`text-left p-3 rounded-xl border transition-all ${
-                p.stok <= 0
-                  ? 'opacity-40 cursor-not-allowed border-gray-100 bg-gray-50'
-                  : 'border-gray-100 bg-white hover:border-indigo-400 hover:shadow-sm cursor-pointer'
-              }`}
-            >
-              {tampilFoto && (p.foto_thumb || p.foto_url) && (
-                // eslint-disable-next-line @next/next/no-img-element -- foto thumb/data URI dinamis
-                <img src={p.foto_thumb || p.foto_url} alt={p.nama} className="h-12 w-12 mb-2 rounded-lg object-cover" loading="lazy" />
-              )}
-              {tampilFoto && !p.foto_thumb && !p.foto_url && <Box size={28} className="text-gray-300 mb-2" />}
-              <div className="text-sm font-medium text-gray-800 leading-tight mb-1">{p.nama}</div>
-              <div className="text-xs text-indigo-700 font-semibold">{fmt(p.harga)}</div>
-              <div className={`text-xs mt-1 ${
-                p.stok <= 0 ? 'text-red-500 font-medium' : p.stok < 5 ? 'text-red-400' : 'text-gray-300'
-              }`}>
-                {p.stok <= 0 ? 'Stok habis' : `Stok: ${p.stok}`}
-              </div>
-            </button>
-          ))}
+          {list.map(p => {
+            const digital = p.jenis === 'digital'
+            const habis = p.stok <= 0 && !digital
+            return (
+              <button
+                key={p.id}
+                data-testid="product-item"
+                onClick={() => onTambah(p)}
+                disabled={habis}
+                className={`text-left p-3 rounded-xl border transition-all ${
+                  habis
+                    ? 'opacity-40 cursor-not-allowed border-gray-100 bg-gray-50'
+                    : 'border-gray-100 bg-white hover:border-indigo-400 hover:shadow-sm cursor-pointer'
+                }`}
+              >
+                {tampilFoto && (p.foto_thumb || p.foto_url) && (
+                  // eslint-disable-next-line @next/next/no-img-element -- foto thumb/data URI dinamis
+                  <img src={p.foto_thumb || p.foto_url} alt={p.nama} className="h-12 w-12 mb-2 rounded-lg object-cover" loading="lazy" />
+                )}
+                {tampilFoto && !p.foto_thumb && !p.foto_url && <Box size={28} className="text-gray-300 mb-2" />}
+                <div className="text-sm font-medium text-gray-800 leading-tight mb-1">
+                  {p.nama}
+                  {digital && <span className="ml-1 align-middle inline-block text-[9px] font-bold uppercase bg-indigo-100 text-indigo-600 rounded px-1 py-px">⚡ Digital</span>}
+                </div>
+                <div className="text-xs text-indigo-700 font-semibold">{fmt(p.harga)}</div>
+                {!digital && (
+                  <div className={`text-xs mt-1 ${
+                    p.stok <= 0 ? 'text-red-500 font-medium' : p.stok < 5 ? 'text-red-400' : 'text-gray-300'
+                  }`}>
+                    {p.stok <= 0 ? 'Stok habis' : `Stok: ${p.stok}`}
+                  </div>
+                )}
+              </button>
+            )
+          })}
         </div>
       )}
       {!loading && produk.length > tampil && (
