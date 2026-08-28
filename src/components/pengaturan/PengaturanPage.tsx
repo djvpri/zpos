@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText, Download, Laptop, Receipt, Printer } from 'react-bootstrap-icons'
+import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText, Download, Laptop, Android2, Receipt, Printer } from 'react-bootstrap-icons'
 import { usePengaturan } from '@/hooks/usePengaturan'
 import { DESAIN_NOTA } from '@/lib/desain-nota'
 import { NotaPreview } from './NotaPreview'
 
 // Rilis kasir diambil live dari GitHub — versi & link download selalu terbaru.
 const KASIR_REPO = 'djvpri/zpos_windows'
+// Rilis Z1 Label (Android) — diambil live dari GitHub.
+const LABEL_REPO = 'djvpri/z1label-android'
 
 // Driver printer untuk kasir — link Google Drive. Ganti nama saat ada info nama file.
 const DRIVER_LINK = [
@@ -23,6 +25,11 @@ interface KasirRilis {
   versi: string
   installer: KasirAsset | null
   portable: KasirAsset | null
+}
+// Rilis Z1 Label — APK tunggal.
+interface LabelRilis {
+  versi: string
+  apk: KasirAsset | null
 }
 
 export default function PengaturanPage() {
@@ -57,6 +64,34 @@ export default function PengaturanPage() {
         })
       } catch {
         if (!batal) setKasirErr('Gagal memuat rilis kasir — pastikan koneksi ke GitHub tersedia.')
+      }
+    })()
+    return () => { batal = true }
+  }, [])
+
+  // Rilis Z1 Label (Android) terbaru — load sekali.
+  const [label, setLabel] = useState<LabelRilis | null>(null)
+  const [labelErr, setLabelErr] = useState('')
+  useEffect(() => {
+    let batal = false
+    ;(async () => {
+      try {
+        const r = await fetch(`https://api.github.com/repos/${LABEL_REPO}/releases/latest`, {
+          headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'ZPos-POS/1.0' },
+        })
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        const d = await r.json()
+        if (batal) return
+        const assets: KasirAsset[] = (d.assets || []).map((a: { name: string; browser_download_url: string }) => ({
+          name: a.name,
+          url: a.browser_download_url,
+        }))
+        setLabel({
+          versi: (d.tag_name || '').replace(/^v/, ''),
+          apk: assets.find(a => a.name.endsWith('.apk')) || null,
+        })
+      } catch {
+        if (!batal) setLabelErr('Gagal memuat rilis Z1 Label — pastikan koneksi ke GitHub tersedia.')
       }
     })()
     return () => { batal = true }
@@ -179,6 +214,49 @@ export default function PengaturanPage() {
               />
               <span className="text-sm text-gray-500">%</span>
             </div>
+          </div>
+
+          {/* Aplikasi Z1 Label (Android) */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 space-y-3">
+            <div className="flex items-center gap-2 text-gray-800">
+              <Android2 size={16} className="text-emerald-500" />
+              <span className="font-medium text-sm">Aplikasi Z1 Label (Android)</span>
+            </div>
+            <p className="text-sm text-gray-400">
+              Download aplikasi <b>Z1 Label</b> untuk cetak label barcode dari HP Android
+              via Bluetooth. Versi <b>{label?.versi ?? '…'}</b>.
+            </p>
+
+            {labelErr && <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{labelErr}</div>}
+
+            {!label && !labelErr && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[0, 1].map(i => (
+                  <div key={i} className="animate-pulse rounded-2xl border border-gray-100 p-4">
+                    <div className="h-4 bg-gray-100 rounded w-1/2 mb-3" />
+                    <div className="h-8 bg-gray-100 rounded" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {label && label.apk && (
+              <a
+                href={label.apk.url}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-2xl border border-gray-100 p-4 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Download size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-gray-800 truncate">Z1 Label APK</div>
+                  <div className="text-xs text-gray-400 truncate">{label.apk.name} — {label.versi}</div>
+                </div>
+              </a>
+            )}
           </div>
 
           {/* Aplikasi Kasir (Z1 Kasir) */}
