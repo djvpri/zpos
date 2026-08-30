@@ -32,6 +32,9 @@ export const produkSchema = z.object({
   deskripsi: z.string().nullable().optional(),
   foto_url: z.string().nullable().optional(),
   barcode: z.string().nullable().optional(),
+  // Barcode internal pendek (6 digit v3) utk label kecil 25mm — di-set server
+  // (generateProductBarcode), client tak wajib kirim.
+  barcode_internal: z.string().max(64).nullable().optional(),
   kategori_id: z.number().int().positive('Kategori wajib dipilih').nullable(),
   toko_id: z.number().int().positive().optional(),
   expired_at: z.string().nullable().optional(),

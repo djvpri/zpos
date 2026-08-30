@@ -11,7 +11,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ code: st
     SELECT p.*, json_build_object('nama', k.nama) AS kategori
     FROM produk p
     LEFT JOIN kategori k ON k.id = p.kategori_id
-    WHERE p.barcode = ${code} AND p.toko_id = ${toko.tokoId} AND p.aktif = true
+    WHERE (p.barcode = ${code} OR p.barcode_internal = ${code}) AND p.toko_id = ${toko.tokoId} AND p.aktif = true
   `
   if (!row) return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 })
   return NextResponse.json(row)

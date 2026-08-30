@@ -63,6 +63,16 @@ export async function GET(req: Request) {
     // bocor payload besar. Web (tanpa query) tetap sertakan foto_thumb preview.
     r.foto_thumb = semua ? null : (r.foto_thumb || null)
   }
+  // Backfill sekali utk produk EXISTING yang belum punya barcode_internal
+  // (mirasi / produk lama). Hanya saat ?semua=1 (jalur sync kasir) supaya
+  // label Z1 langsung dapat barcode 6-digit. COALESCE agar tak menimpa.
+  if (semua) {
+    const kosong = rows.filter((r: { barcode_internal?: string | null }) => !r.barcode_internal)
+    for (const r of kosong) {
+      await sql`UPDATE produk SET barcode_internal = COALESCE(barcode_internal, ${generateProductBarcode(r.id)}) WHERE id = ${r.id}`
+      r.barcode_internal = generateProductBarcode(r.id)
+    }
+  }
   return NextResponse.json(rows)
 }
 
@@ -103,8 +113,12 @@ export const POST = apiHandler(async (req: Request, body: z.infer<typeof produkS
     // dipakai label harga/barcode. Hanya sekali, id tak berubah lagi.
     if (!row.barcode) {
       await sql`UPDATE produk SET barcode = ${generateProductBarcode(row.id)} WHERE id = ${row.id}`
-      ;[row] = await sql`SELECT * FROM produk WHERE id = ${row.id}`
     }
+    // Semua produk dapat barcode internal PENDEK 6-digit (v3, Code 128-C) utk
+    // label kecil 25mm — dibaca scanner walau barcode asli panjang. Id beda →
+    // 6 digit beda, unik aman. Backfill (COALESCE) agar tak menimpa eksisting.
+    await sql`UPDATE produk SET barcode_internal = COALESCE(barcode_internal, ${generateProductBarcode(row.id)}) WHERE id = ${row.id}`
+    ;[row] = await sql`SELECT * FROM produk WHERE id = ${row.id}`
   } catch (e: unknown) {
     if (body.client_ref && (e as { code?: string })?.code === '23505') {
       const [existing] = await sql`SELECT * FROM produk WHERE client_ref = ${body.client_ref} AND toko_id = ${toko.tokoId}`

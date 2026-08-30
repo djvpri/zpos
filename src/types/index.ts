@@ -8,6 +8,9 @@ export interface Produk {
   foto_url?: string
   foto_thumb?: string
   barcode?: string
+  // Barcode internal pendek (6 digit v3) utk label kecil 25mm; di-set server
+  // (generateProductBarcode) bila kosong. Asli panjang tetap di `barcode`.
+  barcode_internal?: string | null
   kategori_id: number | null
   aktif: boolean
   // Item DIGITAL (jual pulsa/tagihan via Digiflazz): jenis='digital' → tak

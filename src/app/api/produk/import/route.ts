@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
-import { isInternalBarcode } from '@/lib/barcode-code39'
+import { isInternalBarcode, generateProductBarcode } from '@/lib/barcode-code39'
 
 export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
         continue
       }
 
-      await sql`
+      const [baru] = await sql`
         INSERT INTO produk (nama, harga, stok, emoji, deskripsi, barcode, foto_url, kategori_id, toko_id, expired_at, stok_minimum, aktif, harga_grosir, min_qty_grosir)
         VALUES (
           ${p.nama}, ${p.harga}, ${p.stok || 0}, ${'📦'},
@@ -126,7 +126,11 @@ export async function POST(req: Request) {
           ${p.expired_at || null}, ${p.stok_minimum || 5}, true,
           ${p.harga_grosir ?? null}, ${p.min_qty_grosir ?? null}
         )
+        RETURNING id
       `
+      // Semua produk (import) dapat barcode internal pendek 6-digit (v3) utk
+      // label kecil 25mm — backfill (COALESCE) agar tak menimpa eksisting.
+      await sql`UPDATE produk SET barcode_internal = COALESCE(barcode_internal, ${generateProductBarcode(baru.id)}) WHERE id = ${baru.id}`
       berhasil++
     } catch (e: unknown) {
       gagal++
