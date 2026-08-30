@@ -349,6 +349,12 @@ export function ProdukModal({ produk, onSimpan, onTutup }: Props) {
                 Ini barcode buatan Z1 Pos (dipakai utk produk tanpa barcode). Kalau barang ini punya barcode asli kemasan, scan kamera untuk menggantinya.
               </p>
             )}
+            {produk?.barcode_internal && (
+              <p className="text-[11px] text-gray-500 mt-1.5 font-mono">
+                Barcode label (6 digit): <span className="font-semibold text-gray-700">{produk.barcode_internal}</span>{' '}
+                <span className="text-gray-400 font-sans">— dipakai Z1 Label utk cetak label 25mm</span>
+              </p>
+            )}
           </div>
           <div>
             <label className="text-xs text-gray-500">Deskripsi <span className="text-gray-300">(opsional)</span></label>
