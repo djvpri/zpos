@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ShieldCheck, XLg, BoxArrowRight, Shop, Gear, Wallet2, ChatSquareDots, GraphUp } from 'react-bootstrap-icons'
+import { ShieldCheck, XLg, BoxArrowRight, Shop, Wallet2, ChatSquareDots, GraphUp } from 'react-bootstrap-icons'
 import { fmtDate } from '@/lib/utils'
 
 interface Member {
@@ -25,7 +25,6 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [kelola, setKelola] = useState<Member | null>(null)
   const [topup, setTopup] = useState<Member | null>(null)
   const [topupForm, setTopupForm] = useState({ nominal: '', keterangan: '' })
 
@@ -63,19 +62,6 @@ export default function AdminPage() {
     await fetch('/api/admin/logout', { method: 'POST' })
     router.push('/admin/login')
     router.refresh()
-  }
-
-  const patch = async (id: number, body: Record<string, unknown>) => {
-    const res = await fetch(`/api/admin/members/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    if (res.ok) {
-      const updated: Member = await res.json()
-      setMembers(m => m.map(x => x.id === id ? updated : x))
-      setKelola(updated)
-    }
   }
 
   return (
@@ -160,13 +146,6 @@ export default function AdminPage() {
                   >
                     <Wallet2 size={15} />
                   </button>
-                  <button
-                    onClick={() => setKelola(m)}
-                    className="p-1.5 text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors shrink-0"
-                    title="Kelola"
-                  >
-                    <Gear size={15} />
-                  </button>
                 </div>
               )
             })}
@@ -174,37 +153,6 @@ export default function AdminPage() {
         )}
       </main>
 
-      {/* Modal kelola member */}
-      {kelola && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="font-semibold text-gray-900 truncate">{kelola.nama}</h3>
-              <button onClick={() => setKelola(null)} className="p-1 text-gray-400 hover:text-gray-600">
-                <XLg size={18} />
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mb-5">
-              {kelola.langganan_sampai && `Langganan aktif s/d ${fmtDate(kelola.langganan_sampai)}`}
-            </p>
-
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => patch(kelola.id, { aktif: !kelola.aktif })}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                    kelola.aktif
-                      ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                      : 'bg-green-50 text-green-600 hover:bg-green-100'
-                  }`}
-                >
-                  {kelola.aktif ? 'Nonaktifkan' : 'Aktifkan'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Modal top-up saldo pulsa */}
       {topup && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
