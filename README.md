@@ -53,8 +53,8 @@ npm install
 
 ### 2. Database (PostgreSQL/Railway)
 Koneksikan ke Postgres (Railway), lalu:
-- Jalankan `supabase/schema.sql` (folder `supabase/` menyimpan file SQL; **nama folder legacy**, koneksi sebenarnya ke Postgres Railway, bukan Supabase)
-- Jalankan migrasi `supabase/migration_*.sql` berurutan secara **manual**
+- Jalankan `migrations/schema.sql` (folder `migrations/` berisi file SQL schema + migrasi, koneksi murni ke Postgres langsung)
+- Jalankan migrasi `migrations/migration_*.sql` berurutan secara **manual**
 
 ### 3. Environment
 Salin `.env.example` (atau buat `.env.local`):
@@ -107,7 +107,7 @@ src/
   hooks/            Custom hooks (useAuth, useProduk, useTransaksi)
   lib/              Utility, auth, DB, validation, offline queue
   types/            TypeScript types
-supabase/           Schema SQL + migrations
+migrations/        Schema SQL + migrations (postgres langsung)
 scripts/            Seed scripts
 tests/              Playwright test files
 ```

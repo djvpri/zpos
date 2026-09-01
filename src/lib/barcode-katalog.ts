@@ -1,6 +1,6 @@
 import sql from './db'
 
-// Katalog barcode pusat (global, lintas toko). Lihat supabase/migration_barcode_katalog.sql.
+// Katalog barcode pusat (global, lintas toko). Lihat migrations/migration_barcode_katalog.sql.
 //
 // Dua fungsi:
 //   - cariBarcode(barcode)  → ambil nama/merek/kategori utk auto-fill saat kasir input produk.

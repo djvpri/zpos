@@ -1,6 +1,6 @@
 import sql from './db'
 
-// Helper inti Stock Opname (SO). Lihat supabase/migration_stock_opname.sql.
+// Helper inti Stock Opname (SO). Lihat migrations/migration_stock_opname.sql.
 //
 // Status SO: proses -> selesai -> disetujui  (atau -> dibatalkan)
 //   - proses   : kasir masih scan.

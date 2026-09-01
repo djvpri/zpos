@@ -25,7 +25,7 @@ npm run test:debug tests/auth.spec.ts
 
 📋 **TODO:**
 1. Add `data-testid` attributes to components
-2. Create test user in Supabase (`admin@test.com`)
+2. Create test user (`admin@test.com`)
 3. Update selectors after inspecting actual HTML
 4. Add laporan/reports tests
 5. Add barcode scanning tests
@@ -67,8 +67,7 @@ Tests run automatically on GitHub Actions. Need to set these secrets in repo set
 
 - `TEST_USER_EMAIL` = admin@test.com
 - `TEST_USER_PASSWORD` = admin123
-- `NEXT_PUBLIC_SUPABASE_URL` = (your Supabase URL)
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` = (your Supabase anon key)
+- `TEST_DATABASE_URL` = (Postgres URL utk seed/test — zpos murni Postgres)
 
 ## Running Specific Tests
 
