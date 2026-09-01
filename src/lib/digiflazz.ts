@@ -98,12 +98,15 @@ export async function cekStatus(sku: string, refId: string) {
 }
 
 // Cek saldo akun buyer.
+// Doc: sign untuk cek-saldo = md5(username + apiKey + "depo"), BUKAN
+// md5(username + apiKey) — ada suffix "depo" (beda dari topup/pasca/status).
+// Sumber: developer.digiflazz.com/api/buyer/cek-saldo/
 export async function cekSaldo() {
   const { username, password } = cfg()
   const res = await fetch(`${BASE}/cek-saldo`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cmd: 'deposit', username, sign: createHash('md5').update(`${username}${password}`).digest('hex') }),
+    body: JSON.stringify({ cmd: 'deposit', username, sign: createHash('md5').update(`${username}${password}depo`).digest('hex') }),
   })
   if (!res.ok) throw new Error(`Digiflazz cek-saldo HTTP ${res.status}`)
   return res.json()
