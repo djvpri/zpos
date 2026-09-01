@@ -24,15 +24,18 @@ const CODE39_PATTERNS: Record<string, string> = {
 
 const QUIET_BARS = 10 // ruang tenang di kanan-kiri (dalam unit)
 
-// Bangun angka barcode internal unik untuk produk minimarket tanpa barcode.
-// Bangun barcode internal unik utk produk tanpa barcode kemasan.
-// Format v3 (6 digit): prefix '2' + id di-pad jadi 4 digit + 1 check digit EAN.
-// Total 6 digit numerik GENAP -> dicetak Code 128-C (2 digit/simbol) = cuma
-// 3 pasang data + start/check/stop ≈ 7 bar -> bar paling sedikit & lebar modul
-// 0.25mm (2-3 dot solid) agar TERBACA scanner di label kecil 25mm.
-// (v2 8-digit & v1 13-digit masih dikenali isInternalBarcode utk produk lama.)
+// Bangun barcode internal unik untuk produk minimarket tanpa barcode.
+// Format 8 digit (Code 128-C): prefix '2' + 6 digit id (last-6) + 1 check EAN.
+// Total 8 digit numerik GENAP -> dicetak Code 128-C (2 digit/simbol = 4 pasang
+// data) = bar paling sedikit & lebar modul 0.25mm (2-3 dot solid) agar TERBACA
+// scanner di label kecil 25mm.
+// - id 1..999.999 -> 6 digit unik -> bar 8 digit barcode_internal PASTI unik
+//   (id global tabel produk berurutan & <1jt di semua toko). Collision hanya bila
+//   id berbeda 1.000.000 (jarang; ponytail: naik ke 10 digit bila id >= 1jt).
+// - v3 lama (6 digit, '2'+4 digit id) TIDAK unik utk id>=10000 -> DIGANTI skema ini.
+//   (v2 8-digit & v1 13-digit masih dikenali isInternalBarcode utk produk lama.)
 export function generateProductBarcode(id: number): string {
-  const base = `2${String(Math.abs(id)).padStart(4, '0').slice(0, 4)}`
+  const base = `2${String(Math.abs(id)).padStart(6, '0').slice(-6)}`
   const check = eanCheckDigit(base)
   return base + String(check)
 }
@@ -63,10 +66,10 @@ export function ean13CheckDigit(digits12: string): number {
 
 // true kalau barcode ini DIBUAT internal ZPos (bukan barcode kemasan asli).
 // Mengenal TIGA format:
-//  - v3: '2' + 4 digit id + 1 check EAN (6 digit, Code 128-C) — format terbaru
-//  - v2: '2' + 6 digit id + 1 check EAN (8 digit, Code 128-C) — produk yg baru
-//       dibuat antara v2..v3 (masih dikenali, tak tercetak ulang otomatis)
-//  - v1: '2' + 11 digit id + 1 check EAN (13 digit) utk produk lama yg uda tercetak
+//  - v4 (8 digit): '2' + 6 digit id + 1 check EAN (Code 128-C) — format TERBARU
+//  - v3 (6 digit, '2'+4 digit id lama): masih dikenali utk produk lama (cacat unik)
+//  - v2 (8 digit, '2'+6 digit id lama): produk yg dibuat antara v2..v3
+//  - v1 (13 digit): '2'+11 digit id, produk lama
 // Dipakai UI utk hint dan agar barcode lama tetap dikenali/di-render.
 export function isInternalBarcode(bc?: string | null): boolean {
   if (!bc) return false

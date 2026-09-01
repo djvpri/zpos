@@ -1,13 +1,13 @@
 import assert from 'node:assert'
-import { generateProductBarcode, isInternalBarcode, ean13CheckDigit } from '../src/lib/barcode-code39.ts'
+import { generateProductBarcode, isInternalBarcode, eanCheckDigit, ean13CheckDigit } from '../src/lib/barcode-code39.ts'
 
-// generateProductBarcode selalu hasil internal
+// generateProductBarcode selalu hasil internal (format v4, 8 digit)
 for (let id = 1; id <= 1000; id++) {
   const bc = generateProductBarcode(id)
-  assert.match(bc, /^2\d{12}$/, `barcode harus 13 digit awalan 2: ${bc}`)
+  assert.match(bc, /^2\d{7}$/, `barcode harus 8 digit awalan 2: ${bc}`)
   assert.ok(isInternalBarcode(bc), `generateProductBarcode(${id}) harus terdeteksi internal: ${bc}`)
-  // checksum EAN-13 valid
-  assert.strictEqual(Number(ean13CheckDigit(bc.slice(0, 12))), Number(bc[12]), `ean13 check gagal: ${bc}`)
+  // checksum EAN valid
+  assert.strictEqual(Number(eanCheckDigit(bc.slice(0, 7))), Number(bc[7]), `ean check gagal: ${bc}`)
 }
 
 // non-internal: kosong, null, awalan lain, panjang beda

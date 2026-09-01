@@ -8,13 +8,13 @@ function ok(desc, cond) { assert.ok(cond, desc); pass++; console.log('  ok -', d
 
 console.log('barcode test:')
 
-// 1. generateProductBarcode: 6 digit (v3: '2'+4 id+1 EAN check), unik per id, checksum valid
+// 1. generateProductBarcode: 8 digit (v4: '2'+6 id+1 EAN check), unik per id, checksum valid
 const b1 = generateProductBarcode(5)
 const b2 = generateProductBarcode(6)
-ok('6 digit', /^\d{6}$/.test(b1))
+ok('8 digit', /^\d{8}$/.test(b1))
 ok('diawali 2', b1.startsWith('2'))
 ok('unjuk per id', b1 !== b2)
-ok('checksum EAN valid', eanCheckDigit(b1.slice(0, 5)) === Number(b1[5]))
+ok('checksum EAN valid', eanCheckDigit(b1.slice(0, 7)) === Number(b1[7]))
 
 // 2. ean13CheckDigit: contoh dikenal (bobot 1-3)
 ok('ean13CheckDigit("590123412345")=7', ean13CheckDigit('590123412345') === 7)
