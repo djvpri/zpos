@@ -24,7 +24,7 @@ export default function AdminPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState({ nama: '', email: '', password: '', plan: 'pro', durasi_bulan: 1 })
+  const [form, setForm] = useState({ nama: '', email: '', password: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [kelola, setKelola] = useState<Member | null>(null)
@@ -80,7 +80,7 @@ export default function AdminPage() {
       const member = await res.json()
       setMembers(m => [member, ...m])
       setShowModal(false)
-      setForm({ nama: '', email: '', password: '', plan: 'pro', durasi_bulan: 1 })
+      setForm({ nama: '', email: '', password: '' })
     } else {
       const data = await res.json()
       setError(data.error || 'Gagal mendaftarkan member')
@@ -173,11 +173,6 @@ export default function AdminPage() {
                       {m.langganan_sampai && ` · s/d ${fmtDate(m.langganan_sampai)}`}
                     </div>
                   </div>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                    m.plan === 'pro' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {m.plan === 'pro' ? 'Pro' : 'Trial'}
-                  </span>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 bg-emerald-50 text-emerald-600 flex items-center gap-1">
                     <Wallet2 size={12} /> Rp {Number(m.saldo ?? 0).toLocaleString('id-ID')}
                   </span>
@@ -253,34 +248,6 @@ export default function AdminPage() {
                   placeholder="Min. 6 karakter"
                 />
               </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Plan</label>
-                  <select
-                    value={form.plan}
-                    onChange={e => setForm(f => ({ ...f, plan: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition-colors bg-white"
-                  >
-                    <option value="pro">Pro</option>
-                    <option value="trial">Trial (30 hari)</option>
-                  </select>
-                </div>
-                {form.plan === 'pro' && (
-                  <div className="flex-1">
-                    <label className="text-sm font-medium text-gray-700 block mb-1.5">Durasi</label>
-                    <select
-                      value={form.durasi_bulan}
-                      onChange={e => setForm(f => ({ ...f, durasi_bulan: Number(e.target.value) }))}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition-colors bg-white"
-                    >
-                      <option value={1}>1 bulan</option>
-                      <option value={3}>3 bulan</option>
-                      <option value={6}>6 bulan</option>
-                      <option value={12}>12 bulan</option>
-                    </select>
-                  </div>
-                )}
-              </div>
               <button
                 type="submit" disabled={saving}
                 className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-colors disabled:opacity-60"
@@ -303,33 +270,11 @@ export default function AdminPage() {
               </button>
             </div>
             <p className="text-xs text-gray-400 mb-5">
-              {kelola.plan === 'pro' ? 'Pro' : 'Trial'}
-              {kelola.langganan_sampai && ` · aktif s/d ${fmtDate(kelola.langganan_sampai)}`}
+              {kelola.langganan_sampai && `Langganan aktif s/d ${fmtDate(kelola.langganan_sampai)}`}
             </p>
 
             <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-2">Perpanjang (sekaligus jadikan Pro)</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[1, 3, 6, 12].map(b => (
-                    <button
-                      key={b}
-                      onClick={() => patch(kelola.id, { tambah_bulan: b, plan: 'pro' })}
-                      className="py-2 rounded-xl bg-indigo-50 text-indigo-600 text-sm font-semibold hover:bg-indigo-100 transition-colors"
-                    >
-                      +{b}bln
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="flex gap-2">
-                <button
-                  onClick={() => patch(kelola.id, { plan: kelola.plan === 'pro' ? 'trial' : 'pro' })}
-                  className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors"
-                >
-                  Jadikan {kelola.plan === 'pro' ? 'Trial' : 'Pro'}
-                </button>
                 <button
                   onClick={() => patch(kelola.id, { aktif: !kelola.aktif })}
                   className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
