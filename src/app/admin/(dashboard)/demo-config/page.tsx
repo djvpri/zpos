@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ShieldCheck, Plus, Trash2, BoxArrowRight, Gear, Check2Circle, XCircle, Hourglass } from 'react-bootstrap-icons'
+import { Plus, Trash2, Gear, Check2Circle, XCircle, Hourglass } from 'react-bootstrap-icons'
 
 interface DemoApp {
   url: string
@@ -133,38 +133,16 @@ export default function DemoConfigPage() {
     setTesting(false)
   }
 
-  const logout = async () => {
-    await fetch('/api/admin/logout', { method: 'POST' })
-    router.push('/admin/login')
-    router.refresh()
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Topbar */}
-      <header className="bg-gray-900 text-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center">
-              <ShieldCheck size={18} />
-            </div>
-            <span className="font-bold">Z1 Pos Admin</span>
-          </div>
-          <button onClick={logout} className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
-            <BoxArrowRight size={15} /> Keluar
-          </button>
+    <div>
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Gear size={20} className="text-indigo-600" />
+          <h1 className="text-2xl font-bold text-gray-900">Demo Config</h1>
         </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Gear size={20} className="text-indigo-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Demo Config</h1>
-          </div>
-          <p className="text-gray-600 text-sm">Manage demo reset targets and test endpoints</p>
-        </div>
+        <p className="text-gray-600 text-sm">Manage demo reset targets and test endpoints</p>
+      </div>
 
         {/* Alerts */}
         {error && (
@@ -332,7 +310,6 @@ export default function DemoConfigPage() {
             )}
           </div>
         )}
-      </main>
     </div>
   )
 }

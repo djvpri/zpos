@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { BoxArrowRight, ShieldCheck, Wallet2, XLg, ChatSquareDots, GraphUp } from 'react-bootstrap-icons'
+import { Wallet2, XLg } from 'react-bootstrap-icons'
 
 interface ProdukDigital {
   id: number
@@ -23,7 +22,6 @@ interface ProdukDigital {
 // margin bisa PERSEN(%) thd modal ATAU NOMINAL (Rp tetap). Diset owner di sini.
 // Tenant TIDAK bisa ubah margin (harga debet tenant dihitung di server dari sini).
 export default function AdminPulsa() {
-  const router = useRouter()
   const [rows, setRows] = useState<ProdukDigital[]>([])
   const [loading, setLoading] = useState(true)
   const [edit, setEdit] = useState<ProdukDigital | null>(null)
@@ -68,45 +66,14 @@ export default function AdminPulsa() {
     setSaving(false)
   }
 
-  const logout = async () => { await fetch('/api/admin/logout', { method: 'POST' }); router.push('/admin/login'); router.refresh() }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gray-900 text-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center"><Wallet2 size={18} /></div>
-            <span className="font-bold">Z1 Pos Admin · Kelola Pulsa</span>
-          </div>
-          <button onClick={logout} className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
-            <BoxArrowRight size={15} /> Keluar
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">Markup Produk Pulsa</h1>
-            <p className="text-sm text-gray-400 mt-0.5">
-              Harga debet saldo tenant = modal Digiflazz + margin owner. Persen (%) thd modal, atau nominal (Rp).
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => router.push('/admin/pricelist')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
-            >
-              <GraphUp size={16} /> Harga Pulsa
-            </button>
-            <button
-              onClick={() => router.push('/admin/laporan-digital')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
-            >
-              <ChatSquareDots size={16} /> Penjualan Pulsa
-            </button>
-          </div>
-        </div>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-lg font-semibold text-gray-900">Markup Produk Pulsa</h1>
+        <p className="text-sm text-gray-400 mt-0.5">
+          Harga debet saldo tenant = modal Digiflazz + margin owner. Persen (%) thd modal, atau nominal (Rp).
+        </p>
+      </div>
 
         {loading ? (
           <div className="text-center py-12 text-gray-400 text-sm">Memuat...</div>
@@ -146,7 +113,6 @@ export default function AdminPulsa() {
             ))}
           </div>
         )}
-      </main>
 
       {edit && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">

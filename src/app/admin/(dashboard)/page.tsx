@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { ShieldCheck, XLg, BoxArrowRight, Shop, Wallet2, ChatSquareDots, GraphUp } from 'react-bootstrap-icons'
+import { XLg, Shop, Wallet2 } from 'react-bootstrap-icons'
 import { fmtDate } from '@/lib/utils'
 
 interface Member {
@@ -20,7 +19,6 @@ interface Member {
 const isExpired = (m: Member) => !!m.langganan_sampai && new Date(m.langganan_sampai) < new Date()
 
 export default function AdminPage() {
-  const router = useRouter()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -58,50 +56,12 @@ export default function AdminPage() {
     Promise.resolve().then(load)
   }, [load])
 
-  const logout = async () => {
-    await fetch('/api/admin/logout', { method: 'POST' })
-    router.push('/admin/login')
-    router.refresh()
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Topbar */}
-      <header className="bg-gray-900 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center">
-              <ShieldCheck size={18} />
-            </div>
-            <span className="font-bold">Z1 Pos Admin</span>
-          </div>
-          <button onClick={logout} className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
-            <BoxArrowRight size={15} /> Keluar
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">Member</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Kelola toko pelanggan (tenant dikelola ZOne)</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.push('/admin/pulsa')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
-            >
-              <GraphUp size={16} /> Kelola Pulsa
-            </button>
-            <button
-              onClick={() => router.push('/admin/laporan-digital')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
-            >
-              <ChatSquareDots size={16} /> Penjualan Pulsa
-            </button>
-          </div>
-        </div>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-lg font-semibold text-gray-900">Member</h1>
+        <p className="text-sm text-gray-400 mt-0.5">Kelola toko pelanggan (tenant dikelola ZOne)</p>
+      </div>
 
         {loading ? (
           <div className="text-center py-12 text-gray-400 text-sm">Memuat...</div>
@@ -151,7 +111,6 @@ export default function AdminPage() {
             })}
           </div>
         )}
-      </main>
 
       {/* Modal top-up saldo pulsa */}
       {topup && (

@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { BoxArrowRight, ShieldCheck, Wallet2, Search, XLg, ArrowClockwise } from 'react-bootstrap-icons'
+import { Wallet2, Search, XLg, ArrowClockwise } from 'react-bootstrap-icons'
 
 interface PricelistItem {
   product_name: string
@@ -19,7 +18,6 @@ interface PricelistItem {
 type Jenis = 'prepaid' | 'pasca'
 
 export default function AdminPricelist() {
-  const router = useRouter()
   const [prepaid, setPrepaid] = useState<PricelistItem[]>([])
   const [pasca, setPasca] = useState<PricelistItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,35 +48,21 @@ export default function AdminPricelist() {
   const cats = Array.from(new Set(list.map((p) => p.category))).sort()
 
   const refresh = async () => { setRefreshing(true); await load(true) }
-  const logout = async () => { await fetch('/api/admin/logout', { method: 'POST' }); router.push('/admin/login'); router.refresh() }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gray-900 text-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center"><Wallet2 size={18} /></div>
-            <span className="font-bold">Z1 Pos Admin · Harga Pulsa</span>
-          </div>
-          <button onClick={logout} className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
-            <BoxArrowRight size={15} /> Keluar
-          </button>
+    <div>
+      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900">Daftar Produk Digiflazz</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Harga dasar (modal) dari API Digiflazz · {prepaid.length + pasca.length} produk</p>
         </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">Daftar Produk Digiflazz</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Harga dasar (modal) dari API Digiflazz · {prepaid.length + pasca.length} produk</p>
-          </div>
-          <button
-            onClick={refresh} disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
-          >
-            <ArrowClockwise size={15} className={refreshing ? 'animate-spin' : ''} /> Segarkan Harga
-          </button>
-        </div>
+        <button
+          onClick={refresh} disabled={refreshing}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
+        >
+          <ArrowClockwise size={15} className={refreshing ? 'animate-spin' : ''} /> Segarkan Harga
+        </button>
+      </div>
 
         {error && <div className="bg-red-50 text-red-600 text-sm px-3 py-2.5 rounded-xl mb-4">{error}</div>}
 
@@ -161,7 +145,6 @@ export default function AdminPricelist() {
             </div>
           </div>
         )}
-      </main>
     </div>
   )
 }

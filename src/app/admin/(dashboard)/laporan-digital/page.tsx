@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { BoxArrowRight, ShieldCheck, Wallet2, ChatSquareDots } from 'react-bootstrap-icons'
 import { fmtDate } from '@/lib/utils'
 
 interface Row {
@@ -28,7 +26,6 @@ const statusColor = (s: string) =>
   s === 'Sukses' ? 'bg-green-50 text-green-600' : s === 'Pending' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'
 
 export default function AdminLaporanDigital() {
-  const router = useRouter()
   const [rows, setRows] = useState<Row[]>([])
   const [tokoList, setTokoList] = useState<{ id: number; nama: string }[]>([])
   const [toko, setToko] = useState('')
@@ -46,43 +43,24 @@ export default function AdminLaporanDigital() {
   }, [toko])
   useEffect(() => { void load() }, [load])
 
-  const logout = async () => { await fetch('/api/admin/logout', { method: 'POST' }); router.push('/admin/login'); router.refresh() }
-
   const totalMargin = rows.reduce((a, r) => a + Number(r.margin_owner ?? 0), 0)
   const totalDebet = rows.filter(r => r.status !== 'Gagal').reduce((a, r) => a + Number(r.harga_debet ?? 0), 0)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gray-900 text-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center"><ChatSquareDots size={18} /></div>
-            <span className="font-bold">Z1 Pos Admin · Penjualan Pulsa</span>
-          </div>
-          <button onClick={logout} className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
-            <BoxArrowRight size={15} /> Keluar
-          </button>
+    <div>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900">Transaksi Pulsa</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Margin owner per item = harga debet tenant − modal Digiflazz</p>
         </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">Transaksi Pulsa</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Margin owner per item = harga debet tenant − modal Digiflazz</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <select value={toko} onChange={e => setToko(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none bg-white">
-              <option value="">Semua toko</option>
-              {tokoList.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
-            </select>
-            <button onClick={() => router.push('/admin/pulsa')}
-              className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
-              Kelola Pulsa
-            </button>
-          </div>
+        <div className="flex items-center gap-2">
+          <select value={toko} onChange={e => setToko(e.target.value)}
+            className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none bg-white">
+            <option value="">Semua toko</option>
+            {tokoList.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
+          </select>
         </div>
+      </div>
 
         {rows.length > 0 && (
           <div className="grid grid-cols-2 gap-3 mb-4">
@@ -133,7 +111,6 @@ export default function AdminLaporanDigital() {
             </table>
           </div>
         )}
-      </main>
     </div>
   )
 }
