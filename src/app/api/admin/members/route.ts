@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const rows = await sql`
-    SELECT t.id, t.nama, t.email, t.plan, t.aktif, t.created_at, t.langganan_sampai,
+    SELECT t.id, t.nama, t.email, t.plan, t.aktif, t.created_at, t.langganan_sampai, t.saldo,
       (SELECT count(*) FROM "user" u WHERE u.toko_id = t.id) AS jumlah_user
     FROM toko t
     ORDER BY t.created_at DESC

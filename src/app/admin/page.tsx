@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ShieldCheck, PersonPlus, XLg, BoxArrowRight, Shop, Gear } from 'react-bootstrap-icons'
+import { ShieldCheck, PersonPlus, XLg, BoxArrowRight, Shop, Gear, Wallet2, ChatSquareDots, GraphUp } from 'react-bootstrap-icons'
 import { fmtDate } from '@/lib/utils'
 
 interface Member {
@@ -14,6 +14,7 @@ interface Member {
   created_at: string
   langganan_sampai: string | null
   jumlah_user: number
+  saldo: number
 }
 
 const isExpired = (m: Member) => !!m.langganan_sampai && new Date(m.langganan_sampai) < new Date()
@@ -27,6 +28,27 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [kelola, setKelola] = useState<Member | null>(null)
+  const [topup, setTopup] = useState<Member | null>(null)
+  const [topupForm, setTopupForm] = useState({ nominal: '', keterangan: '' })
+
+  const topupSaldo = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!topup) return
+    setSaving(true); setError('')
+    const res = await fetch(`/api/admin/members/${topup.id}/saldo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nominal: Number(topupForm.nominal), keterangan: topupForm.keterangan }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setMembers(m => m.map(x => x.id === topup.id ? { ...x, saldo: data.saldo } : x))
+      setTopup(null); setTopupForm({ nominal: '', keterangan: '' })
+    } else {
+      const d = await res.json(); setError(d.error || 'Gagal top-up')
+    }
+    setSaving(false)
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -97,18 +119,32 @@ export default function AdminPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">Member</h1>
             <p className="text-sm text-gray-400 mt-0.5">Daftarkan dan kelola toko pelanggan</p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors"
-          >
-            <PersonPlus size={16} />
-            <span className="hidden sm:inline">Daftarkan Member</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/admin/pulsa')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+            >
+              <GraphUp size={16} /> Kelola Pulsa
+            </button>
+            <button
+              onClick={() => router.push('/admin/laporan-digital')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+            >
+              <ChatSquareDots size={16} /> Penjualan Pulsa
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors"
+            >
+              <PersonPlus size={16} />
+              <span className="hidden sm:inline">Daftarkan Member</span>
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -142,6 +178,9 @@ export default function AdminPage() {
                   }`}>
                     {m.plan === 'pro' ? 'Pro' : 'Trial'}
                   </span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 bg-emerald-50 text-emerald-600 flex items-center gap-1">
+                    <Wallet2 size={12} /> Rp {Number(m.saldo ?? 0).toLocaleString('id-ID')}
+                  </span>
                   {!m.aktif ? (
                     <span className="text-xs bg-red-50 text-red-500 font-semibold px-2 py-0.5 rounded-full shrink-0">Nonaktif</span>
                   ) : expired ? (
@@ -149,6 +188,13 @@ export default function AdminPage() {
                   ) : (
                     <span className="text-xs bg-green-50 text-green-600 font-semibold px-2 py-0.5 rounded-full shrink-0">Aktif</span>
                   )}
+                  <button
+                    onClick={() => { setTopup(m); setTopupForm({ nominal: '', keterangan: '' }); setError('') }}
+                    className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors shrink-0"
+                    title="Top-up saldo"
+                  >
+                    <Wallet2 size={15} />
+                  </button>
                   <button
                     onClick={() => setKelola(m)}
                     className="p-1.5 text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors shrink-0"
@@ -296,6 +342,51 @@ export default function AdminPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Modal top-up saldo pulsa */}
+      {topup && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-semibold text-gray-900 truncate">Top-up Saldo Pulsa</h3>
+              <button onClick={() => setTopup(null)} className="p-1 text-gray-400 hover:text-gray-600">
+                <XLg size={18} />
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mb-5">
+              {topup.nama} · saldo saat ini Rp {Number(topup.saldo ?? 0).toLocaleString('id-ID')}
+            </p>
+            <form onSubmit={topupSaldo} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 text-red-600 text-sm px-3 py-2.5 rounded-xl">{error}</div>
+              )}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">Nominal (Rp)</label>
+                <input
+                  type="number" required min={1} placeholder="100000"
+                  value={topupForm.nominal}
+                  onChange={e => setTopupForm(f => ({ ...f, nominal: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-emerald-400 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">Keterangan</label>
+                <input
+                  value={topupForm.keterangan}
+                  onChange={e => setTopupForm(f => ({ ...f, keterangan: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-emerald-400 transition-colors"
+                  placeholder="Transfer BCA an. ... (opsional)"
+                />
+              </div>
+              <button
+                type="submit" disabled={saving}
+                className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-60"
+              >
+                {saving ? 'Menyimpan...' : 'Tambahkan Saldo'}
+              </button>
+            </form>
           </div>
         </div>
       )}

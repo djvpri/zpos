@@ -42,8 +42,20 @@ export async function POST(req: Request) {
       const [td] = await sql`
         UPDATE transaksi_digital SET status = ${ke}, sn = ${sn}, message = ${msg}
         WHERE id = ${p.id} AND status = 'Pending'
-        RETURNING transaksi_id
+        RETURNING transaksi_id, ref_id, harga_debet
       `
+      // Refund saldo tenant bila transaksi berubah → Gagal (kredit balik yg
+      // sudah didebit saat trx dibuat + catat riwayat, agar akurat).
+      if (td && ke === 'Gagal' && Number(td.harga_debet) > 0) {
+        const [trx] = await sql`SELECT toko_id FROM transaksi WHERE id = ${td.transaksi_id}`
+        if (trx) {
+          await sql.begin(async t => {
+            await t`UPDATE toko SET saldo = saldo + ${Number(td.harga_debet)} WHERE id = ${trx.toko_id}`
+            await t`INSERT INTO toko_deposit (toko_id, nominal, tipe, keterangan)
+                    VALUES (${trx.toko_id}, ${Number(td.harga_debet)}, 'refund', ${`refund pulsa gagal #${p.ref_id}`})`
+          })
+        }
+      }
       if (td && ke !== 'Pending') {
         await sql`
           UPDATE transaksi SET status = (

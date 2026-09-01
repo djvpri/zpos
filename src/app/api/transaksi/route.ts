@@ -4,6 +4,7 @@ import { getTokoFromRequest } from '@/lib/auth'
 import { statusToko } from '@/lib/guard'
 import { catatAktivitas } from '@/lib/aktivitas'
 import { topup, bayarPasca, type DigiflazzRow } from '@/lib/digiflazz'
+import { hitungHargaDebet } from '@/lib/saldo'
 import type { Transaksi, DetailTransaksi } from '@/types'
 
 export async function POST(req: Request) {
@@ -108,10 +109,44 @@ export async function POST(req: Request) {
   // endpoint khusus /api/digiflazz (kasir lihat tagihan dulu, lalu konfirmasi).
   const digitalItems = (items ?? []).filter(i => i._digital)
   let trxStatus = 'Sukses'
+  // --- Saldo tenant utk item digital ---
+  // Tenant beli pulsa dgn DEPOSIT (top-up ke owner). Server DEBIT saldo_toko
+  // sebesar harga_debet (modal Digiflazz + margin owner) utk tiap item digital.
+  // Margin owner diambil dari tabel produk (authoritative owner), BUKAN dari
+  // body kasir (kasir/tanpa modal). Saldo dicek DI MUKA sebelum simpan trx,
+  // supaya tolak bersih kalau tak cukup.
+  const skuSet = [...new Set(digitalItems.map(d => d._digital!.buyer_sku_code))] as string[]
+  const marginBySku = new Map<string, { margin_type: string | null; margin_persen: number | null; margin_nominal: number | null }>()
+  if (skuSet.length > 0) {
+    const rows = await sql`
+      SELECT buyer_sku_code, margin_type, margin_persen, margin_nominal
+      FROM produk WHERE toko_id = ${toko.tokoId} AND buyer_sku_code = ANY(${skuSet})
+    `
+    for (const r of rows) marginBySku.set(r.buyer_sku_code, { margin_type: r.margin_type, margin_persen: r.margin_persen, margin_nominal: r.margin_nominal })
+  }
+  const hargaDebetMap = new Map<number, number>() // index item -> harga_debet
+  let totalDebit = 0
+  digitalItems.forEach((it, i) => {
+    const d = it._digital!
+    const spec = marginBySku.get(d.buyer_sku_code) ?? null
+    const debet = hitungHargaDebet(Number(d.modal) || 0, spec ?? { margin_type: 'persen', margin_persen: 0, margin_nominal: 0 })
+    hargaDebetMap.set(i, debet)
+    totalDebit += debet
+  })
+  if (totalDebit > 0) {
+    const [t] = await sql`SELECT saldo FROM toko WHERE id = ${toko.tokoId}`
+    const saldo = Number(t?.saldo ?? 0)
+    if (saldo < totalDebit) {
+      return NextResponse.json(
+        { error: `Saldo pulsa tidak cukup. Dibutuhkan Rp ${totalDebit.toLocaleString('id-ID')}, saldo Rp ${saldo.toLocaleString('id-ID')}. Hubungi owner utk top-up.` },
+        { status: 402 }
+      )
+    }
+  }
   const digitalRows: {
     transaksi_id: number, produk_id: number | null, buyer_sku_code: string,
     customer_no: string, ref_id: string, commands: string, modal: number | null,
-    harga_jual: number, status: string, sn: string | null, message: string | null
+    harga_debet: number | null, harga_jual: number, status: string, sn: string | null, message: string | null
   }[] = []
   if (digitalItems.length > 0) {
     for (let i = 0; i < digitalItems.length; i++) {
@@ -142,7 +177,7 @@ export async function POST(req: Request) {
       digitalRows.push({
         transaksi_id: saved.id as number, produk_id: Number(it.produk_id) || null,
         buyer_sku_code: d.buyer_sku_code, customer_no: d.customer_no, ref_id: refId,
-        commands, modal: d.modal ?? null, harga_jual: Number(it.subtotal),
+        commands, modal: d.modal ?? null, harga_debet: hargaDebetMap.get(i) ?? null, harga_jual: Number(it.subtotal),
         status, sn, message: msg,
       })
       if (status === 'Pending' && trxStatus === 'Sukses') trxStatus = 'Pending'
@@ -152,6 +187,19 @@ export async function POST(req: Request) {
   if (digitalRows.length > 0) {
     await sql`INSERT INTO transaksi_digital ${sql(digitalRows)}`
     await sql`UPDATE transaksi SET status = ${trxStatus} WHERE id = ${saved.id as number}`
+
+    // Selisih saldo: DEBIT utk item yg jalan (Sukses/Pending), jangan debit
+    // item Gagal (pulsa tak jalan → tak bayar). Atomic dgn catat toko_deposit.
+    const netDebit = digitalRows
+      .filter(r => r.status !== 'Gagal')
+      .reduce((a, r) => a + (r.harga_debet ?? 0), 0)
+    if (netDebit > 0) {
+      await sql.begin(async t => {
+        await t`UPDATE toko SET saldo = saldo - ${netDebit} WHERE id = ${toko.tokoId}`
+        await t`INSERT INTO toko_deposit (toko_id, nominal, tipe, keterangan)
+                VALUES (${toko.tokoId}, ${netDebit}, 'debit', ${`jual pulsa ${saved.no_transaksi}`})`
+      })
+    }
   }
 
   // Audit: catat transaksi baru (metode bayar + total, utk cek kecurangan).
