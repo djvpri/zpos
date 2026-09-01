@@ -11,6 +11,7 @@ export async function GET(req: Request) {
     SELECT t.id, t.nama, t.email, t.plan, t.aktif, t.created_at, t.langganan_sampai, t.saldo,
       (SELECT count(*) FROM "user" u WHERE u.toko_id = t.id) AS jumlah_user
     FROM toko t
+    WHERE t.aktif = true
     ORDER BY t.created_at DESC
   `
   return NextResponse.json(rows)
