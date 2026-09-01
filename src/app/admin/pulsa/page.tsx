@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { BoxArrowRight, ShieldCheck, Wallet2, XLg, ChatSquareDots } from 'react-bootstrap-icons'
+import { BoxArrowRight, ShieldCheck, Wallet2, XLg, ChatSquareDots, GraphUp } from 'react-bootstrap-icons'
 
 interface ProdukDigital {
   id: number
@@ -92,12 +92,20 @@ export default function AdminPulsa() {
               Harga debet saldo tenant = modal Digiflazz + margin owner. Persen (%) thd modal, atau nominal (Rp).
             </p>
           </div>
-          <button
-            onClick={() => router.push('/admin/laporan-digital')}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
-          >
-            <ChatSquareDots size={16} /> Penjualan Pulsa
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => router.push('/admin/pricelist')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+            >
+              <GraphUp size={16} /> Harga Pulsa
+            </button>
+            <button
+              onClick={() => router.push('/admin/laporan-digital')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+            >
+              <ChatSquareDots size={16} /> Penjualan Pulsa
+            </button>
+          </div>
         </div>
 
         {loading ? (

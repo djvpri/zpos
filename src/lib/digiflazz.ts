@@ -111,3 +111,63 @@ export async function cekSaldo() {
   if (!res.ok) throw new Error(`Digiflazz cek-saldo HTTP ${res.status}`)
   return res.json()
 }
+
+// --- Price list Digiflazz (daftar harga produk digital utk dijual) ---
+// Endpoint: POST /v1/price-list. sign = md5(username + apiKey + "pricelist")
+// (ada suffix "pricelist", beda dari topup/status/depo). `cmd` filter:
+//   - 'prepaid' -> pulsa/data/voucher prabayar
+//   - 'pasca'   -> tagihan pascabayar (PLN/PDAM/dst)
+// Respon `data` = array objek produk. `price` = harga dasar (modal tenant).
+export interface PricelistItem {
+  product_name: string
+  category: string
+  brand: string
+  type: string
+  seller_name: string
+  price: number
+  buyer_sku_code: string
+  buyer_product_status: boolean
+  seller_product_status: boolean
+  unlimited_stock: boolean
+  stock: number
+  desc?: string
+  [k: string]: unknown
+}
+
+// Digiflazz membatasi frekuensi cek price-list ("limitasi pengecekan pricelist").
+// Cache module-level 10 menit biar refresh halaman tak kena limit.
+// ponytail: cache tunggal global per proses; bila butuh multi-tenant dingin biarkan,
+//   penyegaran manual via tombol tetap memanggil ulang.
+let pricelistCache: { at: number; prepaid: PricelistItem[]; pasca: PricelistItem[] } | null = null
+const PRICELIST_TTL = 10 * 60 * 1000 // 10 menit
+
+async function ambilPriceList(cmd: 'prepaid' | 'pasca'): Promise<PricelistItem[]> {
+  const { username, password } = cfg()
+  const res = await fetch(`${BASE}/price-list`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cmd,
+      username,
+      sign: createHash('md5').update(`${username}${password}pricelist`).digest('hex'),
+    }),
+  })
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new Error(`Digiflazz price-list HTTP ${res.status}: ${txt.slice(0, 200)}`)
+  }
+  const j = (await res.json()) as { data?: PricelistItem[] | Record<string, unknown> }
+  const arr = Array.isArray(j.data) ? j.data : []
+  return arr.filter((p) => p && typeof p.buyer_sku_code === 'string' && p.buyer_sku_code)
+}
+
+// Ambil price list (prepaid + pasca), pakai cache 10 menit. `refresh=true` paksa ulang.
+export async function priceList(refresh = false): Promise<{ prepaid: PricelistItem[]; pasca: PricelistItem[] }> {
+  const now = Date.now()
+  if (!refresh && pricelistCache && now - pricelistCache.at < PRICELIST_TTL) {
+    return { prepaid: pricelistCache.prepaid, pasca: pricelistCache.pasca }
+  }
+  const [prepaid, pasca] = await Promise.all([ambilPriceList('prepaid'), ambilPriceList('pasca')])
+  pricelistCache = { at: now, prepaid, pasca }
+  return { prepaid, pasca }
+}
