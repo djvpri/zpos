@@ -1,6 +1,6 @@
 // Test mandiri utk generator barcode CODE39 — run:
 //   node --experimental-strip-types tests/barcode-code39.test.mjs
-import { generateProductBarcode, ean13CheckDigit, barcodeToSvg } from '../src/lib/barcode-code39.ts'
+import { generateProductBarcode, eanCheckDigit, ean13CheckDigit, barcodeToSvg } from '../src/lib/barcode-code39.ts'
 import assert from 'node:assert'
 
 let pass = 0
@@ -8,13 +8,13 @@ function ok(desc, cond) { assert.ok(cond, desc); pass++; console.log('  ok -', d
 
 console.log('barcode test:')
 
-// 1. generateProductBarcode: 13 digit, diawali '2', unik per id, checksum valid
+// 1. generateProductBarcode: 6 digit (v3: '2'+4 id+1 EAN check), unik per id, checksum valid
 const b1 = generateProductBarcode(5)
 const b2 = generateProductBarcode(6)
-ok('13 digit', /^\d{13}$/.test(b1))
+ok('6 digit', /^\d{6}$/.test(b1))
 ok('diawali 2', b1.startsWith('2'))
 ok('unjuk per id', b1 !== b2)
-ok('checksum EAN-13 valid', ean13CheckDigit(b1.slice(0, 12)) === Number(b1[12]))
+ok('checksum EAN valid', eanCheckDigit(b1.slice(0, 5)) === Number(b1[5]))
 
 // 2. ean13CheckDigit: contoh dikenal (bobot 1-3)
 ok('ean13CheckDigit("590123412345")=7', ean13CheckDigit('590123412345') === 7)
@@ -36,7 +36,8 @@ ok('deterministik', generateProductBarcode(42) === generateProductBarcode(42))
 const svg128 = barcodeToSvg('200000003804')
 ok('128 berisi <svg', svg128.includes('<svg'))
 ok('128 berisi <rect', svg128.includes('<rect'))
-// Code128-C utk 12 digit: lebar = QUIET*2 + bit. Dekat ~ (6 simbol × 11) + start(11) + check(11) + stop(13) + 20 quiet ≈ 121. Harus jauh di bawah 500.
-ok('128 sempit (bar lebih tebal)', Number((svg128.match(/width="(\d+)"/) || [])[1]) < 400)
+// Code128-C utk 12 digit: dengan X-dim 0.25mm, lebar ≈ 30mm (viewBox dlm mm,
+// bukan px). Harus jauh di bawah 400 — bar tipis & solid biar terbaca label kecil.
+ok('128 sempit (lebar < 400mm)', Number((svg128.match(/width="([\d.]+)mm"/) || [])[1]) < 400)
 
 console.log(`\nPASS: ${pass} assertion${pass === 1 ? '' : 's'}`)
