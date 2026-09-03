@@ -142,9 +142,10 @@ export async function syncSemua(
   for (const sku of aktif) {
     const hargaJual = defaultHarga(sku.harga_modal || 0, sku.margin_type, sku.margin_persen, sku.margin_nominal)
     for (const tk of semuaToko) {
-      // cek ada: (row jenis digital milik toko ini dgn sku sama)
+      // cek ada: (row jenis digital milik toko ini dgn sku sama). Produk pakai kolom `modal`
+      // (bukan harga_modal — itu kolom digital_sku). SELECT dipakai utk .id saja.
       const [ada] = await sql`
-        SELECT id, harga_modal FROM produk
+        SELECT id FROM produk
         WHERE toko_id = ${tk.id} AND jenis = 'digital' AND buyer_sku_code = ${sku.buyer_sku_code}
         LIMIT 1
       `
