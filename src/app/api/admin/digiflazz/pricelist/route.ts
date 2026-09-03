@@ -17,13 +17,24 @@ export async function GET(req: Request) {
   const { prepaid, pasca } = await priceList(refresh)
 
   // kode yg sudah dijadikan produk digital (ada di DB, jenis digital)
-  const kodeSdh = refresh
-    ? []
-    : (await sql`SELECT DISTINCT buyer_sku_code FROM produk WHERE jenis = 'digital' AND buyer_sku_code IS NOT NULL`).map((r) => r.buyer_sku_code)
-  const ada = new Set<string>(kodeSdh)
+  // + margin yg berlaku (sekali di-set via margi global = sama semua row SKU;
+  // ambil contoh row terbaru utk label/display UI Harga Pulsa).
+  const mapa = new Map<string, { margin_type: string | null; margin_persen: number | null; margin_nominal: number | null }>()
+  if (!refresh) {
+    const rows = await sql`
+      SELECT DISTINCT ON (buyer_sku_code)
+             buyer_sku_code, margin_type, margin_persen, margin_nominal
+      FROM produk WHERE jenis = 'digital' AND buyer_sku_code IS NOT NULL AND aktif = true
+      ORDER BY buyer_sku_code, id DESC
+    `
+    for (const r of rows) mapa.set(r.buyer_sku_code, { margin_type: r.margin_type, margin_persen: r.margin_persen, margin_nominal: r.margin_nominal })
+  }
 
   const tandai = (list: typeof prepaid) =>
-    list.map((p) => ({ ...p, sudah_produk: ada.has(p.buyer_sku_code) }))
+    list.map((p) => {
+      const m = mapa.get(p.buyer_sku_code) ?? null
+      return { ...p, sudah_produk: mapa.has(p.buyer_sku_code), margin: m }
+    })
 
   return NextResponse.json({ prepaid: tandai(prepaid), pasca: tandai(pasca), total: prepaid.length + pasca.length })
 }

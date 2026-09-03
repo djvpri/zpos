@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Wallet2, Search, XLg, ArrowClockwise } from 'react-bootstrap-icons'
+import { Wallet2, Search, XLg, ArrowClockwise, Sliders } from 'react-bootstrap-icons'
+
+interface Margin { margin_type: string | null; margin_persen: number | null; margin_nominal: number | null }
 
 interface PricelistItem {
   product_name: string
@@ -12,11 +14,15 @@ interface PricelistItem {
   buyer_sku_code: string
   buyer_product_status: boolean
   sudah_produk?: boolean
+  margin?: Margin | null
   desc?: string
 }
 
 type Jenis = 'prepaid' | 'pasca'
 
+// Harga Pulsa = daftar produk Digiflazz (harga modal). Di sini owner set MARGIN
+// per SKU sekali → berlaku utk SEMUA toko (server update semua row produk SKU).
+// Pemilihan utk dijual tenant diurus alur "SKU otomatis ke toko" terpisah.
 export default function AdminPricelist() {
   const [prepaid, setPrepaid] = useState<PricelistItem[]>([])
   const [pasca, setPasca] = useState<PricelistItem[]>([])
@@ -26,6 +32,11 @@ export default function AdminPricelist() {
   const [q, setQ] = useState('')
   const [cat, setCat] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+
+  // Modal atur margin SKU
+  const [edit, setEdit] = useState<PricelistItem | null>(null)
+  const [form, setForm] = useState({ margin_type: 'persen', margin_persen: '10', margin_nominal: '0' })
+  const [saving, setSaving] = useState(false)
 
   const load = useCallback(async (refresh = false) => {
     setLoading(true); setError('')
@@ -38,7 +49,11 @@ export default function AdminPricelist() {
     } catch (e) { setError((e as Error).message) }
     setLoading(false); setRefreshing(false)
   }, [])
-  useEffect(() => { void load() }, [load])
+  // defer agar setState tak sinkron dlm effect (react-hooks/set-state-in-effect)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => void load())
+    return () => cancelAnimationFrame(id)
+  }, [load])
 
   const list = jenis === 'prepaid' ? prepaid : pasca
   const filter = list.filter((p) =>
@@ -49,12 +64,53 @@ export default function AdminPricelist() {
 
   const refresh = async () => { setRefreshing(true); await load(true) }
 
+  const labelMargin = (m?: Margin | null) => {
+    if (!m) return null
+    return m.margin_type === 'nominal'
+      ? `+Rp ${Number(m.margin_nominal ?? 0).toLocaleString('id-ID')}`
+      : `+${Number(m.margin_persen ?? 0)}%`
+  }
+
+  const hasMargin = (m?: Margin | null) =>
+    !!m && ((m.margin_type === 'nominal' && Number(m.margin_nominal) > 0) ||
+      (m.margin_type !== 'nominal' && Number(m.margin_persen) > 0))
+
+  const openEdit = (p: PricelistItem) => {
+    setEdit(p)
+    setForm({
+      margin_type: p.margin?.margin_type === 'nominal' ? 'nominal' : 'persen',
+      margin_persen: String(p.margin?.margin_persen ?? ''),
+      margin_nominal: String(p.margin?.margin_nominal ?? ''),
+    })
+    setError('')
+  }
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!edit) return
+    setSaving(true); setError('')
+    const body = {
+      buyer_sku_code: edit.buyer_sku_code,
+      margin_type: form.margin_type,
+      margin_persen: form.margin_type === 'persen' ? Number(form.margin_persen) || 0 : null,
+      margin_nominal: form.margin_type === 'nominal' ? Number(form.margin_nominal) || 0 : null,
+    }
+    const res = await fetch('/api/admin/digiflazz/margin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    if (res.ok) {
+      await load()
+      setEdit(null)
+    } else {
+      const d = await res.json(); setError(d.error || 'Gagal simpan')
+    }
+    setSaving(false)
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Daftar Produk Digiflazz</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Harga dasar (modal) dari API Digiflazz · {prepaid.length + pasca.length} produk</p>
+          <p className="text-sm text-gray-400 mt-0.5">Harga dasar (modal) Digiflazz · {prepaid.length + pasca.length} produk · margin berlaku utk semua toko</p>
         </div>
         <button
           onClick={refresh} disabled={refreshing}
@@ -120,6 +176,7 @@ export default function AdminPricelist() {
                     <th className="px-4 py-3 font-semibold">Merek</th>
                     <th className="px-4 py-3 font-semibold">Kode</th>
                     <th className="px-4 py-3 font-semibold text-right">Harga Dasar</th>
+                    <th className="px-4 py-3 font-semibold">Margin Owner</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
                   </tr>
                 </thead>
@@ -132,10 +189,24 @@ export default function AdminPricelist() {
                       <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{p.buyer_sku_code}</td>
                       <td className="px-4 py-2.5 text-right text-gray-800 font-medium">{Number(p.price ?? 0).toLocaleString('id-ID')}</td>
                       <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${hasMargin(p.margin) ? (p.margin?.margin_type === 'nominal' ? 'bg-amber-50 text-amber-600' : 'bg-sky-50 text-sky-600') : 'bg-gray-100 text-gray-400'}`}>
+                            {hasMargin(p.margin) ? labelMargin(p.margin) : 'belum diatur'}
+                          </span>
+                          <button
+                            onClick={() => openEdit(p)} disabled={!p.sudah_produk}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold transition-colors shrink-0 ${p.sudah_produk ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`}
+                            title={p.sudah_produk ? 'Atur margin utk SKU ini (semua toko)' : 'Belum ada produk — aktif di toko dulu'}
+                          >
+                            <Sliders size={11} /> Set Margin
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5">
                         {p.sudah_produk ? (
                           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Sudah jadi produk</span>
                         ) : (
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Belum</span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Belum jadi produk</span>
                         )}
                       </td>
                     </tr>
@@ -145,6 +216,59 @@ export default function AdminPricelist() {
             </div>
           </div>
         )}
+
+      {edit && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-semibold text-gray-900">Margin {edit.product_name}</h3>
+              <button onClick={() => setEdit(null)} className="p-1 text-gray-400 hover:text-gray-600"><XLg size={18} /></button>
+            </div>
+            <p className="text-xs text-gray-400 mb-5">
+              {edit.buyer_sku_code} · modal Digiflazz Rp {Number(edit.price ?? 0).toLocaleString('id-ID')} · berlaku utk semua toko
+            </p>
+            <form onSubmit={save} className="space-y-4">
+              {error && <div className="bg-red-50 text-red-600 text-sm px-3 py-2.5 rounded-xl">{error}</div>}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">Tipe Margin</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setForm(f => ({ ...f, margin_type: 'persen' }))}
+                    className={`py-2.5 rounded-xl text-sm font-semibold transition-colors ${form.margin_type === 'persen' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                    Persen (%)
+                  </button>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, margin_type: 'nominal' }))}
+                    className={`py-2.5 rounded-xl text-sm font-semibold transition-colors ${form.margin_type === 'nominal' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                    Nominal (Rp)
+                  </button>
+                </div>
+              </div>
+              {form.margin_type === 'persen' ? (
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Margin (%)</label>
+                  <input type="number" min={0} value={form.margin_persen}
+                    onChange={e => setForm(f => ({ ...f, margin_persen: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition-colors" />
+                </div>
+              ) : (
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Margin Nominal (Rp)</label>
+                  <input type="number" min={0} value={form.margin_nominal}
+                    onChange={e => setForm(f => ({ ...f, margin_nominal: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-400 transition-colors" />
+                </div>
+              )}
+              <div className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5 text-xs text-gray-500">
+                Debit saldo tenant = modal + margin
+                = <b>Rp {((Number(edit.price ?? 0) + (form.margin_type === 'nominal' ? Number(form.margin_nominal) || 0 : Math.round((Number(edit.price ?? 0) * (Number(form.margin_persen) || 0)) / 100)))).toLocaleString('id-ID')}</b>
+              </div>
+              <button type="submit" disabled={saving}
+                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 transition-colors disabled:opacity-60">
+                {saving ? 'Menyimpan...' : 'Simpan Margin (semua toko)'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

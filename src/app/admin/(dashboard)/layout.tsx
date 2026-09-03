@@ -2,11 +2,10 @@
 
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/navigation'
-import { ShieldCheck, Shop, Wallet2, GraphUp, ChatSquareDots, BoxArrowRight } from 'react-bootstrap-icons'
+import { ShieldCheck, Shop, GraphUp, ChatSquareDots, BoxArrowRight } from 'react-bootstrap-icons'
 
 const MENU = [
   { href: '/admin', label: 'Member', icon: Shop },
-  { href: '/admin/pulsa', label: 'Kelola Pulsa', icon: Wallet2 },
   { href: '/admin/pricelist', label: 'Harga Pulsa', icon: GraphUp },
   { href: '/admin/laporan-digital', label: 'Penjualan Pulsa', icon: ChatSquareDots },
 ]
