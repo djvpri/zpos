@@ -32,6 +32,8 @@ export default function AdminPricelist() {
   const [q, setQ] = useState('')
   const [cat, setCat] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState('')
 
   // Modal atur margin SKU
   const [edit, setEdit] = useState<PricelistItem | null>(null)
@@ -63,6 +65,23 @@ export default function AdminPricelist() {
   const cats = Array.from(new Set(list.map((p) => p.category))).sort()
 
   const refresh = async () => { setRefreshing(true); await load(true) }
+
+  // Sinkron master + aktifkan SEMUA SKU jadi produk di SEMUA toko (tombol owner).
+  const aktifkanSemua = async () => {
+    setSyncing(true); setSyncMsg(''); setError('')
+    try {
+      const res = await fetch('/api/admin/digiflazz/sync', { method: 'POST' })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.error || 'Gagal sinkron')
+      if (d.perlu_migrasi) {
+        setSyncMsg('⚠ Tabel master digital_sku belum ada — migrasi migration_digital_sku.sql dulu di server.')
+      } else {
+        setSyncMsg(`✓ ${d.sku} SKU · ${d.dibuat} produk baru dibuat · ${d.duplikat} sudah ada · ${d.toko} toko`)
+      }
+      await load()
+    } catch (e) { setError((e as Error).message) }
+    setSyncing(false)
+  }
 
   const labelMargin = (m?: Margin | null) => {
     if (!m) return null
@@ -112,13 +131,26 @@ export default function AdminPricelist() {
           <h1 className="text-lg font-semibold text-gray-900">Daftar Produk Digiflazz</h1>
           <p className="text-sm text-gray-400 mt-0.5">Harga dasar (modal) Digiflazz · {prepaid.length + pasca.length} produk · margin berlaku utk semua toko</p>
         </div>
-        <button
-          onClick={refresh} disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
-        >
-          <ArrowClockwise size={15} className={refreshing ? 'animate-spin' : ''} /> Segarkan Harga
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={refresh} disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-60"
+          >
+            <ArrowClockwise size={15} className={refreshing ? 'animate-spin' : ''} /> Segarkan Harga
+          </button>
+          <button
+            onClick={aktifkanSemua} disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-60"
+            title="Sinkron master + jadikan semua SKU Digiflazz produk digital di semua toko (idempotent)"
+          >
+            {syncing ? 'Menyinkronkan...' : '⚡ Aktifkan semua SKU ke semua toko'}
+          </button>
+        </div>
       </div>
+
+        {syncMsg && (
+          <div className="bg-emerald-50 text-emerald-700 text-sm px-3 py-2.5 rounded-xl mb-4">{syncMsg}</div>
+        )}
 
         {error && <div className="bg-red-50 text-red-600 text-sm px-3 py-2.5 rounded-xl mb-4">{error}</div>}
 

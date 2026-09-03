@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-import sql from '@/lib/db'
 import { getAdminFromRequest } from '@/lib/auth'
+import { setMarginSku } from '@/lib/sync-digital'
 
-// Owner atur margin SENGKAL per SKU Digiflazz → berlaku utk SEMUA row produk
-// digital dgn buyer_sku_code tsb di semua toko sekaligus (ganti mekanisme lama
-// yg set per-row-produk per-toko satu per satu di tab "Kelola Pulsa").
+// Owner atur margin GLOBAL per SKU Digiflazz → disimpan di master digital_sku
+// (authoritative) lalu disebar ke SEMUA row produk digital SKU tsb di semua
+// toko sekaligus (ganti mekanisme lama per-row-produk per-toko satu per satu
+// di tab "Kelola Pulsa").
 export async function PATCH(req: Request) {
   const admin = await getAdminFromRequest(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -26,13 +27,8 @@ export async function PATCH(req: Request) {
     if (persen < 0) return NextResponse.json({ error: 'Margin persen tak boleh negatif' }, { status: 400 })
   }
 
-  // Set margin utk SEMUA baris produk digital dgn SKU ini (di semua toko).
-  const [{ count }] = await sql`
-    UPDATE produk
-    SET margin_type = ${mtype}, margin_persen = ${persen}, margin_nominal = ${nominal},
-        updated_at = now()
-    WHERE jenis = 'digital' AND buyer_sku_code = ${sku}
-    RETURNING count(*)::int AS count
-  `
-  return NextResponse.json({ ok: true, buyer_sku_code: sku, margin_type: mtype, margin_persen: persen, margin_nominal: nominal, count })
+  // Set margin global utk SKU ini: master authoritative + sebar ke semua row
+  // produk digital SKU tsb (semua toko yang sudah punya row).
+  const { updated } = await setMarginSku(sku, mtype, persen, nominal)
+  return NextResponse.json({ ok: true, buyer_sku_code: sku, margin_type: mtype, margin_persen: persen, margin_nominal: nominal, count: updated })
 }
