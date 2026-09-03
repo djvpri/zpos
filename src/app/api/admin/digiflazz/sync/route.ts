@@ -25,8 +25,10 @@ export async function POST(req: Request) {
     const res = await syncSemua(prepaid, pasca, scope)
     return NextResponse.json({ ok: true, ...res })
   } catch (e) {
-    // Kirim detail exception ke UI owner supaya penyebab "Gagal sinkron" terlihat
-    // (route owner internal; exception tak sensitif + lebih berguna daripada 500 HTML generik).
+    // 1) Log lengkap di server (Coolify "Logs" container) utk investigasi —
+    //    stack penuh, bukan cuma satu baris.
+    console.error('[sync-digital] sync gagal:', e)
+    // 2) Kirim detail ke UI owner supaya penyebab terlihat di Harga Pulsa
     return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 })
   }
 }
