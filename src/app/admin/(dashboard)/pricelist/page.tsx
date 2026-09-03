@@ -66,17 +66,24 @@ export default function AdminPricelist() {
 
   const refresh = async () => { setRefreshing(true); await load(true) }
 
-  // Sinkron master + aktifkan SEMUA SKU jadi produk di SEMUA toko (tombol owner).
-  const aktifkanSemua = async () => {
+  // Sinkron master + aktifkan SKU jadi produk di SEMUA toko aktif, atau bila
+  // scope='demo' hanya di tenant demo (is_demo) — utk uji dulu tanpa menyentuh
+  // toko asli sebelum materialisasi massal ke semua toko.
+  const aktifkanSemua = async (scope: 'all' | 'demo') => {
     setSyncing(true); setSyncMsg(''); setError('')
     try {
-      const res = await fetch('/api/admin/digiflazz/sync', { method: 'POST' })
+      const res = await fetch('/api/admin/digiflazz/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope }),
+      })
       const d = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(d.error || 'Gagal sinkron')
       if (d.perlu_migrasi) {
         setSyncMsg('⚠ Tabel master digital_sku belum ada — migrasi migration_digital_sku.sql dulu di server.')
       } else {
-        setSyncMsg(`✓ ${d.sku} SKU · ${d.dibuat} produk baru dibuat · ${d.duplikat} sudah ada · ${d.toko} toko`)
+        const preamble = scope === 'demo' ? '🧪 Kepada toko DEMO' : '✓'
+        setSyncMsg(`${preamble} ${d.sku} SKU · ${d.dibuat} produk baru dibuat · ${d.duplikat} sudah ada · ${d.toko} toko`)
       }
       await load()
     } catch (e) { setError((e as Error).message) }
@@ -139,11 +146,18 @@ export default function AdminPricelist() {
             <ArrowClockwise size={15} className={refreshing ? 'animate-spin' : ''} /> Segarkan Harga
           </button>
           <button
-            onClick={aktifkanSemua} disabled={syncing}
+            onClick={() => aktifkanSemua('all')} disabled={syncing}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-60"
-            title="Sinkron master + jadikan semua SKU Digiflazz produk digital di semua toko (idempotent)"
+            title="Sinkron master + jadikan semua SKU Digiflazz produk digital di semua toko aktif, termasuk toko asli (idempotent). Biarkan kosong bila belum yakin."
           >
-            {syncing ? 'Menyinkronkan...' : '⚡ Aktifkan semua SKU ke semua toko'}
+            {syncing ? 'Menyinkronkan...' : '⚡ Aktifkan semua SKU -> semua toko'}
+          </button>
+          <button
+            onClick={() => aktifkanSemua('demo')} disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600 transition-colors disabled:opacity-60 border-2 border-amber-700"
+            title="🧪 Materialisasi hanya ke tenant demo (is_demo) utk uji dulu — TIDAK menyentuh toko asli. Idempotent."
+          >
+            {syncing ? 'Menyinkronkan...' : '🧪 Uji di toko DEMO dulu'}
           </button>
         </div>
       </div>
