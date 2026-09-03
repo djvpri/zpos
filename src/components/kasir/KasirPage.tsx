@@ -37,7 +37,7 @@ export default function KasirPage() {
   const { getHarga } = useHargaMember()
   const { bon, loading: bonLoading, simpan: simpanBon, hapus: hapusBon, tandaiSelesai, reload: reloadBon } = useBon()
 
-  const [katId, setKatId] = useState<number | null>(null)
+  const [katId, setKatId] = useState<number | 'pulsa' | null>(null)
   const [cari, setCari] = useState('')
   const [keranjang, setKeranjang] = useState<Record<number, number>>({})
   const [diskon, setDiskon] = useState(0)
@@ -94,13 +94,17 @@ export default function KasirPage() {
   const [showListBon, setShowListBon] = useState(false)
   const [bonErr, setBonErr] = useState('')
 
-  const produkFiltered = useMemo(() =>
-    produk.filter(p =>
-      (katId === null || p.kategori_id === katId) &&
-      (cari === '' ||
-        p.nama.toLowerCase().includes(cari.toLowerCase()) ||
-        (p.barcode && p.barcode.toLowerCase().includes(cari.toLowerCase())))
-    ), [produk, katId, cari])
+  // Pemisahan grid: chip "Pulsa" menampilkan SEMUA produk digital (jenis='digital',
+  // row Digiflazz). Chip kategori/Semua utk produk FISIK saja — supaya katalog
+  // pulsa 75+ SKU tak bercampur dgn barang fisik kasir.
+  const produkFiltered = useMemo(() => {
+    const q = cari.toLowerCase()
+    return produk.filter(p => {
+      if (!(q === '' || p.nama.toLowerCase().includes(q) || (p.barcode && p.barcode.toLowerCase().includes(q)))) return false
+      if (katId === 'pulsa') return p.jenis === 'digital'
+      return p.jenis !== 'digital' && (katId === null || p.kategori_id === katId)
+    })
+  }, [produk, katId, cari])
 
   const items: ItemKeranjang[] = useMemo(() =>
     Object.entries(keranjang)
@@ -334,6 +338,12 @@ export default function KasirPage() {
 
   const filterChips = (
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+      <button onClick={() => setKatId('pulsa')}
+        className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+          katId === 'pulsa'
+            ? 'bg-indigo-600 text-white'
+            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100'
+        }`}>⚡ Pulsa</button>
       <button onClick={() => setKatId(null)}
         className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
           katId === null ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
