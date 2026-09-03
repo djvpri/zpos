@@ -25,6 +25,34 @@ async function punyaMaster(): Promise<boolean> {
   return !!r?.ok
 }
 
+// Buat tabel master bila blm ada (mirror migration_digital_sku.sql, idempotent).
+// Dipanggil hanya saat owner eksplisit via tombol sync Harga Pulsa — skema
+// digital_sku add-only, non-breaking buat tenant yg sedang pakai.
+async function pastikanMaster(): Promise<boolean> {
+  if (await punyaMaster()) return true
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS digital_sku (
+        buyer_sku_code   text PRIMARY KEY,
+        product_name     text NOT NULL,
+        category         text,
+        brand            text,
+        harga_modal      int  DEFAULT 0,
+        digital_brand    text DEFAULT 'prabayar',
+        margin_type      text,
+        margin_persen    int,
+        margin_nominal   int,
+        aktif            boolean NOT NULL DEFAULT true,
+        updated_at       timestamptz NOT NULL DEFAULT now()
+      )
+    `
+    await sql`CREATE INDEX IF NOT EXISTS idx_digital_sku_aktif ON digital_sku(aktif)`
+    return true
+  } catch {
+    return false // DB kita terlarang DDL? -> tanda utk UI
+  }
+}
+
 // Upsert master SKU dari hasil price-list Digiflazz. Idempotent by buyer_sku_code.
 // Refresh hanya memperbarui data harga Digiflazz (modal/nama/kategori/brand),
 // TIDAK menyentuh margin_yang sudah diset owner (margin master authoritative).
@@ -82,9 +110,9 @@ function defaultHarga(modal: number, marginType: string | null, marginPersen: nu
 // Row produk utk toko tertentu boleh dinonaktifkan sendiri oleh tenant;
 // fungsi ini tidak menghapus / meng-aktifkan ulang yang tenant matikan.
 export async function syncSemua(itemsPrabayar: PricelistItem[], itemsPasca: PricelistItem[]): Promise<SyncDigitalResult> {
-  // Kalau tabel master belum ada (migrasi belum diterapkan), jangan berbuat apa2
-  // (materialisasi butuh master); response ditandai utk UI.
-  if (!(await punyaMaster())) {
+  // Kalau tabel master blm ada, buat otomatis (add-only, aman utk tenant) lalu lanjut.
+  // Kalau DDL gagal (tak punya hak), tandai buat UI.
+  if (!(await pastikanMaster())) {
     return { dibuat: 0, duplikat: 0, sku: 0, toko: 0, perlu_migrasi: true }
   }
   // 1. Update master
