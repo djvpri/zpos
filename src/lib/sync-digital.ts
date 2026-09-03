@@ -104,12 +104,18 @@ function defaultHarga(modal: number, marginType: string | null, marginPersen: nu
   return modal
 }
 
-// Sync master + materialisasi SEMUA SKU (semua toko). Idempotent:
+// Sync master + materialisasi SKU jadi produk di toko target. Idempotent:
 //   - tambah row produk per (toko_id, buyer_sku_code) yang belum ada
 //   - sinkron harga_modal margin utk SKU yang berubah di master (row aktif)
+// scope 'all' (default) = semua toko aktif; 'demo' = hanya tenant demo (is_demo)
+// supaya bisa uji dulu di satu toko demo tanpa merusak toko asli.
 // Row produk utk toko tertentu boleh dinonaktifkan sendiri oleh tenant;
 // fungsi ini tidak menghapus / meng-aktifkan ulang yang tenant matikan.
-export async function syncSemua(itemsPrabayar: PricelistItem[], itemsPasca: PricelistItem[]): Promise<SyncDigitalResult> {
+export async function syncSemua(
+  itemsPrabayar: PricelistItem[],
+  itemsPasca: PricelistItem[],
+  scope: 'all' | 'demo' = 'all',
+): Promise<SyncDigitalResult> {
   // Kalau tabel master blm ada, buat otomatis (add-only, aman utk tenant) lalu lanjut.
   // Kalau DDL gagal (tak punya hak), tandai buat UI.
   if (!(await pastikanMaster())) {
@@ -130,7 +136,7 @@ export async function syncSemua(itemsPrabayar: PricelistItem[], itemsPasca: Pric
     margin_persen: number | null; margin_nominal: number | null; aktif: boolean
   }>
 
-  const semuaToko = (await sql`SELECT id FROM toko WHERE aktif = true`) as Array<{ id: number }>
+  const semuaToko = (await sql`SELECT id FROM toko WHERE aktif = true ${scope === 'demo' ? sql`AND is_demo = true` : sql``}`) as Array<{ id: number }>
   const hasil: SyncDigitalResult = { dibuat: 0, duplikat: 0, sku: aktif.length, toko: semuaToko.length }
 
   for (const sku of aktif) {

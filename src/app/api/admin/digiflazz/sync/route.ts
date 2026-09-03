@@ -13,7 +13,10 @@ export async function POST(req: Request) {
   const admin = await getAdminFromRequest(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  let scope: 'all' | 'demo' = 'all'
+  try { scope = (await req.json().catch(() => ({}))).scope === 'demo' ? 'demo' : 'all' } catch { /* body kosong */ }
+
   const { prepaid, pasca } = await priceList(true) // paksa ambil harga Digiflazz terbaru
-  const res = await syncSemua(prepaid, pasca)
+  const res = await syncSemua(prepaid, pasca, scope)
   return NextResponse.json({ ok: true, ...res })
 }
