@@ -16,7 +16,11 @@ export async function POST(req: Request) {
   let scope: 'all' | 'demo' = 'all'
   try { scope = (await req.json().catch(() => ({}))).scope === 'demo' ? 'demo' : 'all' } catch { /* body kosong */ }
 
-  const { prepaid, pasca } = await priceList(true) // paksa ambil harga Digiflazz terbaru
+  // Pakai cache price-list (SEGAR bila owner baru tekan "Segarkan Harga" di halaman).
+  // JANGAN paksa refresh lagi di sini: dua panggilan fresh berdekatan kena "limitasi
+  // pengecekan pricelist" Digiflazz dan balikin data kosong → materialisasi 0 SKU.
+  // Alur sehat: owner "Segarkan Harga" sekali (fresh → cache) → baru klik sinkron.
+  const { prepaid, pasca } = await priceList()
   const res = await syncSemua(prepaid, pasca, scope)
   return NextResponse.json({ ok: true, ...res })
 }
