@@ -72,9 +72,9 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+    <div className="fixed inset-0 bg-black/50 flex overflow-y-auto z-50 p-4"
       onClick={e => { if (e.target === e.currentTarget) onTutup() }}>
-      <div className="bg-white rounded-xl w-80 shadow-xl overflow-hidden">
+      <div className="bg-white rounded-xl w-80 shadow-xl overflow-hidden m-auto">
         {/* Area nota (yang dicetak) — class struk-area harus ada utk CSS print.
           StrukModal memakai class itu; konsisten supaya print layout sama. */}
         <div className="struk-area relative overflow-hidden p-6 font-mono text-sm bg-white">

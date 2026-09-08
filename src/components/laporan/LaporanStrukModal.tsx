@@ -103,9 +103,9 @@ export function LaporanStrukModal({ data, namaToko, alamat, telepon, catatan_str
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+    <div className="fixed inset-0 bg-black/50 flex overflow-y-auto z-50 p-4"
       onClick={e => { if (e.target === e.currentTarget) onTutup() }}>
-      <div className="bg-white rounded-xl w-80 shadow-xl overflow-hidden">
+      <div className="bg-white rounded-xl w-80 shadow-xl overflow-hidden m-auto">
         <style>{`
           @media screen { .x-lap-print-area { display: none; } }
           @media print {

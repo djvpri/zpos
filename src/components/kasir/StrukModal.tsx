@@ -142,9 +142,9 @@ export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+    <div className="fixed inset-0 bg-black/50 flex overflow-y-auto z-50 p-4"
       onClick={e => { if (e.target === e.currentTarget) onTutup() }}>
-      <div className="bg-white rounded-xl w-80 shadow-xl overflow-hidden">
+      <div className="bg-white rounded-xl w-80 shadow-xl overflow-hidden m-auto">
         {/* Area struk (yang dicetak) */}
         <div className="struk-area relative overflow-hidden p-6 font-mono text-sm bg-white">
           {/* Watermark utk nota batal — tetap tercetak supaya nota void tak bisa dipakai bayar */}
