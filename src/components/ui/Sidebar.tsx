@@ -1,9 +1,8 @@
 'use client'
 
-import { Receipt, Box, BarChartLine, People, PersonBadge, Gear, CardChecklist, Shop, ClipboardCheck, CashCoin, Stars } from 'react-bootstrap-icons'
+import { Box, BarChartLine, People, PersonBadge, Gear, CardChecklist, Shop, ClipboardCheck, CashCoin, Stars } from 'react-bootstrap-icons'
 
 const NAV_OWNER = [
-  { id: 'kasir', icon: Receipt, label: 'Kasir' },
   { id: 'produk', icon: Box, label: 'Produk' },
   { id: 'member', icon: PersonBadge, label: 'Member' },
   { id: 'laporan', icon: BarChartLine, label: 'Laporan' },
@@ -16,9 +15,8 @@ const NAV_OWNER = [
   { id: 'pengaturan', icon: Gear, label: 'Atur' },
 ] as const
 
-const NAV_KASIR = [
-  { id: 'kasir', icon: Receipt, label: 'Kasir' },
-] as const
+// Transaksi web dinonaktifkan — hanya aplikasi Z1 Kasir desktop yg jualan.
+const NAV_KASIR = [] as const
 
 type Halaman = 'kasir' | 'produk' | 'member' | 'laporan' | 'ai' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online' | 'stock-opname' | 'pengeluaran'
 

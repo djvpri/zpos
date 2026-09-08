@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { Sidebar } from '@/components/ui/Sidebar'
 import { Topbar } from '@/components/ui/Topbar'
-import KasirPage from '@/components/kasir/KasirPage'
 import ProdukPage from '@/components/produk/ProdukPage'
 import LaporanPage from '@/components/laporan/LaporanPage'
 import StaffPage from '@/components/staff/StaffPage'
@@ -14,14 +13,13 @@ import TokoOnlinePage from '@/components/toko-online/TokoOnlinePage'
 import StockOpnamePage from '@/components/stock-opname/StockOpnamePage'
 import PengeluaranPage from '@/components/pengeluaran/PengeluaranPage'
 import AIPage from '@/components/ai/AIPage'
-import { Receipt, Box, BarChartLine, People, PersonBadge, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle, Shop, ClipboardCheck, CashCoin, Stars } from 'react-bootstrap-icons'
+import { Box, BarChartLine, People, PersonBadge, Gear, LockFill, BoxArrowRight, Film, CardChecklist, ExclamationTriangle, Shop, ClipboardCheck, CashCoin, Stars, Display } from 'react-bootstrap-icons'
 import { useAuth } from '@/hooks/useAuth'
 import { fmtDate } from '@/lib/utils'
 
 type Halaman = 'kasir' | 'produk' | 'member' | 'laporan' | 'ai' | 'staff' | 'pengaturan' | 'lisensi' | 'toko-online' | 'stock-opname' | 'pengeluaran'
 
 const NAV_OWNER = [
-  { id: 'kasir' as Halaman, icon: Receipt, label: 'Kasir' },
   { id: 'produk' as Halaman, icon: Box, label: 'Produk' },
   { id: 'member' as Halaman, icon: PersonBadge, label: 'Member' },
   { id: 'laporan' as Halaman, icon: BarChartLine, label: 'Laporan' },
@@ -34,13 +32,15 @@ const NAV_OWNER = [
   { id: 'pengaturan' as Halaman, icon: Gear, label: 'Atur' },
 ]
 
-const NAV_KASIR = [
-  { id: 'kasir' as Halaman, icon: Receipt, label: 'Kasir' },
-]
+// Transaksi web DINONAKTIFKAN — seluruh jualan pindah murni ke Z1 Kasir
+// (desktop). Tab Kasir tak ditawarkan ke siapa pun. Role web 'kasir' gak
+// punya menu (NAV_KASIR kosong) → lihat kartu pengalihan di bawah.
+type NavItem = { id: Halaman; icon: typeof Box; label: string }
+const NAV_KASIR: NavItem[] = []
 
 export default function AppPage() {
   const { toko, loading, offline, pendingSync, logout, refresh } = useAuth()
-  const [halaman, setHalaman] = useState<Halaman>('kasir')
+  const [halaman, setHalaman] = useState<Halaman>('produk')
   const [resetLoading, setResetLoading] = useState(false)
   // Banner peringatan lisensi — sisa hari dihitung SEKALI di effect via
   // microtask (bukan sync) biar lolos react-hooks/set-state-in-effect; dan
@@ -73,14 +73,8 @@ export default function AppPage() {
     }
   }
 
-  // Redirect kasir yang coba akses halaman admin (microtask agar lolos
-  // react-hooks/set-state-in-effect — react-hooks/next plugin menolak setState
-  // sinkron di body effect).
-  useEffect(() => {
-    if (!loading && toko?.role === 'kasir' && halaman !== 'kasir') {
-      Promise.resolve().then(() => setHalaman('kasir'))
-    }
-  }, [toko, loading, halaman])
+  // Role web 'kasir' gagal akses semua halaman web manajemen — diarahkan
+  // penuh ke aplikasi Z1 Kasir desktop (transaksi web dinonaktifkan).
 
   if (loading) {
     return (
@@ -111,6 +105,29 @@ export default function AppPage() {
         )}
         <p className="text-sm text-gray-500 max-w-sm mb-6">
           Hubungi admin untuk {nonaktif ? 'mengaktifkan kembali' : 'memperpanjang langganan'}.
+        </p>
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors"
+        >
+          <BoxArrowRight size={15} /> Keluar
+        </button>
+      </div>
+    )
+  }
+
+  // Staf web (role kasir): transaksi & semua fitur kasir dipindah murni ke
+  // aplikasi Z1 Kasir desktop — web Z1 Pos dinonaktifkan utk mereka.
+  if (toko?.role === 'kasir') {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-gray-50 px-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-5">
+          <Display size={28} className="text-indigo-500" />
+        </div>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">Gunakan Aplikasi Z1 Kasir</h1>
+        <p className="text-sm text-gray-500 max-w-sm mb-6">
+          Transaksi kasir kini hanya tersedia di aplikasi <b>Z1 Kasir</b> desktop.
+          Login staf lewat web dinonaktifkan.
         </p>
         <button
           onClick={logout}
@@ -167,7 +184,6 @@ export default function AppPage() {
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar halaman={halaman} />
         <main className="flex-1 overflow-auto pb-16 md:pb-0">
-          {halaman === 'kasir' && <KasirPage />}
           {halaman === 'produk' && isOwner && <ProdukPage />}
           {halaman === 'member' && isOwner && <MemberPage />}
           {halaman === 'laporan' && isOwner && <LaporanPage />}
