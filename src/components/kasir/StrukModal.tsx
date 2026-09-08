@@ -28,10 +28,10 @@ export function StrukModal({ transaksi, toko, desain, onTutup }: Props) {
 
   const tpl = getDesainNota(desain)
 
-  // Cek printer tersimpan saat modal dibuka
-  useState(() => {
+  // Cek printer tersimpan sekali saat modal dibuka
+  useEffect(() => {
     getSavedPrinterName().then(name => setSavedPrinter(name))
-  })
+  }, [])
 
   // Tutup saat klik latar gelap atau tekan Escape
   useEffect(() => {

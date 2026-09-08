@@ -28,9 +28,11 @@ export function LaporanStrukModal({ data, namaToko, alamat, telepon, catatan_str
   const [btMsg, setBtMsg] = useState('')
   const [savedPrinter, setSavedPrinter] = useState<string | null>(null)
 
-  useState(() => {
+  // Muat printer tersimpan sekali saat modal dibuka
+  useEffect(() => {
     getSavedPrinterName().then(name => setSavedPrinter(name))
-  })
+  }, [])
+
   // Tutup saat klik latar gelap atau tekan Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => !e.repeat && e.key === 'Escape' && onTutup()

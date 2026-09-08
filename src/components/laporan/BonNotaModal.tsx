@@ -32,7 +32,9 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
   const [btMsg, setBtMsg] = useState('')
   const [savedPrinter, setSavedPrinter] = useState<string | null>(null)
 
-  useState(() => { getSavedPrinterName().then(setSavedPrinter) })
+  // Muat printer tersimpan sekali saat mount
+  useEffect(() => { getSavedPrinterName().then(setSavedPrinter) }, [])
+
   // Tutup saat klik latar gelap atau tekan Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => !e.repeat && e.key === 'Escape' && onTutup()
