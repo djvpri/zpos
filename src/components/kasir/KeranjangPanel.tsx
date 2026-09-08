@@ -3,6 +3,7 @@
 import { Fragment } from 'react'
 import { ItemKeranjang } from '@/types'
 import { fmt } from '@/lib/utils'
+import type { Bon } from '@/hooks/useBon'
 import { Cart3, Bag, Box, CreditCardFill, BookmarkPlus, ListUl } from 'react-bootstrap-icons'
 
 interface Props {
@@ -23,6 +24,7 @@ interface Props {
   onGantung: () => void
   onListBon: () => void
   bonAktif: number
+  bonEdit?: Bon | null
   // Item DIGITAL: nomor tujuan per item (id produk → customer_no). Kosong/undefined
   // utk produk fisik. Kalau item digital tak punya nomor → bayar diblokir.
   customerNomor?: Record<number, string>
@@ -37,6 +39,7 @@ export function KeranjangPanel({
   onUbahQty, onDiskon, onBayar, onMetode, onBayarSekarang, onGantung, onListBon, bonAktif,
   customerNomor = {}, onCustomerNomor,
   pascaVerified = {}, onCekPasca,
+  bonEdit = null,
 }: Props) {
   const totalItem = items.reduce((s, i) => s + i.qty, 0)
   // Digital butuh nomor; PASCABAYAR extra butuh inquiry sukses (pascaVerified).
@@ -55,6 +58,11 @@ export function KeranjangPanel({
         <span className="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-0.5 rounded-full font-medium">
           {totalItem} item
         </span>
+        {bonEdit && (
+          <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap">
+            Tambah item · #<span className="font-mono">{bonEdit.id}</span>
+          </span>
+        )}
       </div>
 
       {/* Items */}
@@ -202,7 +210,7 @@ export function KeranjangPanel({
             className={`py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 transition-colors ${
               items.length === 0 ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
             }`}>
-            <BookmarkPlus size={15} /> Gantung
+            <BookmarkPlus size={15} /> {bonEdit ? 'Simpan Perubahan' : 'Gantung'}
           </button>
           <button onClick={onListBon}
             className={`relative py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 transition-colors ${

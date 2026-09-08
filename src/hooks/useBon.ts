@@ -6,7 +6,8 @@ import { cacheGet, cacheSet } from '@/lib/offline-cache'
 export interface Bon {
   id: number
   nama: string | null
-  produk: Record<number, number>   // produk_id → qty
+  produk: Record<number, number>   // produk_id → qty (final)
+  sesi?: { t: string; p: Record<string, number> }[]  // grup tambahan (opsional)
   total: number
   selesai: boolean
   created_at?: string
@@ -51,6 +52,23 @@ export function useBon() {
     return row
   }, [])
 
+  // Perbarui isi bon AKTIF (tambah/kurang item). Memakai PATCH produk — bukan POST —
+  // sehingga bon tetap 1 & jejak sesi (jam tambahan) tersimpan untuk nota.
+  const perbaruiProduk = useCallback(async (id: number, produk: Record<number, number>, total?: number): Promise<Bon> => {
+    const res = await fetch(`/api/bon/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ produk, total }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || `Gagal memperbarui bon (${res.status})`)
+    }
+    const row = await res.json()
+    setBon(b => b.map(x => (x.id === row.id ? { ...x, ...row } : x)))
+    return row
+  }, [])
+
   // Hapus bon dari list (refresh list juga utk sinkron).
   const hapus = useCallback(async (id: number) => {
     await fetch(`/api/bon/${id}`, { method: 'DELETE' })
@@ -68,5 +86,5 @@ export function useBon() {
     return res.ok
   }, [])
 
-  return { bon, loading, simpan, hapus, tandaiSelesai, reload: load }
+  return { bon, loading, simpan, perbaruiProduk, hapus, tandaiSelesai, reload: load }
 }

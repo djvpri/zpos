@@ -3,6 +3,7 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { catatAktivitas } from '@/lib/aktivitas'
 import { apiHandler } from '@/lib/api-handler'
+import { resolveSesi } from '@/lib/bon-sesi'
 
 // GET daftar bon. Default: yang masih aktif (selesai=false). ?semua=1 → termasuk dibayar.
 export async function GET(req: Request) {
@@ -11,7 +12,7 @@ export async function GET(req: Request) {
 
   const semua = new URL(req.url).searchParams.get('semua') === '1'
   const rows = await sql`
-    SELECT id, nama, produk_json, total, selesai, created_at, dibayar_at
+    SELECT id, nama, produk_json, sesi_json, total, selesai, created_at, dibayar_at
     FROM bon
     WHERE toko_id = ${toko.tokoId} ${semua ? sql`` : sql`AND selesai = false`}
     ORDER BY selesai ASC, created_at DESC
@@ -20,7 +21,8 @@ export async function GET(req: Request) {
   const out = rows.map(r => ({
     id: r.id,
     nama: r.nama,
-    produk: JSON.parse(r.produk_json),   // {produk_id: qty}
+    produk: JSON.parse(r.produk_json),   // {produk_id: qty} final (kompat)
+    sesi: resolveSesi(r.sesi_json, r.produk_json, r.created_at),  // grup tambahan utk nota
     total: r.total,
     selesai: r.selesai,
     created_at: r.created_at,

@@ -35,7 +35,7 @@ export default function KasirPage() {
   const { pajakPersen, alamat, telepon, catatan_struk, desainNota } = usePengaturan()
   const { anggota } = useMember()
   const { getHarga } = useHargaMember()
-  const { bon, loading: bonLoading, simpan: simpanBon, hapus: hapusBon, tandaiSelesai, reload: reloadBon } = useBon()
+  const { bon, loading: bonLoading, simpan: simpanBon, perbaruiProduk, hapus: hapusBon, tandaiSelesai, reload: reloadBon } = useBon()
 
   const [katId, setKatId] = useState<number | 'pulsa' | null>(null)
   const [cari, setCari] = useState('')
@@ -92,6 +92,7 @@ export default function KasirPage() {
   // Bon gantung: modal simpan (butuh member aktif) + modal daftar (tarik/hapus/bayar).
   const [showSimpanBon, setShowSimpanBon] = useState(false)
   const [showListBon, setShowListBon] = useState(false)
+  const [bonEdit, setBonEdit] = useState<Bon | null>(null)  // bon aktif yg sdg ditambah item (vs dibuat baru)
   const [bonErr, setBonErr] = useState('')
 
   // Pemisahan grid: chip "Pulsa" menampilkan SEMUA produk digital (jenis='digital',
@@ -328,6 +329,7 @@ export default function KasirPage() {
     setStruk({ ...trxData, digital: (hasil.data as { digital?: DigitalResult[] } | undefined)?.digital ?? [] })
     setKeranjang({})
     setVirtualProduk({})
+    setBonEdit(null)
     setCustomerNomor({})
     setPascaVerified({})
     setBayar('')
@@ -365,9 +367,21 @@ export default function KasirPage() {
     setMemberMap(map)
   }
 
-  // Bon gantung: simpan keranjang sekarang sbg bon (belum dibayar). WAJIB ada
-  // member aktif — nama member dipakai sbg keterangan bon.
+  // Simpan keranjang: (a) bon BARU bila tak mengedit bon, (b) PATCH item ke bon yg sama
+  // bila `bonEdit` aktif (tambahan). Nama member dipakai sbg keterangan.
   async function konfirmSimpanBon() {
+    if (bonEdit) {
+      // Edit bon aktif → PATCH produk (server tambah sesi/jam utk nota).
+      setBonErr('')
+      try {
+        await perbaruiProduk(bonEdit.id, keranjang, total)
+        setBonEdit(null)
+        setShowSimpanBon(false)
+        setKeranjang({})
+        setVirtualProduk({})
+      } catch (e) { setBonErr((e as Error).message); return }
+      return
+    }
     if (!memberAktif) { setShowSimpanBon(false); return }
     setBonErr('')
     try {
@@ -378,19 +392,33 @@ export default function KasirPage() {
     } catch (e) { setBonErr((e as Error).message) }
   }
 
-  // Buka modal simpan bon. Wajib member aktif — kalau belum, buka list member.
+  // Buka modal simpan bon. Bon BARU wajib member aktif — kalau belum, buka list member.
+  // Saat mengedit bon yg ada (`bonEdit`), member sudah tercatat di bon → langsung OK.
   function bukaSimpanBon() {
     if (totalItem === 0) return
-    if (!memberAktif) { setMlistTerbuka(true); return }  // minta pilih member dulu
+    if (!memberAktif && !bonEdit) { setMlistTerbuka(true); return }  // minta pilih member dulu
     setBonErr('')
     setShowSimpanBon(true)
   }
 
-  // Tarik bon → isi ulang keranjang (produk id positif), tandai selesai.
+  // Ambi bon utk di-TEBUS (bayar lunas) → muat keranjang & tandai selesai (perilaku lama).
   async function tarikBon(b: Bon) {
     setKeranjang({ ...b.produk })
+    if (bonEdit?.id === b.id) setBonEdit(null)
     setShowListBon(false)
     await tandaiSelesai(b.id)
+  }
+
+  // Ambi bon utk DITAMBAH item (belum tebus): muat keranjang, membernya, TAPI jangan
+  // tandai selesai — bon tetap hidup sampai akhirnya ditebus. Simpan ulang = PATCH sesi baru.
+  function tambahItemBon(b: Bon) {
+    setKeranjang({ ...b.produk })
+    setBonEdit(b)
+    if (b.nama) {
+      const m = anggota.find(a => a.nama === b.nama)
+      if (m) void pilihMember(m)
+    }
+    setShowListBon(false)
   }
 
   const keranjangProps = {
@@ -401,6 +429,7 @@ export default function KasirPage() {
     onGantung: bukaSimpanBon,
     onListBon: () => { setShowListBon(true); reloadBon() },
     bonAktif: bon.filter(x => !x.selesai).length,
+    bonEdit,
     customerNomor, onCustomerNomor: ubahCustomerNomor,
     pascaVerified, onCekPasca: cekTagihanPasca,
   }
@@ -664,20 +693,26 @@ export default function KasirPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="font-semibold text-gray-800">Gantung Transaksi</span>
+              <span className="font-semibold text-gray-800">{bonEdit ? 'Simpan Tambahan ke Bon' : 'Gantung Transaksi'}</span>
               <button onClick={() => setShowSimpanBon(false)} className="p-1.5 rounded-full hover:bg-gray-100"><XLg size={16} className="text-gray-500" /></button>
             </div>
-            <p className="text-sm text-gray-500 mb-3">Keranjang ({totalItem} item, {fmt(total)}) digantung atas nama member berikut & bisa dilanjutkan kapan saja.</p>
+            {bonEdit ? (
+              <p className="text-sm text-gray-500 mb-3">Item tambahan ({totalItem} item, {fmt(total)}) disimpan ke bon yang sama ({bonEdit.nama || `#${bonEdit.id}`}) sbg sesi baru — akan tampil terpisah di nota saat dicetak.</p>
+            ) : (
+              <p className="text-sm text-gray-500 mb-3">Keranjang ({totalItem} item, {fmt(total)}) digantung atas nama member berikut & bisa dilanjutkan kapan saja.</p>
+            )}
+            {!bonEdit && (<>
             <label className="text-xs text-gray-500">Member</label>
             <div className="flex items-center gap-2 mt-1 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2.5">
               <PersonBadge size={16} className="text-emerald-600 shrink-0" />
               <span className="text-sm font-medium text-emerald-800">{memberAktif?.nama}</span>
             </div>
+            </>)}
             {bonErr && <p className="text-sm text-red-600 mt-2">{bonErr}</p>}
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowSimpanBon(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Batal</button>
-              <button onClick={konfirmSimpanBon} disabled={totalItem === 0 || !memberAktif}
-                className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50">Gantung</button>
+              <button onClick={konfirmSimpanBon} disabled={totalItem === 0 || (!memberAktif && !bonEdit)}
+                className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50">{bonEdit ? 'Simpan Perubahan' : 'Gantung'}</button>
             </div>
           </div>
         </div>
@@ -707,10 +742,14 @@ export default function KasirPage() {
                       <div className="text-sm font-medium text-gray-800 truncate">{b.nama || `Bon #${b.id}`}</div>
                       <div className="text-xs text-gray-400">{jumlah} item · {fmt(b.total)}</div>
                     </div>
-                    <button onClick={() => tarikBon(b)}
-                      className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700">Tarik</button>
-                    <button onClick={() => { if (confirm(`Hapus bon ${b.nama || '#'+b.id}?`)) hapusBon(b.id) }}
-                      className="p-2 text-gray-400 hover:text-red-500"><Trash3 size={14} /></button>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => tambahItemBon(b)} title="Ambi bon utk ditambah item (belum tebus)"
+                        className="px-2.5 py-1.5 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-50">+ Item</button>
+                      <button onClick={() => tarikBon(b)} title="Ambi bon & tebus utk dibayar"
+                        className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700">Tebus</button>
+                      <button onClick={() => { if (confirm(`Hapus bon ${b.nama || '#'+b.id}?`)) hapusBon(b.id) }}
+                        className="p-2 text-gray-400 hover:text-red-500"><Trash3 size={14} /></button>
+                    </div>
                   </div>
                 )
               })}

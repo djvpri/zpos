@@ -7,6 +7,12 @@ import { buildEscPos, printViaBluetooth, selectPrinter, isBluetoothSupported, ge
 import { getDesainNota } from '@/lib/desain-nota'
 
 interface BonItem { produk_id: number; nama: string; harga: number; qty: number; subtotal: number }
+export interface GrupNota {
+  t: string
+  sesiNo: number
+  awal: boolean
+  items: BonItem[]
+}
 export interface BonNota {
   id: number
   nama: string | null
@@ -15,6 +21,7 @@ export interface BonNota {
   created_at: string
   dibayar_at: string | null
   items: BonItem[]
+  grup?: GrupNota[] | null   // sesi waktu bila bon pernah ditambah item (dari `grup` di /nota)
 }
 
 interface TokoInfo { nama: string; alamat?: string; telepon?: string; catatan_struk?: string }
@@ -98,7 +105,19 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
           </div>
 
           <div className={`border-b ${tpl.dividerStyle === 'solid' ? 'border-solid' : 'border-dashed'} border-gray-300 mb-3`}>
-            {nota.items.map((it, i) => (
+            {nota.grup && nota.grup.length > 1 ? nota.grup.map(g => (
+              <div key={g.sesiNo} className="mb-2">
+                <div className={`text-[10px] font-bold tracking-wide ${g.awal ? '' : 'text-amber-600'}`}>
+                  {g.awal ? `PESANAN PERTAMA` : `+ TAMBAHAN ${g.sesiNo} · ${new Date(g.t).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`}
+                </div>
+                {g.items.map((it, i) => (
+                  <div key={i} className="flex justify-between text-[13px]">
+                    <span className="truncate">{it.nama}{!g.awal && <span className="text-amber-600 font-bold"> +{it.qty}</span>}</span>
+                    <span className="whitespace-nowrap">{g.awal ? fmt(it.subtotal) : `+${fmt(it.subtotal)}`}</span>
+                  </div>
+                ))}
+              </div>
+            )) : nota.items.map((it, i) => (
               <div key={i} className="mb-1">
                 <div className="truncate">{it.nama} x{it.qty}</div>
                 <div className="text-right whitespace-nowrap">{fmt(it.subtotal)}</div>

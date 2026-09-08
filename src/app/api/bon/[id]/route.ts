@@ -3,6 +3,7 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { apiHandler } from '@/lib/api-handler'
 import { catatAktivitas } from '@/lib/aktivitas'
+import { resolveSesi, appendSesi } from '@/lib/bon-sesi'
 
 // PATCH:
 //  a) tandai bon selesai (dibayar). Body { selesai: bool }.
@@ -41,9 +42,10 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
     for (const [pid, qty] of entries) finalObj[String(pid)] = qty
     if (entries.length > 50) return NextResponse.json({ error: 'Terlalu banyak item (maks 50)' }, { status: 400 })
 
+    let nextSesi: { t: string; p: Record<string, number> }[] = []
     const row = await sql.begin(async t => {
       const [cur] = await t`
-        SELECT id, produk_json, total, selesai FROM bon
+        SELECT id, produk_json, sesi_json, total, selesai, created_at FROM bon
         WHERE id = ${id} AND toko_id = ${toko.tokoId}
         FOR UPDATE
       `
@@ -69,8 +71,16 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
         else if (d < 0) await t`UPDATE produk SET stok = stok + ${-d}, updated_at = now() WHERE id = ${Number(pidStr)} AND toko_id = ${toko.tokoId}`
       }
       const newTotal = Math.round(body.total ?? cur.total)
+      // Simpan sesi (snapshot penuh) bila isi berubah — jaga jejak jam utk nota grup.
+      const before = resolveSesi(cur.sesi_json, cur.produk_json, cur.created_at)
+      const last = before.length ? before[before.length - 1] : null
+      const berubah = !last || JSON.stringify(last.p) !== JSON.stringify(finalObj)
+      nextSesi = berubah ? appendSesi(before, new Date().toISOString(), finalObj) : before
       const [upd] = await t`
-        UPDATE bon SET produk_json = ${JSON.stringify(finalObj)}, total = ${newTotal}
+        UPDATE bon
+        SET produk_json = ${JSON.stringify(finalObj)},
+            sesi_json = ${berubah ? JSON.stringify(nextSesi) : cur.sesi_json},
+            total = ${newTotal}
         WHERE id = ${id} AND toko_id = ${toko.tokoId}
         RETURNING id, nama, produk_json, total, selesai, created_at
       `
@@ -79,7 +89,7 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
     if (!row) return NextResponse.json({ error: 'Bon tidak ditemukan' }, { status: 404 })
     if ('err' in row) return NextResponse.json({ error: row.err }, { status: 400 })
     void catatAktivitas(toko, 'bon_edit', `Bon #${row.id} diubah isinya`)
-    return NextResponse.json({ ...row, produk: JSON.parse(row.produk_json) })
+    return NextResponse.json({ ...row, produk: JSON.parse(row.produk_json), sesi: nextSesi ?? [] })
   }
 
   return NextResponse.json({ error: 'Body tidak dikenal' }, { status: 400 })

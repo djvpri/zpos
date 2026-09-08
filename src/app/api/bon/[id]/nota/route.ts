@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
+import { resolveSesi, deltaPositif } from '@/lib/bon-sesi'
 
 // Ambil detail nota bon utk dicetak: resolve produk_json (id→qty) ke
 // daftar item {nama, harga, qty, subtotal}. Harga diambil dari tabel produk
@@ -16,7 +17,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: 'ID bon tidak valid' }, { status: 400 })
 
   const [bon] = await sql`
-    SELECT id, nama, produk_json, total, selesai, created_at, dibayar_at
+    SELECT id, nama, produk_json, sesi_json, total, selesai, created_at, dibayar_at
     FROM bon
     WHERE id = ${id} AND toko_id = ${toko.tokoId}`
 
@@ -42,6 +43,37 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return { produk_id: id, nama: p?.nama ?? `Produk #${id}`, harga, qty, subtotal: Math.round(harga * qty) }
   })
 
+  // Sesi eksplisit (tambahan ulang gagal) dari sesi_json bila ada. Kalau >1 (barang pernah
+  // ditambahkan terpisah dari waktu pembuatan), nota dicetak per-sesi biar pembeli tak bingung.
+  const daftarSesi = resolveSesi(bon.sesi_json, bon.produk_json, bon.created_at)
+  let grup: {
+    t: string
+    sesiNo: number
+    awal: boolean
+    items: { produk_id: number; nama: string; harga: number; qty: number; subtotal: number }[]
+  }[] | null = null
+  if (daftarSesi.length > 1) {
+    grup = daftarSesi.map((s, i) => {
+      const prev = i === 0 ? null : daftarSesi[i - 1].p
+      const mapQty = i === 0 ? s.p : deltaPositif(prev ?? {}, s.p)
+      const list = Object.entries(mapQty)
+        .map(([pidStr, qty]) => {
+          const pid = Number(pidStr)
+          const p = info.get(pid)
+          const harga = p?.harga ?? 0
+          return {
+            produk_id: pid,
+            nama: p?.nama ?? `Produk #${pid}`,
+            harga,
+            qty,
+            subtotal: Math.round(harga * qty),
+          }
+        })
+        .filter(it => it.qty > 0)
+      return { t: s.t, sesiNo: i + 1, awal: i === 0, items: list }
+    })
+  }
+
   return NextResponse.json({
     id: bon.id,
     nama: bon.nama,
@@ -50,5 +82,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     created_at: bon.created_at,
     dibayar_at: bon.dibayar_at,
     items,
+    grup,
   })
 }
