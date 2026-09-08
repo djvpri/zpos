@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { LaporanHarian } from '@/types'
 import { fmt, fmtDate } from '@/lib/utils'
 import {
@@ -31,6 +31,12 @@ export function LaporanStrukModal({ data, namaToko, alamat, telepon, catatan_str
   useState(() => {
     getSavedPrinterName().then(name => setSavedPrinter(name))
   })
+  // Tutup saat klik latar gelap atau tekan Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => !e.repeat && e.key === 'Escape' && onTutup()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onTutup])
 
   const isRange = data.tanggal.includes(' s/d ')
   // Rentang = label sudah siap pakai ("2026-08-01 s/d 2026-08-07");
@@ -97,7 +103,8 @@ export function LaporanStrukModal({ data, namaToko, alamat, telepon, catatan_str
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={e => { if (e.target === e.currentTarget) onTutup() }}>
       <div className="bg-white rounded-xl w-80 shadow-xl overflow-hidden">
         <style>{`
           @media screen { .x-lap-print-area { display: none; } }

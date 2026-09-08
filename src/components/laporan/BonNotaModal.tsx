@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { fmt, fmtDateTime } from '@/lib/utils'
 import { Printer, Bluetooth, CheckLg } from 'react-bootstrap-icons'
 import { buildEscPos, printViaBluetooth, selectPrinter, isBluetoothSupported, getSavedPrinterName } from '@/lib/thermal-print'
@@ -33,6 +33,12 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
   const [savedPrinter, setSavedPrinter] = useState<string | null>(null)
 
   useState(() => { getSavedPrinterName().then(setSavedPrinter) })
+  // Tutup saat klik latar gelap atau tekan Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => !e.repeat && e.key === 'Escape' && onTutup()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onTutup])
   const tpl = getDesainNota(desain)
 
   const waktu = nota.created_at
@@ -66,7 +72,8 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={e => { if (e.target === e.currentTarget) onTutup() }}>
       <div className="bg-white rounded-xl w-80 shadow-xl overflow-hidden">
         {/* Area nota (yang dicetak) — class struk-area harus ada utk CSS print.
           StrukModal memakai class itu; konsisten supaya print layout sama. */}
