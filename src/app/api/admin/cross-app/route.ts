@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'create') {
       const name = String(data?.name || '').trim()
-      const userEmail = String(data?.email || '').trim()
+      const userEmail = String(data?.email || email || '').trim()
       const password = String(data?.password || '')
       let tenantId = data?.tenantId ? Number(data.tenantId) : null
       if (!name || !userEmail || !password) {
