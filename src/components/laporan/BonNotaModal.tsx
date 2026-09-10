@@ -6,7 +6,7 @@ import { Printer, Bluetooth, CheckLg } from 'react-bootstrap-icons'
 import { buildEscPos, printViaBluetooth, selectPrinter, isBluetoothSupported, getSavedPrinterName } from '@/lib/thermal-print'
 import { getDesainNota } from '@/lib/desain-nota'
 
-interface BonItem { produk_id: number; nama: string; harga: number; qty: number; subtotal: number }
+export interface BonItem { produk_id: number; nama: string; harga: number; qty: number; subtotal: number }
 export interface GrupNota {
   t: string
   sesiNo: number

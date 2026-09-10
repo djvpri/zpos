@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePengaturan } from '@/hooks/usePengaturan'
 import { StrukModal } from '@/components/kasir/StrukModal'
 import { LaporanStrukModal } from '@/components/laporan/LaporanStrukModal'
-import { BonNotaModal, BonNota } from '@/components/laporan/BonNotaModal'
+import { BonNotaModal, BonNota, BonItem } from '@/components/laporan/BonNotaModal'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 const fmtDT = (d: string) => `${fmtDate(d)} ${fmtTime(d)}`
@@ -98,6 +98,7 @@ export default function LaporanPage() {
   const [filterStatus, setFilterStatus] = useState<'semua' | 'aktif' | 'selesai'>('semua')
   const [notaCetak, setNotaCetak] = useState<BonNota | null>(null)
   const [loadingNota, setLoadingNota] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const filterBon = useMemo(() => {
     const q = filterNama.trim().toLowerCase()
@@ -251,6 +252,100 @@ export default function LaporanPage() {
     a.download = `bon-gantung-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  // Export Excel (.xlsx): sheet "Ringkasan" + 1 sheet per bon (rincian item + grup
+  // waktu masuk barang). Rincian item diambil dari /api/bon/{id}/nota (BonRow list
+  // tak membawa item). Diambil bergilir; bon yang gagal diambil tetap muncul di
+  // Ringkasan (rinciannya dilewati, dicatat di kolom Catatan).
+  const exportBonExcel = async () => {
+    const daftar = filterBon
+    if (daftar.length === 0) return
+    setExporting(true)
+    try {
+      const XLSX = await import('xlsx')
+      const wb = XLSX.utils.book_new()
+
+      // --- Ringkasan ---
+      const ringkas: (string | number)[][] = [
+        ['Daftar Bon Gantung'],
+        [`Dibuat: ${new Date().toLocaleString('id-ID')}`],
+        [],
+        ['Bon', 'Member', 'Jumlah Item', 'Total (Rp)', 'Status', 'Dibuat', 'Dibayar', 'Catatan'],
+      ]
+      // Nama sheet Excel: maks 31 char, tanpa \ / ? * [ ] :
+      const bersihSheet = (s: string) => s.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31)
+      const dipakai = new Set<string>(['Ringkasan'])
+
+      // Ambil rincian semua bon (bergilir, toleran gagal).
+      const detail = new Map<number, BonNota>()
+      const gagal = new Set<number>()
+      for (const b of daftar) {
+        try {
+          const res = await fetch(`/api/bon/${b.id}/nota`)
+          if (!res.ok) throw new Error('gagal')
+          detail.set(b.id, await res.json())
+        } catch {
+          gagal.add(b.id)
+        }
+      }
+
+      for (const b of daftar) {
+        const n = Object.values(b.produk).reduce((s, x) => s + x, 0)
+        ringkas.push([
+          `Bon #${b.id}`, b.nama || '-', n, b.total,
+          b.selesai ? 'Selesai' : 'Belum Dibayar',
+          b.created_at ? fmtDT(b.created_at) : '',
+          b.dibayar_at ? fmtDT(b.dibayar_at) : '',
+          gagal.has(b.id) ? 'Rincian gagal dimuat' : '',
+        ])
+      }
+      const totalSemua = daftar.reduce((s, b) => s + Number(b.total || 0), 0)
+      const totalItem = daftar.reduce((s, b) => s + Object.values(b.produk).reduce((x, n) => x + n, 0), 0)
+      ringkas.push([], ['TOTAL', `${daftar.length} bon`, totalItem, totalSemua])
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ringkas), 'Ringkasan')
+
+      // --- 1 sheet per bon ---
+      for (const b of daftar) {
+        const d = detail.get(b.id)
+        const rows: (string | number)[][] = [
+          [`Bon #${b.id}${b.nama ? ` — ${b.nama}` : ''}`],
+          ['Status', b.selesai ? 'Selesai' : 'Belum Dibayar'],
+          ['Dibuat', b.created_at ? fmtDT(b.created_at) : ''],
+          ['Dibayar', b.dibayar_at ? fmtDT(b.dibayar_at) : ''],
+          [],
+        ]
+        if (d?.grup && d.grup.length > 0) {
+          // Per grup (barang masuk kapan) — tiap grup punya waktu & harganya sendiri.
+          for (const g of d.grup) {
+            const waktu = g.t ? fmtDT(g.t) : '(tanpa waktu)'
+            rows.push([`Grup ${g.sesiNo} — ${waktu}${g.awal ? ' (awal)' : ''}`])
+            rows.push(['Produk', 'Qty', 'Harga', 'Subtotal'])
+            for (const it of g.items) rows.push([it.nama, it.qty, it.harga, it.subtotal])
+            rows.push(['Subtotal grup', '', '', g.items.reduce((s: number, i: BonItem) => s + Number(i.subtotal || 0), 0)])
+            rows.push([])
+          }
+        } else if (d?.items && d.items.length > 0) {
+          rows.push(['Produk', 'Qty', 'Harga', 'Subtotal'])
+          for (const it of d.items) rows.push([it.nama, it.qty, it.harga, it.subtotal])
+        } else {
+          rows.push(['(rincian tidak tersedia)'])
+        }
+        rows.push([])
+        rows.push(['TOTAL BON', '', '', d?.total ?? b.total])
+
+        let nama = bersihSheet(b.nama ? `${b.id} ${b.nama}` : `Bon ${b.id}`)
+        let i = 2
+        while (dipakai.has(nama)) { nama = bersihSheet(`${b.id} ${b.nama || 'Bon'} ${i++}`) }
+        dipakai.add(nama)
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), nama)
+      }
+
+      XLSX.writeFile(wb, `bon-gantung-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    } catch {
+      alert('Gagal membuat file Excel. Coba lagi.')
+    }
+    setExporting(false)
   }
 
   useEffect(() => { Promise.resolve().then(() => loadRingkasan()) }, [loadRingkasan])
@@ -617,11 +712,16 @@ export default function LaporanPage() {
       {tab === 'bon' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Daftar bon gantung ({bon.length} total). Klik <b className="text-gray-700">Export CSV</b> untuk unduh.</p>
+            <p className="text-sm text-gray-500">Daftar bon gantung ({bon.length} total). <b className="text-gray-700">Export Excel</b> = ringkasan + 1 sheet per bon (rincian item & waktu masuk) · <b className="text-gray-700">CSV</b> = daftar ringkas.</p>
             <div className="flex gap-2">
               <button onClick={() => { setBonLoaded(false); loadBonus() }}
                 className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 transition-colors">
                 <ArrowClockwise size={13} /> Muat ulang
+              </button>
+              <button onClick={exportBonExcel} disabled={bon.length === 0 || exporting}
+                title="File Excel: sheet Ringkasan + 1 sheet per bon berisi rincian item"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                <Download size={13} /> {exporting ? 'Menyiapkan...' : 'Export Excel'}
               </button>
               <button onClick={exportBonCSV} disabled={bon.length === 0}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
