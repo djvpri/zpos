@@ -3,7 +3,7 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { catatAktivitas } from '@/lib/aktivitas'
 import { apiHandler } from '@/lib/api-handler'
-import { resolveSesi } from '@/lib/bon-sesi'
+import { resolveSesi, normalSesi } from '@/lib/bon-sesi'
 
 // GET daftar bon. Default: yang masih aktif (selesai=false). ?semua=1 → termasuk dibayar.
 export async function GET(req: Request) {
@@ -44,7 +44,7 @@ export async function GET(req: Request) {
 // qty > 0. Max item dibatasi biar payload wajar (50).
 const KERANJANG_MAX = 50
 
-export const POST = apiHandler(async (req: Request, body: { nama?: string | null; produk: Record<string, number>; harga?: Record<string, number> | null; total?: number }) => {
+export const POST = apiHandler(async (req: Request, body: { nama?: string | null; produk: Record<string, number>; harga?: Record<string, number> | null; sesi?: unknown; total?: number }) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -77,11 +77,16 @@ export const POST = apiHandler(async (req: Request, body: { nama?: string | null
   }
   const hargaJson = Object.keys(hargaObj).length ? JSON.stringify(hargaObj) : null
 
+  // Sesi ber-harga (per-kiriman) dari kasir: [{t, p:{id:qty}, h:{id:harga}}]. Kalau
+  // klien lama tak kirim → 1 sesi sintesis dari created_at (resolveSesi bikin sendiri).
+  const sesiIn = normalSesi(body.sesi)
+  const sesiJson = sesiIn.length ? JSON.stringify(sesiIn) : null
+
   const row = await sql.begin(async t => {
     const [r] = await t`
-      INSERT INTO bon (toko_id, nama, produk_json, harga_json, total)
-      VALUES (${toko.tokoId}, ${body.nama?.trim() || null}, ${JSON.stringify(produkObj)}, ${hargaJson}, ${total})
-      RETURNING id, nama, produk_json, harga_json, total, selesai, created_at
+      INSERT INTO bon (toko_id, nama, produk_json, sesi_json, harga_json, total)
+      VALUES (${toko.tokoId}, ${body.nama?.trim() || null}, ${JSON.stringify(produkObj)}, ${sesiJson}, ${hargaJson}, ${total})
+      RETURNING id, nama, produk_json, sesi_json, harga_json, total, selesai, created_at
     `
     // Opsi A: barang bon uda DIAMBIL pembeli saat digantung → HOLD stok kini.
     // Kurangi stok per item (hold), GREATEST(0) cegah minus. Saat tebus (tandai
@@ -96,5 +101,5 @@ export const POST = apiHandler(async (req: Request, body: { nama?: string | null
   })
   // Audit: bon digantung (dari windows kasir via kirim_bon, atau halaman bon web).
   await catatAktivitas(toko, 'bon_gantung', `Bon #${row.id} atas nama ${body.nama?.trim() || '(tanpa nama)'} · Rp ${total.toLocaleString('id-ID')}`)
-  return NextResponse.json({ ...row, produk: JSON.parse(row.produk_json) }, { status: 201 })
+  return NextResponse.json({ ...row, produk: JSON.parse(row.produk_json), sesi: resolveSesi(row.sesi_json, row.produk_json, row.created_at) }, { status: 201 })
 })

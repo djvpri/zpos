@@ -4,9 +4,12 @@ import { getTokoFromRequest } from '@/lib/auth'
 import { resolveSesi, deltaPositif } from '@/lib/bon-sesi'
 
 // Ambil detail nota bon utk dicetak: resolve produk_json (id→qty) ke
-// daftar item {nama, harga, qty, subtotal}. Harga diambil dari harga TERKUNCI
-// bon (`harga_json`, Opsi A) bila ada — biar nota = harga saat digantung,
-// konsisten dgn kasir. Bon lama (harga_json null) → fallback harga katalog.
+// daftar item {nama, harga, qty, subtotal}. Prioritas harga:
+//   1. harga PER-SESI (`sesi_json[].h[produk]`) — harga saat grup itu dibuat.
+//   2. harga terkunci bon (`harga_json`, Opsi A) — bon lama / tanpa rincian sesi.
+//   3. harga katalog terkini — bon lama tanpa harga_json.
+// Jadi grup lama bisa tetap Rp21.000 walau katalog kini Rp15.000, sementara
+// tambahan baru (grup baru) dicatat di harga katalog saat barang ditambahkan.
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const toko = await getTokoFromRequest(req)
@@ -39,17 +42,35 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
   const info = new Map(produkInfo.map(p => [Number(p.id), p]))
 
-  const items = ids.map(id => {
-    const p = info.get(id)
-    const qty = produk[id]
-    const kunci = hargaKunci[String(id)]
-    const harga = (kunci != null && Number.isFinite(Number(kunci))) ? Number(kunci) : (p?.harga ?? 0)
-    return { produk_id: id, nama: p?.nama ?? `Produk #${id}`, harga, qty, subtotal: Math.round(harga * qty) }
-  })
-
   // Sesi eksplisit (tambahan ulang gagal) dari sesi_json bila ada. Kalau >1 (barang pernah
   // ditambahkan terpisah dari waktu pembuatan), nota dicetak per-sesi biar pembeli tak bingung.
   const daftarSesi = resolveSesi(bon.sesi_json, bon.produk_json, bon.created_at)
+
+  // Harga efektif satuan per produk utk `items` flat. PENTING: `s.p` = qty KUMULATIF
+  // (snapshot penuh) → qty per grup = DELTA positif dari grup sebelumnya. Bila harga
+  // beda antar grup (produk sama, grup lama lebih mahal) → RATA-RATA TERTIMBANG.
+  const hargaEfektif = (pid: number): number => {
+    let q = 0, sum = 0
+    for (let i = 0; i < daftarSesi.length; i++) {
+      const s = daftarSesi[i]
+      const prev = i === 0 ? null : daftarSesi[i - 1].p
+      const d = i === 0 ? Number(s.p[String(pid)] || 0) : Number(deltaPositif(prev ?? {}, s.p)[String(pid)] || 0)
+      if (d <= 0) continue
+      const hs = s.h ? Number(s.h[String(pid)]) : NaN
+      const h = Number.isFinite(hs) ? hs : (hargaKunci[String(pid)] != null ? Number(hargaKunci[String(pid)]) : (info.get(pid)?.harga ?? 0))
+      q += d; sum += h * d
+    }
+    if (q > 0) return sum / q
+    const kunci = hargaKunci[String(pid)]
+    return (kunci != null && Number.isFinite(Number(kunci))) ? Number(kunci) : (info.get(pid)?.harga ?? 0)
+  }
+
+  const items = ids.map(id => {
+    const p = info.get(id)
+    const qty = produk[id]
+    const harga = Math.round(hargaEfektif(id))
+    return { produk_id: id, nama: p?.nama ?? `Produk #${id}`, harga, qty, subtotal: Math.round(harga * qty) }
+  })
   let grup: {
     t: string
     sesiNo: number
@@ -64,7 +85,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         .map(([pidStr, qty]) => {
           const pid = Number(pidStr)
           const p = info.get(pid)
-          const kunci = hargaKunci[String(pid)]
+          const hs = s.h ? Number(s.h[String(pid)]) : NaN
+          const kunci = Number.isFinite(hs) ? hs : hargaKunci[String(pid)]
           const harga = (kunci != null && Number.isFinite(Number(kunci))) ? Number(kunci) : (p?.harga ?? 0)
           return {
             produk_id: pid,

@@ -3,7 +3,7 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { apiHandler } from '@/lib/api-handler'
 import { catatAktivitas } from '@/lib/aktivitas'
-import { resolveSesi, appendSesi } from '@/lib/bon-sesi'
+import { resolveSesi, appendSesi, normalSesi, type BonSesi } from '@/lib/bon-sesi'
 
 // PATCH:
 //  a) tandai bon selesai (dibayar). Body { selesai: bool }.
@@ -12,7 +12,7 @@ import { resolveSesi, appendSesi } from '@/lib/bon-sesi'
 //     Web bandingkan dgn produk_json tersimpan → hold selisih POSITIF (item nambah),
 //     pulihkan selisih NEGATIF (item dikurangi/dihapus). Idempoten & anti-double-hold.
 //  c) opsional { total } utk perbarui nilai list penanda.
-export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; produk?: Record<string, number>; harga?: Record<string, number> | null; total?: number }, context) => {
+export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; produk?: Record<string, number>; harga?: Record<string, number> | null; sesi?: unknown; total?: number }, context) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -45,7 +45,7 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
     for (const [pid, qty] of entries) finalObj[String(pid)] = qty
     if (entries.length > 50) return NextResponse.json({ error: 'Terlalu banyak item (maks 50)' }, { status: 400 })
 
-    let nextSesi: { t: string; p: Record<string, number> }[] = []
+    let nextSesi: BonSesi[] = []
     const row = await sql.begin(async t => {
       const [cur] = await t`
         SELECT id, produk_json, sesi_json, harga_json, total, selesai, created_at FROM bon
@@ -78,7 +78,13 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
       const before = resolveSesi(cur.sesi_json, cur.produk_json, cur.created_at)
       const last = before.length ? before[before.length - 1] : null
       const berubah = !last || JSON.stringify(last.p) !== JSON.stringify(finalObj)
-      nextSesi = berubah ? appendSesi(before, new Date().toISOString(), finalObj) : before
+      // Klien (kasir) kirim snapshot sesi PENUH ber-harga → pakai apa adanya (grup
+      // lama simpan harga saat grup dibuat, grup baru harga katalog saat itu).
+      // Klien lama (web/tanpa sesi) → append sesi baru tanpa harga (fallback).
+      const sesiIn = normalSesi(body.sesi)
+      nextSesi = sesiIn.length
+        ? sesiIn
+        : (berubah ? appendSesi(before, new Date().toISOString(), finalObj) : before)
       // Harga terkunci (Opsi A): utamakan harga dari klien (kasir/web saat edit),
       // tapi selalu pertahankan harga lama utk item yg tak dikirim harga barunya.
       // Produk yg dihapus dari bon → harga-nya dibuang (ikut finalObj).
@@ -94,11 +100,11 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
       const [upd] = await t`
         UPDATE bon
         SET produk_json = ${JSON.stringify(finalObj)},
-            sesi_json = ${berubah ? JSON.stringify(nextSesi) : cur.sesi_json},
+            sesi_json = ${(sesiIn.length || berubah) ? JSON.stringify(nextSesi) : cur.sesi_json},
             harga_json = ${newHargaJson},
             total = ${newTotal}
         WHERE id = ${id} AND toko_id = ${toko.tokoId}
-        RETURNING id, nama, produk_json, harga_json, total, selesai, created_at
+        RETURNING id, nama, produk_json, sesi_json, harga_json, total, selesai, created_at
       `
       return upd
     })
