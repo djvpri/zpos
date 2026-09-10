@@ -370,11 +370,14 @@ export default function KasirPage() {
   // Simpan keranjang: (a) bon BARU bila tak mengedit bon, (b) PATCH item ke bon yg sama
   // bila `bonEdit` aktif (tambahan). Nama member dipakai sbg keterangan.
   async function konfirmSimpanBon() {
+    // Harga satuan TERKUNCI per produk (Opsi A) → bon tetap di harga saat digantung.
+    const hargaBon: Record<number, number> = {}
+    for (const it of items) if (it.id > 0) hargaBon[it.id] = it.harga
     if (bonEdit) {
       // Edit bon aktif → PATCH produk (server tambah sesi/jam utk nota).
       setBonErr('')
       try {
-        await perbaruiProduk(bonEdit.id, keranjang, total)
+        await perbaruiProduk(bonEdit.id, keranjang, total, hargaBon)
         setBonEdit(null)
         setShowSimpanBon(false)
         setKeranjang({})
@@ -385,7 +388,7 @@ export default function KasirPage() {
     if (!memberAktif) { setShowSimpanBon(false); return }
     setBonErr('')
     try {
-      await simpanBon(keranjang, memberAktif.nama, total)
+      await simpanBon(keranjang, memberAktif.nama, total, hargaBon)
       setKeranjang({})
       setVirtualProduk({})
       setShowSimpanBon(false)

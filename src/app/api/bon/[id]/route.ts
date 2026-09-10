@@ -12,11 +12,14 @@ import { resolveSesi, appendSesi } from '@/lib/bon-sesi'
 //     Web bandingkan dgn produk_json tersimpan → hold selisih POSITIF (item nambah),
 //     pulihkan selisih NEGATIF (item dikurangi/dihapus). Idempoten & anti-double-hold.
 //  c) opsional { total } utk perbarui nilai list penanda.
-export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; produk?: Record<string, number>; total?: number }, context) => {
+export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; produk?: Record<string, number>; harga?: Record<string, number> | null; total?: number }, context) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const id = Number((await context.params).id)
+
+  // Auto-migrate kolom harga terkunci (idempotent) — PATCH bisa jalan sebelum GET.
+  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS harga_json text')
 
   // --- (a) tandai selesai / aktifkan kembali ---
   if (typeof body.selesai === 'boolean') {
@@ -45,7 +48,7 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
     let nextSesi: { t: string; p: Record<string, number> }[] = []
     const row = await sql.begin(async t => {
       const [cur] = await t`
-        SELECT id, produk_json, sesi_json, total, selesai, created_at FROM bon
+        SELECT id, produk_json, sesi_json, harga_json, total, selesai, created_at FROM bon
         WHERE id = ${id} AND toko_id = ${toko.tokoId}
         FOR UPDATE
       `
@@ -76,13 +79,26 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
       const last = before.length ? before[before.length - 1] : null
       const berubah = !last || JSON.stringify(last.p) !== JSON.stringify(finalObj)
       nextSesi = berubah ? appendSesi(before, new Date().toISOString(), finalObj) : before
+      // Harga terkunci (Opsi A): utamakan harga dari klien (kasir/web saat edit),
+      // tapi selalu pertahankan harga lama utk item yg tak dikirim harga barunya.
+      // Produk yg dihapus dari bon → harga-nya dibuang (ikut finalObj).
+      let newHargaJson: string | null = cur.harga_json ?? null
+      const oldHarga: Record<string, number> = (() => { try { return cur.harga_json ? JSON.parse(cur.harga_json) : {} } catch { return {} } })()
+      const merged: Record<string, number> = {}
+      for (const pidStr of Object.keys(finalObj)) {
+        const hb = body.harga ? Number(body.harga[pidStr]) : NaN
+        const h = Number.isFinite(hb) && hb >= 0 ? Math.round(hb) : (oldHarga[pidStr] ?? NaN)
+        if (Number.isFinite(h) && h >= 0) merged[pidStr] = h
+      }
+      if (Object.keys(merged).length) newHargaJson = JSON.stringify(merged)
       const [upd] = await t`
         UPDATE bon
         SET produk_json = ${JSON.stringify(finalObj)},
             sesi_json = ${berubah ? JSON.stringify(nextSesi) : cur.sesi_json},
+            harga_json = ${newHargaJson},
             total = ${newTotal}
         WHERE id = ${id} AND toko_id = ${toko.tokoId}
-        RETURNING id, nama, produk_json, total, selesai, created_at
+        RETURNING id, nama, produk_json, harga_json, total, selesai, created_at
       `
       return upd
     })

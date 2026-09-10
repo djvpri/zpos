@@ -4,9 +4,9 @@ import { getTokoFromRequest } from '@/lib/auth'
 import { resolveSesi, deltaPositif } from '@/lib/bon-sesi'
 
 // Ambil detail nota bon utk dicetak: resolve produk_json (id→qty) ke
-// daftar item {nama, harga, qty, subtotal}. Harga diambil dari tabel produk
-// terkini (konsisten dgn logika tebus bon yg menghitung ulang harga).
-// Admin / kasir toko tsb.
+// daftar item {nama, harga, qty, subtotal}. Harga diambil dari harga TERKUNCI
+// bon (`harga_json`, Opsi A) bila ada — biar nota = harga saat digantung,
+// konsisten dgn kasir. Bon lama (harga_json null) → fallback harga katalog.
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const toko = await getTokoFromRequest(req)
@@ -17,7 +17,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: 'ID bon tidak valid' }, { status: 400 })
 
   const [bon] = await sql`
-    SELECT id, nama, produk_json, sesi_json, total, selesai, created_at, dibayar_at
+    SELECT id, nama, produk_json, sesi_json, harga_json, total, selesai, created_at, dibayar_at
     FROM bon
     WHERE id = ${id} AND toko_id = ${toko.tokoId}`
 
@@ -25,6 +25,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const produk: Record<number, number> = JSON.parse(bon.produk_json)
   const ids = Object.keys(produk).map(Number)
+  // Harga terkunci per produk (kalau ada) — acuan utama nota.
+  let hargaKunci: Record<string, number> = {}
+  try { hargaKunci = bon.harga_json ? JSON.parse(bon.harga_json) : {} } catch { hargaKunci = {} }
 
   // Detail produk milik toko ini utk nama & harga nota.
   let produkInfo: { id: number; nama: string; harga: number }[] = []
@@ -39,7 +42,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const items = ids.map(id => {
     const p = info.get(id)
     const qty = produk[id]
-    const harga = p?.harga ?? 0
+    const kunci = hargaKunci[String(id)]
+    const harga = (kunci != null && Number.isFinite(Number(kunci))) ? Number(kunci) : (p?.harga ?? 0)
     return { produk_id: id, nama: p?.nama ?? `Produk #${id}`, harga, qty, subtotal: Math.round(harga * qty) }
   })
 
@@ -60,7 +64,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         .map(([pidStr, qty]) => {
           const pid = Number(pidStr)
           const p = info.get(pid)
-          const harga = p?.harga ?? 0
+          const kunci = hargaKunci[String(pid)]
+          const harga = (kunci != null && Number.isFinite(Number(kunci))) ? Number(kunci) : (p?.harga ?? 0)
           return {
             produk_id: pid,
             nama: p?.nama ?? `Produk #${pid}`,

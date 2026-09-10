@@ -10,9 +10,16 @@ export async function GET(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // Opsi A (harga terkunci): bon menyimpan harga satuan saat digantung, supaya
+  // naik/turun harga katalog setelahnya TIDAK mengubah isi bon (bon = transaksi
+  // terkunci, barang sudah diambil pembeli). Auto-migrate idempotent — sama pola
+  // `member_nama` di /api/transaksi. Tanpa kolom ini, tarik bon jatuh ke harga
+  // katalog terkini (perilaku lama) — jadi aman utk bon lama (harga_json null).
+  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS harga_json text')
+
   const semua = new URL(req.url).searchParams.get('semua') === '1'
   const rows = await sql`
-    SELECT id, nama, produk_json, sesi_json, total, selesai, created_at, dibayar_at
+    SELECT id, nama, produk_json, sesi_json, harga_json, total, selesai, created_at, dibayar_at
     FROM bon
     WHERE toko_id = ${toko.tokoId} ${semua ? sql`` : sql`AND selesai = false`}
     ORDER BY selesai ASC, created_at DESC
@@ -23,6 +30,7 @@ export async function GET(req: Request) {
     nama: r.nama,
     produk: JSON.parse(r.produk_json),   // {produk_id: qty} final (kompat)
     sesi: resolveSesi(r.sesi_json, r.produk_json, r.created_at),  // grup tambahan utk nota
+    harga: r.harga_json ? JSON.parse(r.harga_json) : null,  // {produk_id: harga} terkunci
     total: r.total,
     selesai: r.selesai,
     created_at: r.created_at,
@@ -36,7 +44,7 @@ export async function GET(req: Request) {
 // qty > 0. Max item dibatasi biar payload wajar (50).
 const KERANJANG_MAX = 50
 
-export const POST = apiHandler(async (req: Request, body: { nama?: string | null; produk: Record<string, number>; total?: number }) => {
+export const POST = apiHandler(async (req: Request, body: { nama?: string | null; produk: Record<string, number>; harga?: Record<string, number> | null; total?: number }) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -53,17 +61,27 @@ export const POST = apiHandler(async (req: Request, body: { nama?: string | null
   const valid = entries.filter(([id]) => ownedSet.has(id))
   if (valid.length === 0) return NextResponse.json({ error: 'Tidak ada produk valid' }, { status: 400 })
 
-  // harga pakai harga saat ini? Simpan total sbg penanda; saat tarik dihitung ulang
-  // dari harga produk terkini (fleksibel). Total disimpan utk list penanda.
+  // total = penanda utk list; harga satuan terkunci disimpan terpisah di harga_json.
   const total = Math.round(body.total ?? 0)
   const produkObj: Record<string, number> = {}
   for (const [id, qty] of valid) produkObj[String(id)] = qty
 
+  // Harga terkunci (Opsi A): simpan harga satuan saat digantung utk tiap item valid.
+  // Kalau klien lama tak kirim → null (tarik jatuh ke harga katalog, perilaku lama).
+  const hargaObj: Record<string, number> = {}
+  if (body.harga) {
+    for (const [id] of valid) {
+      const h = Number(body.harga[String(id)])
+      if (Number.isFinite(h) && h >= 0) hargaObj[String(id)] = Math.round(h)
+    }
+  }
+  const hargaJson = Object.keys(hargaObj).length ? JSON.stringify(hargaObj) : null
+
   const row = await sql.begin(async t => {
     const [r] = await t`
-      INSERT INTO bon (toko_id, nama, produk_json, total)
-      VALUES (${toko.tokoId}, ${body.nama?.trim() || null}, ${JSON.stringify(produkObj)}, ${total})
-      RETURNING id, nama, produk_json, total, selesai, created_at
+      INSERT INTO bon (toko_id, nama, produk_json, harga_json, total)
+      VALUES (${toko.tokoId}, ${body.nama?.trim() || null}, ${JSON.stringify(produkObj)}, ${hargaJson}, ${total})
+      RETURNING id, nama, produk_json, harga_json, total, selesai, created_at
     `
     // Opsi A: barang bon uda DIAMBIL pembeli saat digantung → HOLD stok kini.
     // Kurangi stok per item (hold), GREATEST(0) cegah minus. Saat tebus (tandai

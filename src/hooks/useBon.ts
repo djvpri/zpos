@@ -8,6 +8,7 @@ export interface Bon {
   nama: string | null
   produk: Record<number, number>   // produk_id → qty (final)
   sesi?: { t: string; p: Record<string, number> }[]  // grup tambahan (opsional)
+  harga?: Record<number, number> | null   // produk_id → harga satuan TERKUNCI saat digantung
   total: number
   selesai: boolean
   created_at?: string
@@ -37,11 +38,11 @@ export function useBon() {
   useEffect(() => { load(false) }, [load])
 
   // Simpan keranjang → bon baru.
-  const simpan = useCallback(async (produk: Record<number, number>, nama?: string | null, total?: number): Promise<Bon> => {
+  const simpan = useCallback(async (produk: Record<number, number>, nama?: string | null, total?: number, harga?: Record<number, number> | null): Promise<Bon> => {
     const res = await fetch('/api/bon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ produk, nama, total }),
+      body: JSON.stringify({ produk, nama, total, harga }),
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
@@ -54,11 +55,11 @@ export function useBon() {
 
   // Perbarui isi bon AKTIF (tambah/kurang item). Memakai PATCH produk — bukan POST —
   // sehingga bon tetap 1 & jejak sesi (jam tambahan) tersimpan untuk nota.
-  const perbaruiProduk = useCallback(async (id: number, produk: Record<number, number>, total?: number): Promise<Bon> => {
+  const perbaruiProduk = useCallback(async (id: number, produk: Record<number, number>, total?: number, harga?: Record<number, number> | null): Promise<Bon> => {
     const res = await fetch(`/api/bon/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ produk, total }),
+      body: JSON.stringify({ produk, total, harga }),
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
