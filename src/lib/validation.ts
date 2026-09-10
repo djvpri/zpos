@@ -51,9 +51,16 @@ export const produkSchema = z.object({
   digital_brand: z.enum(['prabayar', 'pasca']).nullable().optional(),
 })
 
+// PENTING (Zod 4): `.partial()` TIDAK membuang `.default()` — parse `{id, harga}`
+// tetap menyuntik `stok: 0`, `stok_minimum: 5`, `jenis: 'fisik'` → edit cepat harga
+// menimpa STOK jadi 0 (bug nyata). Jadi override manual: field ber-default wajib
+// `.optional()` TANPA default di skema update, agar field absen benar-benar absen.
 export const produkUpdateSchema = produkSchema.partial().extend({
   id: z.number().int().positive(),
   aktif: z.boolean().optional(),
+  stok: z.number().int().min(0).optional(),
+  stok_minimum: z.number().int().min(0).optional(),
+  jenis: z.enum(['fisik', 'digital']).optional(),
 })
 
 // ===== Kategori =====

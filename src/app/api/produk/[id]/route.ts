@@ -44,11 +44,18 @@ export const PUT = apiHandler(async (req: Request, body: z.infer<typeof produkUp
     ...Object.fromEntries(Object.entries(body).filter(([, v]) => v !== undefined)),
   }
 
+  // Sabuk pengaman: `stok` HANYA berubah kalau body benar-benar mengirimnya.
+  // (Edit cepat harga kirim {id, harga}; kalau schema/handler suatu saat menyuntik
+  // stok:0 lagi, stok existing tetap dipertahankan — bukan di-reset ke 0.)
+  const stokBaru = (body as { stok?: number }).stok !== undefined
+    ? (merged.jenis === 'digital' ? 0 : merged.stok)
+    : (Number(existing.stok) || 0)
+
   let row: Produk
   try {
     ;[row] = await sql`
       UPDATE produk
-      SET nama = ${merged.nama}, harga = ${merged.harga}, stok = ${merged.jenis === 'digital' ? 0 : merged.stok},
+      SET nama = ${merged.nama}, harga = ${merged.harga}, stok = ${stokBaru},
           emoji = ${merged.emoji ?? null}, deskripsi = ${merged.deskripsi || null}, foto_url = ${merged.foto_url || null},
           barcode = ${merged.barcode || null}, kategori_id = ${merged.kategori_id ?? null},
           harga_grosir = ${merged.harga_grosir ?? null}, min_qty_grosir = ${merged.min_qty_grosir ?? null},
