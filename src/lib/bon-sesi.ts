@@ -246,6 +246,24 @@ export function grupDariSesi(
   return out
 }
 
+// Item virtual dari PRESET katalog (tabel item_virtual, id serial POSITIF).
+// Kasir desktop memakai hash nama+harga (vidVirtual) sebagai id negatif; web tak
+// bisa meniru hash itu tanpa duplikasi algoritma (rawan beda JS↔TS). Web cukup
+// memakai id negatif SENDIRI yang jelas & tak bentrok dengan hash kasir:
+//   -(1_000_000_000 + idItemVirtual)  → -1.000.000.005 dst
+// Hash kasir selalu < 9e15 tapi tak pernah di rentang kecil 1e9..+∞ negatif ini
+// (kasir hanya utk nama+harga bebas) — dan kalaupun bentrok, `vmap` menang karena
+// kasir selalu restore vmap bon dulu (Object.assign ke virtualProduk).
+export const OFFSET_VIRTUAL_WEB = 1_000_000_000
+export function idVirtualPreset(idItemVirtual: number): number {
+  return -(OFFSET_VIRTUAL_WEB + idItemVirtual)
+}
+export function idItemVirtualDariPreset(idVirtual: number): number | null {
+  if (!Number.isInteger(idVirtual) || idVirtual >= 0) return null
+  const n = -idVirtual - OFFSET_VIRTUAL_WEB
+  return n > 0 ? n : null
+}
+
 // vmap = {idVirtual: {nama, harga}} dari kasir. Dipakai server utk MENAMAI baris
 // item virtual (id negatif, "Lainnya") di nota web — tanpa ini barisnya cuma
 // tampil "Produk #-1789...". Hanya id negatif yg diterima (positif pakai katalog).

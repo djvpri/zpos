@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { fmt } from '@/lib/utils'
 import { Trash, PlusLg, ClockHistory } from 'react-bootstrap-icons'
 import type { BonNota, BonGrup, BonItem } from '@/components/laporan/BonNotaModal'
+import { idVirtualPreset } from '@/lib/bon-sesi'
 
 // Satu baris item yang sedang diedit. `produk_id` 0 = baris baru (belum dipilih).
 // `virtualNama` = nama item "Lainnya" (id negatif) supaya ikut terkirim di vmap.
@@ -16,6 +17,10 @@ interface BarisEdit { produk_id: number; nama: string; harga: number; qty: numbe
 interface GrupEdit { t: string | null; baris: BarisEdit[] }
 
 interface Produk { id: number; nama: string; harga: number }
+// Preset = baris tabel item_virtual (id positif) → dipakai lewat id virtual negatif.
+interface Preset { id: number; nama: string; harga: number }
+// Satu hasil pencarian: produk katalog atau preset "Lainnya".
+interface HasilCari { kunci: string; nama: string; harga: number; produkId: number; preset: boolean }
 
 interface Props {
   nota: BonNota
@@ -47,6 +52,7 @@ export function BonEditModal({ nota, onSimpan, onTutup }: Props) {
     }]
   })
   const [produk, setProduk] = useState<Produk[]>([])
+  const [preset, setPreset] = useState<Preset[]>([])
   const [cari, setCari] = useState<{ gi: number; teks: string } | null>(null)
   const [err, setErr] = useState('')
   const [simpan, setSimpan] = useState(false)
@@ -54,6 +60,9 @@ export function BonEditModal({ nota, onSimpan, onTutup }: Props) {
   useEffect(() => {
     // ?semua=1 = mode ringan (tanpa foto_thumb base64).
     fetch('/api/produk?semua=1').then(r => r.ok ? r.json() : []).then(setProduk).catch(() => setProduk([]))
+    // Preset "Lainnya" (katalog item virtual per-toko) — tak punya stok/barcode,
+    // jadi hanya ditawarkan di sini, bukan di daftar produk.
+    fetch('/api/item-virtual').then(r => r.ok ? r.json() : []).then(setPreset).catch(() => setPreset([]))
   }, [])
 
   useEffect(() => {
@@ -66,22 +75,36 @@ export function BonEditModal({ nota, onSimpan, onTutup }: Props) {
     setGrup(gs => gs.map((g, i) => i !== gi ? g : { ...g, baris: g.baris.map((b, j) => j === bi ? { ...b, ...patch } : b) }))
   const buangBaris = (gi: number, bi: number) =>
     setGrup(gs => gs.map((g, i) => i !== gi ? g : { ...g, baris: g.baris.filter((_, j) => j !== bi) }))
-  const tambahKe = (gi: number, p: Produk) => {
+  const tambahKe = (gi: number, p: HasilCari) => {
     setCari(null)
     setGrup(gs => gs.map((g, i) => {
       if (i !== gi) return g
       // Produk sudah ada DI GRUP INI → naikkan qty, bukan baris kembar.
-      const bi = g.baris.findIndex(b => b.produk_id === p.id)
+      const bi = g.baris.findIndex(b => b.produk_id === p.produkId)
       if (bi >= 0) return { ...g, baris: g.baris.map((b, j) => j === bi ? { ...b, qty: b.qty + 1 } : b) }
-      return { ...g, baris: [...g.baris, { produk_id: p.id, nama: p.nama, harga: p.harga, qty: 1 }] }
+      return { ...g, baris: [...g.baris, { produk_id: p.produkId, nama: p.nama, harga: p.harga, qty: 1 }] }
     }))
   }
   const buangGrup = (gi: number) => setGrup(gs => gs.filter((_, i) => i !== gi))
 
   const total = grup.reduce((s, g) => s + g.baris.reduce((a, b) => a + Math.round(b.harga * b.qty), 0), 0)
-  const hasilCari = cari && cari.teks.trim()
-    ? produk.filter(p => p.nama.toLowerCase().includes(cari.teks.trim().toLowerCase())).slice(0, 8)
-    : []
+  // Gabungan produk katalog + preset "Lainnya" dalam satu daftar: produk dulu
+  // (dipakai paling sering), lalu preset yg cocok. Preset dikirim dgn id virtual
+  // negatif (idVirtualPreset) supaya tidak bentrok dgn produk asli.
+  const hasilCari: HasilCari[] = (() => {
+    const q = cari?.teks.trim().toLowerCase()
+    if (!q) return []
+    const dariProduk: HasilCari[] = produk
+      .filter(p => p.nama.toLowerCase().includes(q))
+      .slice(0, 8)
+      .map(p => ({ kunci: `p${p.id}`, nama: p.nama, harga: p.harga, produkId: p.id, preset: false }))
+    const sisa = Math.max(0, 8 - dariProduk.length)
+    const dariPreset: HasilCari[] = sisa === 0 ? [] : preset
+      .filter(p => p.nama.toLowerCase().includes(q))
+      .slice(0, sisa)
+      .map(p => ({ kunci: `v${p.id}`, nama: p.nama, harga: p.harga, produkId: idVirtualPreset(p.id), preset: true }))
+    return [...dariProduk, ...dariPreset]
+  })()
 
   const simpanKe = async () => {
     // Item virtual (id negatif, "Lainnya") ikut dipertahankan.
@@ -167,16 +190,17 @@ export function BonEditModal({ nota, onSimpan, onTutup }: Props) {
                 <div className="flex items-center gap-2">
                   <input value={cari?.gi === gi ? cari.teks : ''}
                     onChange={e => setCari({ gi, teks: e.target.value })}
-                    placeholder={`Tambah produk ke grup ${gi + 1}...`}
+                    placeholder={`Tambah produk / preset ke grup ${gi + 1}...`}
                     className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400" />
                   <PlusLg size={15} className="text-gray-300" />
                 </div>
                 {cari?.gi === gi && hasilCari.length > 0 && (
                   <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {hasilCari.map(p => (
-                      <button key={p.id} onClick={() => tambahKe(gi, p)}
+                      <button key={p.kunci} onClick={() => tambahKe(gi, p)}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 transition-colors">
                         <span className="text-gray-800">{p.nama}</span>
+                        {p.preset && <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded ml-2">Preset</span>}
                         <span className="text-xs text-gray-400 ml-2">{fmt(p.harga)}</span>
                       </button>
                     ))}
