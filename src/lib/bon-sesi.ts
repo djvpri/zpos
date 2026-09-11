@@ -165,7 +165,10 @@ export function normalVmap(raw: unknown): Record<string, VMapEntry> {
     const nama = String((v as VMapEntry).nama ?? '').trim().slice(0, 120)
     if (!nama) continue
     const h = Number((v as VMapEntry).harga)
-    out[String(id)] = { nama, harga: Number.isFinite(h) && h >= 0 ? Math.round(h) : 0 }
+    // Harga WAJIB angka >= 0: fallback 0 bikin Σ grup ≠ total (bug yg fitur ini
+    // perbaiki). Entri cacat dibuang — baris virtualnya lebih baik absen drpd Rp 0.
+    if (!Number.isFinite(h) || h < 0) continue
+    out[String(id)] = { nama, harga: Math.round(h) }
   }
   return out
 }

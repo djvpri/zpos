@@ -25,11 +25,15 @@ test('normalVmap: terima id negatif saja, tolak positif/rusak', () => {
     '-7': { nama: 'Lainnya: Parkir', harga: 3000 },
     '175': { nama: 'Ayam Geprek', harga: 21000 },   // id positif → bukan virtual
     '-8': { nama: '', harga: 1000 },                // nama kosong → dibuang
-    '-9': { nama: 'Tanpa Harga' },                  // harga hilang → 0
+    // Harga hilang / non-angka / negatif → dibuang, BUKAN dijadikan 0: harga 0
+    // bikin Σ grup ≠ total bon = bug yg fitur vmap ini perbaiki.
+    '-9': { nama: 'Tanpa Harga' },
+    '-10': { nama: 'Harga Teks', harga: 'abc' },
+    '-11': { nama: 'Harga Negatif', harga: -500 },
   })
-  assert.deepEqual(Object.keys(v), ['-7', '-9'])
+  assert.deepEqual(Object.keys(v), ['-7'])
   assert.equal(v['-7'].nama, 'Lainnya: Parkir')
-  assert.equal(v['-9'].harga, 0)
+  assert.equal(v['-7'].harga, 3000)
   assert.deepEqual(normalVmap(null), {})
   assert.deepEqual(normalVmap('bukan objek'), {})
 })
