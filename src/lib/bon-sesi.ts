@@ -151,8 +151,28 @@ export function grupDariSesi(
   return out
 }
 
+// vmap = {idVirtual: {nama, harga}} dari kasir. Dipakai server utk MENAMAI baris
+// item virtual (id negatif, "Lainnya") di nota web — tanpa ini barisnya cuma
+// tampil "Produk #-1789...". Hanya id negatif yg diterima (positif pakai katalog).
+export interface VMapEntry { nama: string; harga: number }
+export function normalVmap(raw: unknown): Record<string, VMapEntry> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const out: Record<string, VMapEntry> = {}
+  for (const [idStr, v] of Object.entries(raw as Record<string, unknown>)) {
+    const id = Number(idStr)
+    if (!Number.isInteger(id) || id >= 0) continue
+    if (!v || typeof v !== 'object') continue
+    const nama = String((v as VMapEntry).nama ?? '').trim().slice(0, 120)
+    if (!nama) continue
+    const h = Number((v as VMapEntry).harga)
+    out[String(id)] = { nama, harga: Number.isFinite(h) && h >= 0 ? Math.round(h) : 0 }
+  }
+  return out
+}
+
 // Normalisasi `sesi` dari klien (kasir) → array sesi valid. Buang id/qty non-positif
 // & selaras `h` (harga per-sesi hanya utk produk yg ada di sesi itu).
+// Id NEGATIF (item virtual "Lainnya") diterima — idnya stabil dari kasir.
 export function normalSesi(raw: unknown): BonSesi[] {
   if (!Array.isArray(raw)) return []
   const out: BonSesi[] = []
@@ -164,7 +184,7 @@ export function normalSesi(raw: unknown): BonSesi[] {
     const p: Record<string, number> = {}
     for (const [id, q] of Object.entries(pRaw)) {
       const n = Number(id), qq = Number(q)
-      if (Number.isInteger(n) && n > 0 && Number.isInteger(qq) && qq > 0) p[String(n)] = qq
+      if (Number.isInteger(n) && n !== 0 && Number.isInteger(qq) && qq > 0) p[String(n)] = qq
     }
     if (!Object.keys(p).length) continue
     const s: BonSesi = { t, p }

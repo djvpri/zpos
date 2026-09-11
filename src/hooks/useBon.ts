@@ -12,6 +12,8 @@ export interface Bon {
   total: number
   selesai: boolean
   created_at?: string
+  /** {idVirtual: {nama, harga}} — item "Lainnya" dari kasir (id negatif). */
+  vmap?: Record<string, { nama: string; harga: number }> | null
 }
 
 const CACHE_KEY = 'bon'
@@ -38,11 +40,11 @@ export function useBon() {
   useEffect(() => { load(false) }, [load])
 
   // Simpan keranjang → bon baru.
-  const simpan = useCallback(async (produk: Record<number, number>, nama?: string | null, total?: number, harga?: Record<number, number> | null): Promise<Bon> => {
+  const simpan = useCallback(async (produk: Record<number, number>, nama?: string | null, total?: number, harga?: Record<number, number> | null, vmap?: Record<string, { nama: string; harga: number }> | null): Promise<Bon> => {
     const res = await fetch('/api/bon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ produk, nama, total, harga }),
+      body: JSON.stringify({ produk, nama, total, harga, vmap }),
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
@@ -55,11 +57,13 @@ export function useBon() {
 
   // Perbarui isi bon AKTIF (tambah/kurang item). Memakai PATCH produk — bukan POST —
   // sehingga bon tetap 1 & jejak sesi (jam tambahan) tersimpan untuk nota.
-  const perbaruiProduk = useCallback(async (id: number, produk: Record<number, number>, total?: number, harga?: Record<number, number> | null): Promise<Bon> => {
+  // `vmap` wajib diteruskan kalau bon berisi item virtual (id negatif) — server
+  // menolak id negatif yg tak dikenal vmap lama/kiriman.
+  const perbaruiProduk = useCallback(async (id: number, produk: Record<number, number>, total?: number, harga?: Record<number, number> | null, vmap?: Record<string, { nama: string; harga: number }> | null): Promise<Bon> => {
     const res = await fetch(`/api/bon/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ produk, total, harga }),
+      body: JSON.stringify({ produk, total, harga, vmap }),
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))

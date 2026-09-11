@@ -12,7 +12,7 @@ interface Produk { id: number; nama: string; harga: number }
 
 interface Props {
   nota: BonNota
-  onSimpan: (produk: Record<number, number>, harga: Record<number, number>, total: number) => Promise<void>
+  onSimpan: (produk: Record<number, number>, harga: Record<number, number>, total: number, vmap?: Record<number, { nama: string; harga: number }>) => Promise<void>
   onTutup: () => void
 }
 
@@ -58,14 +58,20 @@ export function BonEditModal({ nota, onSimpan, onTutup }: Props) {
     : []
 
   const simpanKe = async () => {
-    const valid = baris.filter(b => b.produk_id > 0 && b.qty > 0)
-    if (!valid.length) { setErr('Bon harus punya minimal 1 item'); return }
+    // Item virtual (id negatif, "Lainnya") ikut dipertahankan — kalau dibuang di
+    // sini, barisnya HILANG dari bon diam-diam & total web jadi selisih.
+    const valid = baris.filter(b => b.produk_id !== 0 && b.qty > 0)
+    if (!valid.some(b => b.produk_id > 0)) { setErr('Bon harus punya minimal 1 produk'); return }
     const produkObj: Record<number, number> = {}
     const hargaObj: Record<number, number> = {}
-    for (const b of valid) { produkObj[b.produk_id] = b.qty; hargaObj[b.produk_id] = b.harga }
+    const vmapObj: Record<number, { nama: string; harga: number }> = {}
+    for (const b of valid) {
+      produkObj[b.produk_id] = b.qty; hargaObj[b.produk_id] = b.harga
+      if (b.produk_id < 0) vmapObj[b.produk_id] = { nama: b.nama, harga: b.harga }
+    }
     setErr(''); setSimpan(true)
     try {
-      await onSimpan(produkObj, hargaObj, valid.reduce((s, b) => s + Math.round(b.harga * b.qty), 0))
+      await onSimpan(produkObj, hargaObj, valid.reduce((s, b) => s + Math.round(b.harga * b.qty), 0), vmapObj)
       onTutup()
     } catch (e) { setErr((e as Error).message) } finally { setSimpan(false) }
   }

@@ -371,13 +371,18 @@ export default function KasirPage() {
   // bila `bonEdit` aktif (tambahan). Nama member dipakai sbg keterangan.
   async function konfirmSimpanBon() {
     // Harga satuan TERKUNCI per produk (Opsi A) → bon tetap di harga saat digantung.
+    // Item virtual (id negatif) ikut — kalau dibuang, barisnya hilang dari bon.
     const hargaBon: Record<number, number> = {}
-    for (const it of items) if (it.id > 0) hargaBon[it.id] = it.harga
+    const vmapBon: Record<string, { nama: string; harga: number }> = {}
+    for (const it of items) {
+      hargaBon[it.id] = it.harga
+      if (it.id < 0) vmapBon[String(it.id)] = { nama: it.nama, harga: it.harga }
+    }
     if (bonEdit) {
       // Edit bon aktif → PATCH produk (server tambah sesi/jam utk nota).
       setBonErr('')
       try {
-        await perbaruiProduk(bonEdit.id, keranjang, total, hargaBon)
+        await perbaruiProduk(bonEdit.id, keranjang, total, hargaBon, vmapBon)
         setBonEdit(null)
         setShowSimpanBon(false)
         setKeranjang({})
@@ -388,7 +393,7 @@ export default function KasirPage() {
     if (!memberAktif) { setShowSimpanBon(false); return }
     setBonErr('')
     try {
-      await simpanBon(keranjang, memberAktif.nama, total, hargaBon)
+      await simpanBon(keranjang, memberAktif.nama, total, hargaBon, vmapBon)
       setKeranjang({})
       setVirtualProduk({})
       setShowSimpanBon(false)
@@ -404,8 +409,25 @@ export default function KasirPage() {
     setShowSimpanBon(true)
   }
 
+  // Pulihkan item virtual (id negatif) dari `vmap` server → nama & harga-nya
+  // ketemu lagi di keranjang web. Tanpa ini, barisnya hilang (items filtered out)
+  // dan total keranjang ≠ total bon. `stok` tanpa arti utk virtual (pakai 0).
+  function restoreVirtual(vmap?: Record<string, { nama: string; harga: number }> | null) {
+    if (!vmap) return
+    setVirtualProduk(v => {
+      const next = { ...v }
+      for (const [k, e] of Object.entries(vmap)) {
+        const id = Number(k)
+        if (!Number.isFinite(id) || id >= 0) continue
+        next[id] = { id, nama: e.nama, harga: e.harga, stok: 0, kategori_id: null, barcode: null, foto_url: null }
+      }
+      return next
+    })
+  }
+
   // Ambi bon utk di-TEBUS (bayar lunas) → muat keranjang & tandai selesai (perilaku lama).
   async function tarikBon(b: Bon) {
+    restoreVirtual(b.vmap)
     setKeranjang({ ...b.produk })
     if (bonEdit?.id === b.id) setBonEdit(null)
     setShowListBon(false)
@@ -415,6 +437,7 @@ export default function KasirPage() {
   // Ambi bon utk DITAMBAH item (belum tebus): muat keranjang, membernya, TAPI jangan
   // tandai selesai — bon tetap hidup sampai akhirnya ditebus. Simpan ulang = PATCH sesi baru.
   function tambahItemBon(b: Bon) {
+    restoreVirtual(b.vmap)
     setKeranjang({ ...b.produk })
     setBonEdit(b)
     if (b.nama) {

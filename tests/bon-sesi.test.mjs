@@ -2,7 +2,7 @@
 // Fokus: harga PER-SESI (`h`) — bon #103 demo: grup 1 = 21.000, grup 4 = 15.000.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { normalSesi, resolveSesi, appendSesi, parseSesiJson, deltaPositif, grupDariSesi } from '../src/lib/bon-sesi.ts'
+import { normalSesi, resolveSesi, appendSesi, parseSesiJson, deltaPositif, grupDariSesi, normalVmap } from '../src/lib/bon-sesi.ts'
 
 test('normalSesi: simpan h & selaraskan dgn p', () => {
   const s = normalSesi([{ t: 'x', p: { 175: 1 }, h: { 175: 21000, 999: 5 } }])
@@ -12,10 +12,26 @@ test('normalSesi: simpan h & selaraskan dgn p', () => {
 })
 
 test('normalSesi: sanitasi non-positif & bentuk rusak', () => {
-  assert.deepEqual(normalSesi([{ t: 'x', p: { 0: 1, '-2': 3, 175: 0, 184: 2 } }])[0].p, { 184: 2 })
+  // id 0 & 175:0 dibuang; id NEGATIF (-2) DIPERTAHANKAN — itu item virtual
+  // "Lainnya" dari kasir (id stabil), buang dia bikin grup web kehilangan baris.
+  assert.deepEqual(normalSesi([{ t: 'x', p: { 0: 1, '-2': 3, 175: 0, 184: 2 } }])[0].p, { '-2': 3, 184: 2 })
   assert.deepEqual(normalSesi('bukan array'), [])
   assert.deepEqual(normalSesi([{ p: { 175: 1 } }]), [], 'tanpa t → dibuang')
   assert.deepEqual(normalSesi([{ t: 'x', p: { 175: 1 }, h: { 175: -5 } }])[0].h, undefined, 'harga negatif dibuang')
+})
+
+test('normalVmap: terima id negatif saja, tolak positif/rusak', () => {
+  const v = normalVmap({
+    '-7': { nama: 'Lainnya: Parkir', harga: 3000 },
+    '175': { nama: 'Ayam Geprek', harga: 21000 },   // id positif → bukan virtual
+    '-8': { nama: '', harga: 1000 },                // nama kosong → dibuang
+    '-9': { nama: 'Tanpa Harga' },                  // harga hilang → 0
+  })
+  assert.deepEqual(Object.keys(v), ['-7', '-9'])
+  assert.equal(v['-7'].nama, 'Lainnya: Parkir')
+  assert.equal(v['-9'].harga, 0)
+  assert.deepEqual(normalVmap(null), {})
+  assert.deepEqual(normalVmap('bukan objek'), {})
 })
 
 test('parseSesiJson: round-trip h', () => {
@@ -146,4 +162,24 @@ test('grupDariSesi: h tak lengkap di satu grup → fallback ke harga_json, bukan
   assert.ok(grup)
   const beras = grup[1].items.find(it => it.produk_id === 184)
   assert.equal(beras?.harga, 65000, 'jatuh ke hargaFallback (harga_json), bukan 0')
+})
+
+// Item virtual "Lainnya" (id negatif) harus IKUT di grup — dulu dibuang di
+// normalSesi sehingga Σ grup < total bon (selisih di nota web).
+test('grupDariSesi: item virtual (id negatif) ikut, nama dari vmap', () => {
+  const VID = -1789119144102
+  const sesi = normalSesi([
+    { t: 'a', p: { 175: 1, [VID]: 1 }, h: { 175: 21000, [VID]: 5000 } },
+  ])
+  const vmap = normalVmap({ [VID]: { nama: 'Lainnya: Parkir', harga: 5000 } })
+  const grup = grupDariSesi(sesi, { 175: 1, [VID]: 1 },
+    id => id < 0 ? (vmap[String(id)]?.nama ?? `Produk #${id}`) : NAMA(id),
+    id => id < 0 ? (vmap[String(id)]?.harga ?? 0) : FALLBACK(id),
+  )
+  assert.ok(grup, 'grup virtual tetap mode grup')
+  const virt = grup[0].items.find(it => it.produk_id === VID)
+  assert.equal(virt?.nama, 'Lainnya: Parkir', 'nama dari vmap, bukan "Produk #-..."')
+  assert.equal(virt?.subtotal, 5000)
+  // Σ grup = 21000 + 5000 = jumlah semua baris yang tampil
+  assert.equal(grup.reduce((a, g) => a + g.subtotal, 0), 26000)
 })

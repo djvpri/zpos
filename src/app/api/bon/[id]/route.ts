@@ -3,7 +3,7 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { apiHandler } from '@/lib/api-handler'
 import { catatAktivitas } from '@/lib/aktivitas'
-import { resolveSesi, appendSesi, normalSesi, type BonSesi } from '@/lib/bon-sesi'
+import { resolveSesi, appendSesi, normalSesi, normalVmap, type BonSesi } from '@/lib/bon-sesi'
 
 // PATCH:
 //  a) tandai bon selesai (dibayar). Body { selesai: bool }.
@@ -12,7 +12,7 @@ import { resolveSesi, appendSesi, normalSesi, type BonSesi } from '@/lib/bon-ses
 //     Web bandingkan dgn produk_json tersimpan → hold selisih POSITIF (item nambah),
 //     pulihkan selisih NEGATIF (item dikurangi/dihapus). Idempoten & anti-double-hold.
 //  c) opsional { total } utk perbarui nilai list penanda.
-export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; produk?: Record<string, number>; harga?: Record<string, number> | null; sesi?: unknown; total?: number }, context) => {
+export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; produk?: Record<string, number>; harga?: Record<string, number> | null; sesi?: unknown; vmap?: Record<string, { nama?: string; harga?: number }> | null; total?: number }, context) => {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -20,6 +20,8 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
 
   // Auto-migrate kolom harga terkunci (idempotent) — PATCH bisa jalan sebelum GET.
   await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS harga_json text')
+  // vmap_json = nama/harga item virtual (id negatif) — lihat POST /api/bon.
+  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS vmap_json text')
 
   // --- (a) tandai selesai / aktifkan kembali ---
   if (typeof body.selesai === 'boolean') {
@@ -39,8 +41,10 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
 
   // --- (b) edit isi bon + sinkron stok hold (delta) ---
   if (body.produk !== undefined) {
+    // Item virtual (id < 0) ikut diedit; validasinya lewat `vmap` (bukan tabel produk).
+    const vmap = normalVmap(body.vmap)
     const entries = Object.entries(body.produk ?? {}).map(([idStr, qty]) => [Number(idStr), Number(qty)] as const)
-      .filter(([pid, qty]) => Number.isInteger(pid) && pid > 0 && Number.isInteger(qty) && qty > 0)
+      .filter(([pid, qty]) => Number.isInteger(pid) && pid !== 0 && Number.isInteger(qty) && qty > 0)
     const finalObj: Record<string, number> = {}
     for (const [pid, qty] of entries) finalObj[String(pid)] = qty
     if (entries.length > 50) return NextResponse.json({ error: 'Terlalu banyak item (maks 50)' }, { status: 400 })
@@ -48,27 +52,37 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
     let nextSesi: BonSesi[] = []
     const row = await sql.begin(async t => {
       const [cur] = await t`
-        SELECT id, produk_json, sesi_json, harga_json, total, selesai, created_at FROM bon
+        SELECT id, produk_json, sesi_json, harga_json, vmap_json, total, selesai, created_at FROM bon
         WHERE id = ${id} AND toko_id = ${toko.tokoId}
         FOR UPDATE
       `
       if (!cur) return null
       if (cur.selesai) return { err: 'Bon sudah selesai — tak bisa diedit' } as const
       const old: Record<string, number> = (() => { try { return JSON.parse(cur.produk_json) } catch { return {} } })()
-      // Semua id target harus milik toko (jaga integritas).
-      const owned = await t`SELECT id FROM produk WHERE toko_id = ${toko.tokoId} AND id = ANY(${Object.keys(finalObj).map(Number)})`
+      const oldVmap: Record<string, { nama: string; harga: number }> = (() => { try { return cur.vmap_json ? JSON.parse(cur.vmap_json) : {} } catch { return {} } })()
+      // Semua id ASLI (positif) harus milik toko; item virtual (negatif) cukup
+      // ada di vmap lama ATAU vmap kiriman (biar item lama tetap bisa diedit
+      // walau klien tak mengirim ulang seluruh vmap-nya).
+      const idsAsli = Object.keys(finalObj).map(Number).filter(n => n > 0)
+      const owned = idsAsli.length
+        ? await t`SELECT id FROM produk WHERE toko_id = ${toko.tokoId} AND id = ANY(${idsAsli})`
+        : []
       const ownedSet = new Set(owned.map(o => Number(o.id)))
       const delta: Record<string, number> = {}
       let okOwned = true
       for (const [pidStr, qty] of Object.entries(finalObj)) {
         const pid = Number(pidStr)
-        if (!ownedSet.has(pid)) { okOwned = false; break }
+        if (pid < 0) {
+          if (!vmap[pidStr] && !oldVmap[pidStr]) { okOwned = false; break }
+        } else if (!ownedSet.has(pid)) { okOwned = false; break }
         const before = old[pidStr] || 0
         delta[pidStr] = qty - before
       }
       if (!okOwned) return { err: 'Terdapat produk tak valid' } as const
       // Terapkan hold delta: +kurangi stok (nambah item), -naikkan stok (kurangi item).
+      // Item virtual dilewati (tak ada row produk).
       for (const [pidStr, diff] of Object.entries(delta)) {
+        if (Number(pidStr) < 0) continue
         const d = Number(diff)
         if (d > 0) await t`UPDATE produk SET stok = GREATEST(0, stok - ${d}), updated_at = now() WHERE id = ${Number(pidStr)} AND toko_id = ${toko.tokoId}`
         else if (d < 0) await t`UPDATE produk SET stok = stok + ${-d}, updated_at = now() WHERE id = ${Number(pidStr)} AND toko_id = ${toko.tokoId}`
@@ -97,14 +111,23 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
         if (Number.isFinite(h) && h >= 0) merged[pidStr] = h
       }
       if (Object.keys(merged).length) newHargaJson = JSON.stringify(merged)
+      // vmap: gabung vmap lama + kiriman klien, buang yg item virtualnya tak ada lagi.
+      const mergedVmap: Record<string, { nama: string; harga: number }> = {}
+      for (const pidStr of Object.keys(finalObj)) {
+        if (Number(pidStr) >= 0) continue
+        const v = vmap[pidStr] ?? oldVmap[pidStr]
+        if (v) mergedVmap[pidStr] = { nama: v.nama, harga: Number(v.harga) || 0 }
+      }
+      const newVmapJson = Object.keys(mergedVmap).length ? JSON.stringify(mergedVmap) : null
       const [upd] = await t`
         UPDATE bon
         SET produk_json = ${JSON.stringify(finalObj)},
             sesi_json = ${(sesiIn.length || berubah) ? JSON.stringify(nextSesi) : cur.sesi_json},
             harga_json = ${newHargaJson},
+            vmap_json = ${newVmapJson},
             total = ${newTotal}
         WHERE id = ${id} AND toko_id = ${toko.tokoId}
-        RETURNING id, nama, produk_json, sesi_json, harga_json, total, selesai, created_at
+        RETURNING id, nama, produk_json, sesi_json, harga_json, vmap_json, total, selesai, created_at
       `
       return upd
     })
@@ -137,6 +160,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
         try { return JSON.parse(r.produk_json) } catch { return {} }
       })()
       for (const [idStr, qty] of Object.entries(produk)) {
+        if (Number(idStr) < 0) continue // item virtual: tak ada stok utk dipulihkan
         await t`
           UPDATE produk SET stok = stok + ${Number(qty)}, updated_at = now()
           WHERE id = ${Number(idStr)} AND toko_id = ${toko.tokoId}

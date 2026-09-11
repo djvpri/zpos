@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
-import { grupDariSesi, parseSesiJson } from '@/lib/bon-sesi'
+import { grupDariSesi, parseSesiJson, normalVmap, type VMapEntry } from '@/lib/bon-sesi'
 
 // Ambil detail nota bon utk dicetak: resolve produk_json (id→qty) ke
 // daftar item {nama, harga, qty, subtotal}.
@@ -29,7 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: 'ID bon tidak valid' }, { status: 400 })
 
   const [bon] = await sql`
-    SELECT id, nama, produk_json, sesi_json, harga_json, total, selesai, created_at, dibayar_at
+    SELECT id, nama, produk_json, sesi_json, harga_json, vmap_json, total, selesai, created_at, dibayar_at
     FROM bon
     WHERE id = ${id} AND toko_id = ${toko.tokoId}`
 
@@ -40,32 +40,36 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // Harga terkunci per produk (kalau ada) — acuan utama nota.
   let hargaKunci: Record<string, number> = {}
   try { hargaKunci = bon.harga_json ? JSON.parse(bon.harga_json) : {} } catch { hargaKunci = {} }
+  // vmap = {idVirtual: {nama, harga}} → nama baris item "Lainnya" (id negatif).
+  let vmapJson: unknown = null
+  try { vmapJson = bon.vmap_json ? JSON.parse(bon.vmap_json) : null } catch { vmapJson = null }
+  const vmap: Record<string, VMapEntry> = normalVmap(vmapJson)
 
-  // Detail produk milik toko ini utk nama & harga nota.
+  // Detail produk milik toko ini utk nama & harga nota (item virtual tak ada).
+  const idsAsli = ids.filter(n => n > 0)
   let produkInfo: { id: number; nama: string; harga: number }[] = []
-  if (ids.length) {
+  if (idsAsli.length) {
     produkInfo = await sql`
       SELECT id, nama, harga
       FROM produk
-      WHERE id = ANY(${ids}) AND toko_id = ${toko.tokoId}`
+      WHERE id = ANY(${idsAsli}) AND toko_id = ${toko.tokoId}`
   }
   const info = new Map(produkInfo.map(p => [Number(p.id), p]))
+  const namaDari = (id: number): string =>
+    id < 0 ? (vmap[String(id)]?.nama ?? `Produk #${id}`) : (info.get(id)?.nama ?? `Produk #${id}`)
+  const hargaDari = (id: number): number =>
+    id < 0 ? (vmap[String(id)]?.harga ?? 0) : Number(hargaKunci[String(id)] ?? info.get(id)?.harga ?? 0)
 
   const items = ids.map(id => {
-    const p = info.get(id)
     const qty = produk[id]
-    const kunci = hargaKunci[String(id)]
-    const harga = (kunci != null && Number.isFinite(Number(kunci))) ? Number(kunci) : (p?.harga ?? 0)
-    return { produk_id: id, nama: p?.nama ?? `Produk #${id}`, harga, qty, subtotal: Math.round(harga * qty) }
+    const harga = hargaDari(id)
+    return { produk_id: id, nama: namaDari(id), harga, qty, subtotal: Math.round(harga * qty) }
   })
 
   // Riwayat grup ber-harga: hanya dipakai bila SETIAP grup punya `h`. Bon campur
   // (sebagian grup tanpa h) → null → nota pakai mode seragam di bawah.
   const sesi = parseSesiJson(bon.sesi_json)
-  const grup = grupDariSesi(sesi, produk,
-    id => info.get(id)?.nama ?? `Produk #${id}`,
-    id => Number(hargaKunci[String(id)] ?? info.get(id)?.harga ?? 0),
-  )
+  const grup = grupDariSesi(sesi, produk, namaDari, hargaDari)
 
   // Total dihitung dari baris yang ditampilkan — jamin footer nota = jumlah baris.
   // Mode grup: jumlah grup. Mode seragam: jumlah items. `bon.total` dipakai hanya
