@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePengaturan } from '@/hooks/usePengaturan'
 import { StrukModal } from '@/components/kasir/StrukModal'
 import { LaporanStrukModal } from '@/components/laporan/LaporanStrukModal'
-import { BonNotaModal, BonNota, BonItem } from '@/components/laporan/BonNotaModal'
+import { BonNotaModal, BonNota } from '@/components/laporan/BonNotaModal'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 const fmtDT = (d: string) => `${fmtDate(d)} ${fmtTime(d)}`
@@ -270,10 +270,11 @@ export default function LaporanPage() {
     URL.revokeObjectURL(url)
   }
 
-  // Export Excel (.xlsx): sheet "Ringkasan" + 1 sheet per bon (rincian item + grup
-  // waktu masuk barang). Rincian item diambil dari /api/bon/{id}/nota (BonRow list
-  // tak membawa item). Diambil bergilir; bon yang gagal diambil tetap muncul di
-  // Ringkasan (rinciannya dilewati, dicatat di kolom Catatan).
+  // Export Excel (.xlsx): sheet "Ringkasan" + 1 sheet per bon (rincian item).
+  // Harga seragam dari `harga_json` → subtotal baris selalu menjumlah = total bon.
+  // Rincian item diambil dari /api/bon/{id}/nota (BonRow list tak membawa item).
+  // Diambil bergilir; bon yang gagal diambil tetap muncul di Ringkasan (rinciannya
+  // dilewati, dicatat di kolom Catatan).
   const exportBonExcel = async () => {
     const daftar = bonEkspor
     if (daftar.length === 0) return
@@ -331,17 +332,7 @@ export default function LaporanPage() {
           ['Dibayar', b.dibayar_at ? fmtDT(b.dibayar_at) : ''],
           [],
         ]
-        if (d?.grup && d.grup.length > 0) {
-          // Per grup (barang masuk kapan) — tiap grup punya waktu & harganya sendiri.
-          for (const g of d.grup) {
-            const waktu = g.t ? fmtDT(g.t) : '(tanpa waktu)'
-            rows.push([`Grup ${g.sesiNo} — ${waktu}${g.awal ? ' (awal)' : ''}`])
-            rows.push(['Produk', 'Qty', 'Harga', 'Subtotal'])
-            for (const it of g.items) rows.push([it.nama, it.qty, it.harga, it.subtotal])
-            rows.push(['Subtotal grup', '', '', g.items.reduce((s: number, i: BonItem) => s + Number(i.subtotal || 0), 0)])
-            rows.push([])
-          }
-        } else if (d?.items && d.items.length > 0) {
+        if (d?.items && d.items.length > 0) {
           rows.push(['Produk', 'Qty', 'Harga', 'Subtotal'])
           for (const it of d.items) rows.push([it.nama, it.qty, it.harga, it.subtotal])
         } else {
