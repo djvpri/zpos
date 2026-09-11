@@ -99,6 +99,8 @@ export default function LaporanPage() {
   const [notaCetak, setNotaCetak] = useState<BonNota | null>(null)
   const [loadingNota, setLoadingNota] = useState(false)
   const [exporting, setExporting] = useState(false)
+  // Bon terpilih utk export — kosong = export semua (perilaku lama).
+  const [pilihBon, setPilihBon] = useState<Set<number>>(new Set())
 
   const filterBon = useMemo(() => {
     const q = filterNama.trim().toLowerCase()
@@ -108,6 +110,20 @@ export default function LaporanPage() {
         (filterStatus === 'aktif' ? !b.selesai : b.selesai))
     )
   }, [bon, filterNama, filterStatus])
+
+  // Yang benar-benar diekspor: irisan pilihan dgn yg lolos filter (id bon
+  // terpilih yg kebetulan tersaring keluar tak ikut terbuang diam-diam).
+  const bonEkspor = useMemo(
+    () => (pilihBon.size ? filterBon.filter(b => pilihBon.has(b.id)) : filterBon),
+    [pilihBon, filterBon]
+  )
+
+  const togglePilihBon = (id: number) => setPilihBon(p => {
+    const n = new Set(p)
+    if (n.has(id)) n.delete(id); else n.add(id)
+    return n
+  })
+  const semuaTerpilih = filterBon.length > 0 && filterBon.every(b => pilihBon.has(b.id))
 
   // --- Log aktivitas (audit anti-kecurangan) ---
   const [log, setLog] = useState<AktivitasRow[]>([])
@@ -239,7 +255,7 @@ export default function LaporanPage() {
       return `"${s.replace(/"/g, '""')}"`
     }
     const head = ['ID', 'Member', 'Jumlah Item', 'Total (Rp)', 'Status', 'Dibuat', 'Dibayar']
-    const rows = bon.map(b => [
+    const rows = bonEkspor.map(b => [
       b.id, b.nama || '-',
       Object.values(b.produk).reduce((s, n) => s + n, 0),
       b.total, b.selesai ? 'Selesai' : 'Belum Dibayar',
@@ -259,7 +275,7 @@ export default function LaporanPage() {
   // tak membawa item). Diambil bergilir; bon yang gagal diambil tetap muncul di
   // Ringkasan (rinciannya dilewati, dicatat di kolom Catatan).
   const exportBonExcel = async () => {
-    const daftar = filterBon
+    const daftar = bonEkspor
     if (daftar.length === 0) return
     setExporting(true)
     try {
@@ -712,18 +728,18 @@ export default function LaporanPage() {
       {tab === 'bon' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Daftar bon gantung ({bon.length} total). <b className="text-gray-700">Export Excel</b> = ringkasan + 1 sheet per bon (rincian item & waktu masuk) · <b className="text-gray-700">CSV</b> = daftar ringkas.</p>
+            <p className="text-sm text-gray-500">Daftar bon gantung ({bon.length} total). Centang bon utk pilih sebagian — tanpa centang = semua ikut ter-export. <b className="text-gray-700">Export Excel</b> = ringkasan + 1 sheet per bon (rincian item & waktu masuk) · <b className="text-gray-700">CSV</b> = daftar ringkas.</p>
             <div className="flex gap-2">
               <button onClick={() => { setBonLoaded(false); loadBonus() }}
                 className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 transition-colors">
                 <ArrowClockwise size={13} /> Muat ulang
               </button>
-              <button onClick={exportBonExcel} disabled={bon.length === 0 || exporting}
+              <button onClick={exportBonExcel} disabled={bonEkspor.length === 0 || exporting}
                 title="File Excel: sheet Ringkasan + 1 sheet per bon berisi rincian item"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
-                <Download size={13} /> {exporting ? 'Menyiapkan...' : 'Export Excel'}
+                <Download size={13} /> {exporting ? 'Menyiapkan...' : `Export Excel${pilihBon.size ? ` (${bonEkspor.length})` : ''}`}
               </button>
-              <button onClick={exportBonCSV} disabled={bon.length === 0}
+              <button onClick={exportBonCSV} disabled={bonEkspor.length === 0}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
                 <Download size={13} /> Export CSV
               </button>
@@ -763,6 +779,11 @@ export default function LaporanPage() {
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50">
                         <tr className="text-xs text-gray-400">
+                          <th className="px-4 py-3 w-8">
+                            <input type="checkbox" checked={semuaTerpilih}
+                              onChange={() => setPilihBon(semuaTerpilih ? new Set() : new Set(filterBon.map(b => b.id)))}
+                              className="accent-indigo-600 cursor-pointer" />
+                          </th>
                           <th className="text-left px-4 py-3">Member</th>
                           <th className="text-right px-4 py-3">Item</th>
                           <th className="text-right px-4 py-3">Total</th>
@@ -777,6 +798,11 @@ export default function LaporanPage() {
                           const item = Object.values(b.produk).reduce((s, n) => s + n, 0)
                           return (
                             <tr key={b.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
+                              <td className="px-4 py-3">
+                                <input type="checkbox" checked={pilihBon.has(b.id)}
+                                  onChange={() => togglePilihBon(b.id)}
+                                  className="accent-indigo-600 cursor-pointer" />
+                              </td>
                               <td className="px-4 py-3 font-medium text-gray-800">{b.nama || `Bon Gantung #${b.id}`}</td>
                               <td className="px-4 py-3 text-right text-gray-500">{item}x</td>
                               <td className="px-4 py-3 text-right font-semibold text-gray-900">{fmt(b.total)}</td>
