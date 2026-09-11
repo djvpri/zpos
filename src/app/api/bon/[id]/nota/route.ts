@@ -1,16 +1,24 @@
 import { NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
+import { grupDariSesi, parseSesiJson } from '@/lib/bon-sesi'
 
 // Ambil detail nota bon utk dicetak: resolve produk_json (id→qty) ke
 // daftar item {nama, harga, qty, subtotal}.
 //
-// KEBIJAKAN HARGA: bon dinilai SERAGAM di harga terkunci terakhir (`harga_json`).
-// Semua qty ikut harga itu, termasuk pcs yang masuk waktu harga masih lain —
-// jadi jumlah baris nota SELALU = kolom `total` bon. Histori `sesi_json` tetap
-// ada tapi TIDAK ditampilkan sebagai baris terpisah (dulu menampilkan delta
-// per-sesi, sehingga baris tak pernah menjumlah jadi `total`).
-// Urutan fallback harga: harga_json → harga katalog terkini.
+// KEBIJAKAN HARGA (2 tingkat):
+//  - Bon punya riwayat grup ber-harga (`sesi_json[].h`) → nota tampilkan baris
+//    PER GRUP. Tiap grup memakai harga saat grup itu dibuat, jadi nota
+//    mencerminkan harga yg benar-benar disepakati waktu barang masuk.
+//  - Bon tanpa `h` (dibuat sebelum kasir kirim h / dari web) → SERAGAM di
+//    harga terkunci `harga_json` (fallback harga katalog). Nota lama tak berubah.
+//
+// `items` (flat) TETAP dikirim sbagai ringkasan per produk — dipakai edit bon,
+// export Excel, & jumlah baris. `grup` hanya keterangan tambahan utk tampilan.
+//
+// TRANSPARANSI TOTAL: `total` = jumlah baris yang ditampilkan. Bila beda dgn
+// `bon.total` tersimpan (mis. harga lama berubah), `totalTercatat` diisi angka
+// tersimpan itu supaya nota bisa menandai selisihnya.
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const toko = await getTokoFromRequest(req)
@@ -51,15 +59,31 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return { produk_id: id, nama: p?.nama ?? `Produk #${id}`, harga, qty, subtotal: Math.round(harga * qty) }
   })
 
+  // Riwayat grup ber-harga: hanya dipakai bila SETIAP grup punya `h`. Bon campur
+  // (sebagian grup tanpa h) → null → nota pakai mode seragam di bawah.
+  const sesi = parseSesiJson(bon.sesi_json)
+  const grup = grupDariSesi(sesi, produk,
+    id => info.get(id)?.nama ?? `Produk #${id}`,
+    id => Number(hargaKunci[String(id)] ?? info.get(id)?.harga ?? 0),
+  )
+
   // Total dihitung dari baris yang ditampilkan — jamin footer nota = jumlah baris.
-  // `bon.total` dipakai hanya bila tak ada item (bon kosong / produk terhapus).
-  const jumlahBaris = items.reduce((a, it) => a + it.subtotal, 0)
-  const total = items.length ? jumlahBaris : Number(bon.total ?? 0)
+  // Mode grup: jumlah grup. Mode seragam: jumlah items. `bon.total` dipakai hanya
+  // bila tak ada item (bon kosong / produk terhapus).
+  const jumlahBaris = grup
+    ? grup.reduce((a, g) => a + g.subtotal, 0)
+    : items.reduce((a, it) => a + it.subtotal, 0)
+  const total = (grup || items.length) ? jumlahBaris : Number(bon.total ?? 0)
+  // Angka tersimpan di kolom `bon.total` — dikirim terpisah supaya nota bisa
+  // menandai selisih (harga historis berubah / total dikirim klien).
+  const totalTercatat = Number(bon.total ?? 0)
 
   return NextResponse.json({
     id: bon.id,
     nama: bon.nama,
     total,
+    totalTercatat,
+    grup,
     selesai: bon.selesai,
     created_at: bon.created_at,
     dibayar_at: bon.dibayar_at,

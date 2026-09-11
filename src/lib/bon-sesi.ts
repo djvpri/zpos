@@ -95,6 +95,62 @@ export function deltaPositif(sebelum: Record<string, number> | null, kini: Recor
 
 type ISO = string
 
+// Ubah riwayat sesi → daftar GRUP ber-harga utk nota (tiap kiriman = 1 grup).
+//
+// DUA BENTUK `p` yang beredar — dibedakan otomatis dari `acuanFinal`:
+//  - ADITIF (kasir desktop): tiap grup simpan qty kiriman ITU saja.
+//    Invarian: Σ qty semua grup per id == qty final. (bon #103: 1+2+2+3=8)
+//  - KUMULATIF (web `appendSesi`): tiap grup simpan snapshot penuh saat itu.
+//    Invarian: `p` grup TERAKHIR == qty final. (qty per grup = delta)
+// Kalau Σ aditif cocok dgn final → pakai apa adanya; kalau `p` terakhir cocok →
+// pakai delta; kalau dua-duanya meleset → null (pemanggil pakai mode seragam),
+// supaya nota tak pernah menampilkan qty yg salah.
+//
+// Hanya dipakai bila SETIAP sesi punya `h`; kalau ada satu saja yg kosong,
+// kembalikan null → pemanggil pakai mode seragam (harga_json / katalog).
+// Nota campur (separuh baris tanpa harga) lebih menyesatkan daripada seragam.
+export interface BonGrupItem { produk_id: number; nama: string; harga: number; qty: number; subtotal: number }
+export interface BonGrup { waktu: string | null; items: BonGrupItem[]; subtotal: number }
+
+export function grupDariSesi(
+  sesi: BonSesi[],
+  acuanFinal: Record<string, number>,
+  namaDari: (id: number) => string,
+  hargaFallback: (id: number) => number,
+): BonGrup[] | null {
+  if (!sesi.length || !sesi.every(s => s.h && Object.keys(s.h).length > 0)) return null
+
+  const sama = (a: Record<string, number>, b: Record<string, number>) => {
+    const ids = new Set([...Object.keys(a), ...Object.keys(b)])
+    for (const id of ids) if ((Number(a[id]) || 0) !== (Number(b[id]) || 0)) return false
+    return true
+  }
+
+  // Bentuk aditif: Σ qty tiap id == final.
+  const jum: Record<string, number> = {}
+  for (const s of sesi) for (const [id, q] of Object.entries(s.p)) jum[id] = (jum[id] ?? 0) + Number(q)
+  const aditif = sama(jum, acuanFinal)
+  // Bentuk kumulatif: snapshot terakhir == final.
+  const kumulatif = !aditif && sama(sesi[sesi.length - 1].p, acuanFinal)
+  if (!aditif && !kumulatif) return null
+
+  const out: BonGrup[] = []
+  let prev: Record<string, number> | null = null
+  for (const s of sesi) {
+    const qtyMap = aditif ? s.p : deltaPositif(prev, s.p)
+    if (!aditif) prev = s.p
+    const items: BonGrupItem[] = Object.entries(qtyMap).map(([idStr, qty]) => {
+      const id = Number(idStr)
+      const h = Number(s.h?.[idStr] ?? hargaFallback(id))
+      return { produk_id: id, nama: namaDari(id), harga: h, qty: Number(qty), subtotal: Math.round(h * Number(qty)) }
+    })
+    // Grup tanpa barang baru (sesi menyimpan ulang qty sama) tetap ditampilkan
+    // sbg penanda waktu — subtotal 0.
+    out.push({ waktu: s.t, items, subtotal: items.reduce((a, b) => a + b.subtotal, 0) })
+  }
+  return out
+}
+
 // Normalisasi `sesi` dari klien (kasir) → array sesi valid. Buang id/qty non-positif
 // & selaras `h` (harga per-sesi hanya utk produk yg ada di sesi itu).
 export function normalSesi(raw: unknown): BonSesi[] {

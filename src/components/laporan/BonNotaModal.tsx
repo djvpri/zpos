@@ -7,10 +7,16 @@ import { buildEscPos, printViaBluetooth, selectPrinter, isBluetoothSupported, ge
 import { getDesainNota } from '@/lib/desain-nota'
 
 export interface BonItem { produk_id: number; nama: string; harga: number; qty: number; subtotal: number }
+/** Satu kiriman barang ke bon gantung — harga terkunci saat grup dibuat. */
+export interface BonGrup { waktu: string | null; items: BonItem[]; subtotal: number }
 export interface BonNota {
   id: number
   nama: string | null
   total: number
+  /** Angka tersimpan di kolom `bon.total`; beda dari `total` → nota tandai selisih. */
+  totalTercatat?: number
+  /** Ada bila SEMUA grup punya harga historis; null → nota pakai `items` seragam. */
+  grup?: BonGrup[] | null
   selesai: boolean
   created_at: string
   dibayar_at: string | null
@@ -50,6 +56,20 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
   const cetak = () => window.print()
 
   const cetakBluetooth = async () => {
+    // Mode grup: struk ikut rinci per kiriman (harga historis masing-masing).
+    // Kertas termal sempit → nama baris saja, harga di baris terpisah.
+    const itemsStruk = nota.grup?.length
+      ? nota.grup.flatMap(g => {
+          const jam = g.waktu
+            ? new Date(g.waktu).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })
+            : ''
+          return [
+            ...(jam ? [{ nama: `-- ${jam} --`, qty: 0, harga: 0 }] : []),
+            ...g.items.map(it => ({ nama: `${it.nama} @${it.harga}`, qty: it.qty, harga: it.harga })),
+          ]
+        })
+      : nota.items.map(it => ({ nama: it.nama, qty: it.qty, harga: it.harga }))
+
     const data = {
       namaToko: toko.nama || 'Toko',
       alamat: toko.alamat,
@@ -58,7 +78,7 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
       noTransaksi: `Bon Gantung #${nota.id}`,
       kasir: nota.nama || '',
       member: nota.nama || undefined,
-      items: nota.items.map(it => ({ nama: it.nama, qty: it.qty, harga: it.harga })),
+      items: itemsStruk,
       subtotal: nota.total,
       total: nota.total,
       bayar: 0,
@@ -98,18 +118,45 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
           </div>
 
           <div className={`border-b ${tpl.dividerStyle === 'solid' ? 'border-solid' : 'border-dashed'} border-gray-300 mb-3`}>
-            {nota.items.map((it, i) => (
-              <div key={i} className="mb-1">
-                <div className="truncate">{it.nama} x{it.qty}</div>
-                <div className="text-right whitespace-nowrap">{fmt(it.subtotal)}</div>
-              </div>
-            ))}
+            {nota.grup?.length ? (
+              // Mode grup: barang dikirim bertahap, tiap tahap harga sendiri.
+              // Waktu ditampilkan supaya kasir/pembeli tahu pcs mana masuk kapan.
+              nota.grup.map((g, gi) => (
+                <div key={gi} className={gi ? 'mt-2 pt-2 border-t border-dotted border-gray-200' : ''}>
+                  <div className="text-[10px] text-gray-400 mb-0.5">
+                    {g.waktu ? new Date(g.waktu).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : `Kiriman ${gi + 1}`}
+                  </div>
+                  {g.items.map((it, i) => (
+                    <div key={i} className="mb-1">
+                      <div className="truncate">{it.nama} x{it.qty}</div>
+                      <div className="text-right whitespace-nowrap text-xs text-gray-500">
+                        @{fmt(it.harga)} — {fmt(it.subtotal)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))
+            ) : (
+              nota.items.map((it, i) => (
+                <div key={i} className="mb-1">
+                  <div className="truncate">{it.nama} x{it.qty}</div>
+                  <div className="text-right whitespace-nowrap">{fmt(it.subtotal)}</div>
+                </div>
+              ))
+            )}
           </div>
 
           <div className={`border-t ${tpl.dividerStyle === 'solid' ? 'border-solid' : 'border-dashed'} border-gray-300 pt-3 mb-3`}>
             <div className="flex justify-between font-bold text-base">
               <span>TOTAL</span><span>{fmt(nota.total)}</span>
             </div>
+            {/* Selisih dgn angka tersimpan di bon → tampilkan apa adanya biar tak
+                ada angka hilang diam-diam (mis. harga historis berubah). */}
+            {nota.totalTercatat != null && nota.totalTercatat !== nota.total && (
+              <div className="flex justify-between text-xs text-amber-600 mt-1">
+                <span>Tercatat di bon</span><span>{fmt(nota.totalTercatat)}</span>
+              </div>
+            )}
           </div>
 
           {!tpl.infoSebelumItems && (
