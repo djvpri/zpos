@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePengaturan } from '@/hooks/usePengaturan'
 import { StrukModal } from '@/components/kasir/StrukModal'
 import { LaporanStrukModal } from '@/components/laporan/LaporanStrukModal'
-import { BonNotaModal, BonNota } from '@/components/laporan/BonNotaModal'
+import { BonNotaModal, BonNota, BonGrup } from '@/components/laporan/BonNotaModal'
 import { BonEditModal } from '@/components/laporan/BonEditModal'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
@@ -304,8 +304,10 @@ export default function LaporanPage() {
   }
 
   // Export Excel (.xlsx): sheet "Ringkasan" + 1 sheet per bon (rincian item).
-  // Harga seragam dari `harga_json` → subtotal baris selalu menjumlah = total bon.
-  // Rincian item diambil dari /api/bon/{id}/nota (BonRow list tak membawa item).
+  // Rincian per GRUP kiriman bila tersedia (`grup`): tiap grup punya waktu & harga
+  // sendiri saat barang masuk, jadi subtotal baris selalu menjumlah = total bon.
+  // Bon tanpa grup (harga historis tak lengkap) → fallback `items` seragam.
+  // Rincian diambil dari /api/bon/{id}/nota (BonRow list tak membawa item).
   // Diambil bergilir; bon yang gagal diambil tetap muncul di Ringkasan (rinciannya
   // dilewati, dicatat di kolom Catatan).
   const exportBonExcel = async () => {
@@ -365,7 +367,17 @@ export default function LaporanPage() {
           ['Dibayar', b.dibayar_at ? fmtDT(b.dibayar_at) : ''],
           [],
         ]
-        if (d?.items && d.items.length > 0) {
+        if (d?.grup && d.grup.length > 0) {
+          // Pisah per grup kiriman: tiap grup punya waktu & harga saat itu.
+          d.grup.forEach((g: BonGrup, gi: number) => {
+            const waktu = g.waktu ? fmtDT(g.waktu) : `Kiriman ${gi + 1}`
+            rows.push([`Grup ${gi + 1} — ${waktu}`])
+            rows.push(['Produk', 'Qty', 'Harga', 'Subtotal'])
+            for (const it of g.items) rows.push([it.nama, it.qty, it.harga, it.subtotal])
+            rows.push(['Subtotal grup', '', '', g.subtotal])
+            rows.push([])
+          })
+        } else if (d?.items && d.items.length > 0) {
           rows.push(['Produk', 'Qty', 'Harga', 'Subtotal'])
           for (const it of d.items) rows.push([it.nama, it.qty, it.harga, it.subtotal])
         } else {
