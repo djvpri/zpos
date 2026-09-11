@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fmt, fmtDate } from '@/lib/utils'
 import { LaporanHarian, ProdukTerlaris, Transaksi, Shift } from '@/types'
-import { GraphUpArrow, Receipt, Bag, Percent, Ban, Download, ArrowClockwise, Trophy, Printer, CashCoin, Wallet2 } from 'react-bootstrap-icons'
+import { GraphUpArrow, Receipt, Bag, Percent, Ban, Download, ArrowClockwise, Trophy, Printer, CashCoin, Wallet2, PencilSquare } from 'react-bootstrap-icons'
 import { cacheGet, cacheSet } from '@/lib/offline-cache'
 import { useAuth } from '@/hooks/useAuth'
 import { usePengaturan } from '@/hooks/usePengaturan'
 import { StrukModal } from '@/components/kasir/StrukModal'
 import { LaporanStrukModal } from '@/components/laporan/LaporanStrukModal'
 import { BonNotaModal, BonNota } from '@/components/laporan/BonNotaModal'
+import { BonEditModal } from '@/components/laporan/BonEditModal'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 const fmtDT = (d: string) => `${fmtDate(d)} ${fmtTime(d)}`
@@ -97,6 +98,7 @@ export default function LaporanPage() {
   const [filterNama, setFilterNama] = useState('')
   const [filterStatus, setFilterStatus] = useState<'semua' | 'aktif' | 'selesai'>('semua')
   const [notaCetak, setNotaCetak] = useState<BonNota | null>(null)
+  const [bonEdit, setBonEdit] = useState<BonNota | null>(null)
   const [loadingNota, setLoadingNota] = useState(false)
   const [exporting, setExporting] = useState(false)
   // Bon terpilih utk export — kosong = export semua (perilaku lama).
@@ -209,6 +211,37 @@ export default function LaporanPage() {
       setNotaCetak(null)
     }
     setLoadingNota(false)
+  }
+
+  // Buka editor item bon. Pakai detail nota yang sama (sudah resolve
+  // produk_json + harga terkunci) supaya daftar di editor = daftar di nota.
+  const bukaEditBon = async (id: number) => {
+    setLoadingNota(true)
+    try {
+      const res = await fetch(`/api/bon/${id}/nota`)
+      if (!res.ok) throw new Error('gagal')
+      setBonEdit(await res.json())
+    } catch {
+      alert('Gagal memuat detail bon')
+    }
+    setLoadingNota(false)
+  }
+
+  const simpanEditBon = async (produk: Record<number, number>, harga: Record<number, number>, total: number) => {
+    if (!bonEdit) return
+    const res = await fetch(`/api/bon/${bonEdit.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ produk, harga, total }),
+    })
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      throw new Error(d.error || 'Gagal menyimpan bon')
+    }
+    // Muat ulang daftar bon — item & total di tabel harus ikut berubah.
+    setBonLoaded(false)
+    setPilihBon(new Set())
+    void loadBonus()
   }
 
   const loadLog = useCallback(async () => {
@@ -805,13 +838,22 @@ export default function LaporanPage() {
                               <td className="px-4 py-3 text-gray-500 text-xs">{b.created_at ? fmtDT(b.created_at) : '-'}</td>
                               <td className="px-4 py-3 text-gray-500 text-xs">{b.dibayar_at ? fmtDT(b.dibayar_at) : '-'}</td>
                               <td className="px-4 py-3 text-center">
-                                <button
-                                  onClick={() => bukaNota(b.id)}
-                                  disabled={loadingNota}
-                                  className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-                                  title="Cetak nota">
-                                  <Printer size={14} />
-                                </button>
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    onClick={() => bukaNota(b.id)}
+                                    disabled={loadingNota}
+                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                                    title="Cetak nota">
+                                    <Printer size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => bukaEditBon(b.id)}
+                                    disabled={loadingNota}
+                                    className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50"
+                                    title="Edit item & harga">
+                                    <PencilSquare size={14} />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           )
@@ -904,6 +946,13 @@ export default function LaporanPage() {
           toko={{ nama: toko?.nama ?? '', alamat, telepon, catatan_struk }}
           desain={desainNota}
           onTutup={() => setNotaCetak(null)}
+        />
+      )}
+      {bonEdit && (
+        <BonEditModal
+          nota={bonEdit}
+          onSimpan={simpanEditBon}
+          onTutup={() => setBonEdit(null)}
         />
       )}
       {lapCetak && (
