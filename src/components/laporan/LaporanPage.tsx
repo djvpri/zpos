@@ -228,12 +228,18 @@ export default function LaporanPage() {
     setLoadingNota(false)
   }
 
-  const simpanEditBon = async (produk: Record<number, number>, harga: Record<number, number>, total: number, vmap?: Record<number, { nama: string; harga: number }>) => {
+  const simpanEditBon = async (
+    produk: Record<number, number>,
+    harga: Record<number, number>,
+    total: number,
+    vmap: Record<number, { nama: string; harga: number }>,
+    sesi: { t: string; p: Record<string, number>; h: Record<string, number> }[],
+  ) => {
     if (!bonEdit) return
     const res = await fetch(`/api/bon/${bonEdit.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ produk, harga, total, vmap }),
+      body: JSON.stringify({ produk, harga, total, vmap, sesi }),
     })
     if (!res.ok) {
       const d = await res.json().catch(() => ({}))
