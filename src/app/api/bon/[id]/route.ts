@@ -3,7 +3,7 @@ import sql from '@/lib/db'
 import { getTokoFromRequest } from '@/lib/auth'
 import { apiHandler } from '@/lib/api-handler'
 import { catatAktivitas } from '@/lib/aktivitas'
-import { resolveSesi, appendSesi, normalSesi, normalVmap, type BonSesi } from '@/lib/bon-sesi'
+import { resolveSesi, sesiDariEdit, normalSesi, normalVmap, type BonSesi } from '@/lib/bon-sesi'
 
 // PATCH:
 //  a) tandai bon selesai (dibayar). Body { selesai: bool }.
@@ -88,17 +88,18 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
         else if (d < 0) await t`UPDATE produk SET stok = stok + ${-d}, updated_at = now() WHERE id = ${Number(pidStr)} AND toko_id = ${toko.tokoId}`
       }
       const newTotal = Math.round(body.total ?? cur.total)
-      // Simpan sesi (snapshot penuh) bila isi berubah — jaga jejak jam utk nota grup.
+      // Simpan sesi — jaga jejak jam utk nota grup.
       const before = resolveSesi(cur.sesi_json, cur.produk_json, cur.created_at)
-      const last = before.length ? before[before.length - 1] : null
-      const berubah = !last || JSON.stringify(last.p) !== JSON.stringify(finalObj)
       // Klien (kasir) kirim snapshot sesi PENUH ber-harga → pakai apa adanya (grup
       // lama simpan harga saat grup dibuat, grup baru harga katalog saat itu).
-      // Klien lama (web/tanpa sesi) → append sesi baru tanpa harga (fallback).
+      // Klien tanpa `sesi` (web edit / klien lama) → rebuild dari sesi lama +
+      // SELISIH qty (bukan append snapshot kumulatif yg bikin qty dobel & tanpa harga).
       const sesiIn = normalSesi(body.sesi)
       nextSesi = sesiIn.length
         ? sesiIn
-        : (berubah ? appendSesi(before, new Date().toISOString(), finalObj) : before)
+        : sesiDariEdit(before, new Date().toISOString(), finalObj, body.harga ?? null)
+      // Tulis sesi_json bila senarainya benar-benar berubah (qty ATAU harga per grup).
+      const sesiBerubah = JSON.stringify(nextSesi) !== JSON.stringify(before)
       // Harga terkunci (Opsi A): utamakan harga dari klien (kasir/web saat edit),
       // tapi selalu pertahankan harga lama utk item yg tak dikirim harga barunya.
       // Produk yg dihapus dari bon → harga-nya dibuang (ikut finalObj).
@@ -122,7 +123,7 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
       const [upd] = await t`
         UPDATE bon
         SET produk_json = ${JSON.stringify(finalObj)},
-            sesi_json = ${(sesiIn.length || berubah) ? JSON.stringify(nextSesi) : cur.sesi_json},
+            sesi_json = ${sesiBerubah ? JSON.stringify(nextSesi) : cur.sesi_json},
             harga_json = ${newHargaJson},
             vmap_json = ${newVmapJson},
             total = ${newTotal}

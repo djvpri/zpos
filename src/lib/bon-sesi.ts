@@ -95,6 +95,101 @@ export function deltaPositif(sebelum: Record<string, number> | null, kini: Recor
 
 type ISO = string
 
+// Rebuild sesi saat klien mengirim snapshot FINAL tanpa `sesi` (web / klien lama):
+// jangan append snapshot kumulatif — itu bikin tiap grup memuat SELURUH bon &
+// tanpa harga (bug: nota kehilangan pemisahan grup, qty dobel).
+//
+// Yang benar, dibandingkan thd sesi lama:
+//  - qty NAIK  → grup baru berisi DELTA saja, ber-harga dari `hargaBaru`/harga lama.
+//  - qty TURUN → buang kelebihannya dari grup terlama yg memuatnya (LIFO), supaya
+//    Σ qty tiap id tetap == final; grup yang jadi kosong dibuang.
+//  - harga berubah tanpa qty berubah → perbarui `h` grup terakhir yg memuat id itu.
+// Bila tak ada perubahan sama sekali → sesi lama dipertahankan.
+//
+// `hargaBaru` = {id: harga} kiriman klien (harga saat edit); dipakai utk grup baru.
+export function sesiDariEdit(
+  sebelum: BonSesi[],
+  t: ISO,
+  final: Record<string, number>,
+  hargaBaru?: Record<string, number> | null,
+): BonSesi[] {
+  const hitung = (sesi: BonSesi[]) => {
+    const m: Record<string, number> = {}
+    for (const s of sesi) for (const [id, q] of Object.entries(s.p)) m[id] = (m[id] ?? 0) + Number(q)
+    return m
+  }
+  // Klon dangkal supaya tak memutasi input.
+  const out: BonSesi[] = sebelum.map(s => ({ t: s.t, p: { ...s.p }, ...(s.h ? { h: { ...s.h } } : {}) }))
+
+  // 1) Turunkan qty berlebih (LIFO dari grup terbaru) — jaga Σ == final.
+  //    Iterasi UNION id (final + yg ada di sesi): id yg HILANG dari final (item
+  //    dibuang) pun harus ikut dikurangi sampai 0, kalau tidak sisa qty-nya
+  //    tertinggal di grup lama dan total bon jadi lebih besar dari kenyataan.
+  const kini = hitung(out)
+  const semuaId = new Set([...Object.keys(final), ...Object.keys(kini)])
+  for (const id of semuaId) {
+    const want = Number(final[id] ?? 0)
+    let lebih = (kini[id] ?? 0) - want
+    for (let i = out.length - 1; i >= 0 && lebih > 0; i--) {
+      const punya = Number(out[i].p[id] ?? 0)
+      if (punya <= 0) continue
+      const buang = Math.min(punya, lebih)
+      out[i].p[id] = punya - buang
+      if (out[i].p[id] <= 0) delete out[i].p[id]
+      lebih -= buang
+    }
+  }
+  // 2) Naikkan qty kurang (ADITIF: tambahkan ke grup yg sudah ada memuat id itu,
+  //    else item baru → masuk GRUP BARU).
+  const kurang: Record<string, number> = {}
+  const kini2 = hitung(out)
+  for (const [id, want] of Object.entries(final)) {
+    const d = Number(want) - (kini2[id] ?? 0)
+    if (d > 0) kurang[id] = d
+  }
+  // Harga efektif utk grup baru: dari klien, else `h` grup terakhir yang memuat id itu.
+  const hBaru: Record<string, number> = {}
+  for (const id of Object.keys(kurang)) {
+    const dariKlien = Number(hargaBaru?.[id])
+    if (Number.isFinite(dariKlien) && dariKlien >= 0) { hBaru[id] = Math.round(dariKlien); continue }
+    for (let i = out.length - 1; i >= 0; i--) {
+      const h = out[i].h?.[id]
+      if (h != null) { hBaru[id] = Number(h); break }
+    }
+  }
+  if (Object.keys(kurang).length) {
+    const s: BonSesi = { t, p: kurang }
+    if (Object.keys(hBaru).length) s.h = hBaru
+    out.push(s)
+  } else if (hargaBaru) {
+    // 3) qty tetap — hanya harga yg berubah. Perbarui `h` grup terakhir yg memuat id.
+    for (const [id, hv] of Object.entries(hargaBaru)) {
+      const h = Number(hv)
+      if (!Number.isFinite(h) || h < 0) continue
+      for (let i = out.length - 1; i >= 0; i--) {
+        if (out[i].p[id] != null) {
+          if (!out[i].h) out[i].h = {}
+          out[i].h![id] = Math.round(h)
+          break
+        }
+      }
+    }
+  }
+  return out
+    .map(s => {
+      // `h` harus selaras `p`: entri harga utk id yg tak lagi ada di sesi ini
+      // bikin nota menghitung baris hantu (qty 0 tp muncul) → subtotal salah.
+      if (s.h) {
+        const h: Record<string, number> = {}
+        for (const [id, v] of Object.entries(s.h)) if (s.p[id] != null) h[id] = v
+        if (Object.keys(h).length) s.h = h
+        else delete s.h
+      }
+      return s
+    })
+    .filter(s => Object.keys(s.p).length > 0)
+}
+
 // Ubah riwayat sesi → daftar GRUP ber-harga utk nota (tiap kiriman = 1 grup).
 //
 // DUA BENTUK `p` yang beredar — dibedakan otomatis dari `acuanFinal`:
