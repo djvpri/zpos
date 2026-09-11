@@ -62,7 +62,7 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
       alamat: toko.alamat,
       telepon: toko.telepon,
       waktu,
-      noTransaksi: `Bon #${nota.id}`,
+      noTransaksi: `Bon Gantung #${nota.id}`,
       kasir: nota.nama || '',
       member: nota.nama || undefined,
       items: nota.items.map(it => ({ nama: it.nama, qty: it.qty, harga: it.harga })),
@@ -70,7 +70,7 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
       total: nota.total,
       bayar: 0,
       kembali: 0,
-      metodeBayar: 'BON',
+      metodeBayar: 'BON GANTUNG',
       catatan: `${nota.selesai ? '' : 'BELUM LUNAS - '}${toko.catatan_struk || ''}`,
     }
     const escPos = buildEscPos(data, tpl.id)
@@ -95,10 +95,10 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
             {tpl.infoSebelumItems && (
               <div className="text-xs text-gray-400">
                 <div>{waktu}</div>
-                <div>No: Bon #{nota.id}</div>
+                <div>No: Bon Gantung #{nota.id}</div>
                 {nota.nama && <div>Nama: {nota.nama}</div>}
                 {!nota.selesai && (
-                  <div className="font-bold text-amber-600 mt-1">*** BON / BELUM LUNAS ***</div>
+                  <div className="font-bold text-amber-600 mt-1">*** BON GANTUNG / BELUM LUNAS ***</div>
                 )}
               </div>
             )}
@@ -134,10 +134,10 @@ export function BonNotaModal({ nota, toko, desain, onTutup }: Props) {
           {!tpl.infoSebelumItems && (
             <div className="text-xs text-gray-400 mb-4 space-y-0.5">
               <div>{waktu}</div>
-              <div>No: Bon #{nota.id}</div>
+              <div>No: Bon Gantung #{nota.id}</div>
               {nota.nama && <div>Nama: {nota.nama}</div>}
               {!nota.selesai && (
-                <div className="font-bold text-amber-600">*** BON / BELUM LUNAS ***</div>
+                <div className="font-bold text-amber-600">*** BON GANTUNG / BELUM LUNAS ***</div>
               )}
             </div>
           )}

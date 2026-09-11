@@ -100,6 +100,6 @@ export const POST = apiHandler(async (req: Request, body: { nama?: string | null
     return r
   })
   // Audit: bon digantung (dari windows kasir via kirim_bon, atau halaman bon web).
-  await catatAktivitas(toko, 'bon_gantung', `Bon #${row.id} atas nama ${body.nama?.trim() || '(tanpa nama)'} · Rp ${total.toLocaleString('id-ID')}`)
+  await catatAktivitas(toko, 'bon_gantung', `Bon Gantung #${row.id} atas nama ${body.nama?.trim() || '(tanpa nama)'} · Rp ${total.toLocaleString('id-ID')}`)
   return NextResponse.json({ ...row, produk: JSON.parse(row.produk_json), sesi: resolveSesi(row.sesi_json, row.produk_json, row.created_at) }, { status: 201 })
 })

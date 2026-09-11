@@ -33,7 +33,7 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
     `
     if (!row) return NextResponse.json({ error: 'Bon tidak ditemukan' }, { status: 404 })
     void catatAktivitas(toko, 'bon_bayar',
-      `Bon #${row.id} ${selesai ? 'dibayar/selesai' : 'diaktifkan kembali'}`)
+      `Bon Gantung #${row.id} ${selesai ? 'dibayar/selesai' : 'diaktifkan kembali'}`)
     return NextResponse.json(row)
   }
 
@@ -110,7 +110,7 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
     })
     if (!row) return NextResponse.json({ error: 'Bon tidak ditemukan' }, { status: 404 })
     if ('err' in row) return NextResponse.json({ error: row.err }, { status: 400 })
-    void catatAktivitas(toko, 'bon_edit', `Bon #${row.id} diubah isinya`)
+    void catatAktivitas(toko, 'bon_edit', `Bon Gantung #${row.id} diubah isinya`)
     return NextResponse.json({ ...row, produk: JSON.parse(row.produk_json), sesi: nextSesi ?? [] })
   }
 
@@ -147,6 +147,6 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
   })
   if (!row) return NextResponse.json({ error: 'Bon tidak ditemukan' }, { status: 404 })
 
-  void catatAktivitas(toko, 'bon_hapus', `Bon #${id} dihapus permanen`)
+  void catatAktivitas(toko, 'bon_hapus', `Bon Gantung #${id} dihapus permanen`)
   return NextResponse.json({ ok: true })
 }

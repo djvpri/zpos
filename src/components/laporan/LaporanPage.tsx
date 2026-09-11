@@ -46,9 +46,9 @@ const AKTIVITAS_LABEL: Record<string, { label: string; cls: string }> = {
   shift_tutup: { label: 'Tutup Shift', cls: 'bg-violet-50 text-violet-600' },
   kas_keluar: { label: 'Pengeluaran', cls: 'bg-amber-50 text-amber-600' },
   kas_keluar_void: { label: 'Void Pengeluaran', cls: 'bg-red-50 text-red-500' },
-  bon_gantung: { label: 'Bon Digantung', cls: 'bg-teal-50 text-teal-600' },
-  bon_bayar: { label: 'Bayar Bon', cls: 'bg-teal-50 text-teal-600' },
-  bon_hapus: { label: 'Hapus Bon', cls: 'bg-red-50 text-red-600' },
+  bon_gantung: { label: 'Bon Gantung', cls: 'bg-teal-50 text-teal-600' },
+  bon_bayar: { label: 'Bayar Bon Gantung', cls: 'bg-teal-50 text-teal-600' },
+  bon_hapus: { label: 'Hapus Bon Gantung', cls: 'bg-red-50 text-red-600' },
   staff_ubah: { label: 'Ubah Staff', cls: 'bg-amber-50 text-amber-600' },
   staff_hapus: { label: 'Hapus Staff', cls: 'bg-red-50 text-red-600' },
   staff_tambah: { label: 'Aktifkan Staff', cls: 'bg-emerald-50 text-emerald-600' },
@@ -103,7 +103,7 @@ export default function LaporanPage() {
   const filterBon = useMemo(() => {
     const q = filterNama.trim().toLowerCase()
     return bon.filter(b =>
-      (!q || (b.nama || `Bon #${b.id}`).toLowerCase().includes(q)) &&
+      (!q || (b.nama || `Bon Gantung #${b.id}`).toLowerCase().includes(q)) &&
       (filterStatus === 'semua' ||
         (filterStatus === 'aktif' ? !b.selesai : b.selesai))
     )
@@ -271,7 +271,7 @@ export default function LaporanPage() {
         ['Daftar Bon Gantung'],
         [`Dibuat: ${new Date().toLocaleString('id-ID')}`],
         [],
-        ['Bon', 'Member', 'Jumlah Item', 'Total (Rp)', 'Status', 'Dibuat', 'Dibayar', 'Catatan'],
+        ['Bon Gantung', 'Member', 'Jumlah Item', 'Total (Rp)', 'Status', 'Dibuat', 'Dibayar', 'Catatan'],
       ]
       // Nama sheet Excel: maks 31 char, tanpa \ / ? * [ ] :
       const bersihSheet = (s: string) => s.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31)
@@ -293,7 +293,7 @@ export default function LaporanPage() {
       for (const b of daftar) {
         const n = Object.values(b.produk).reduce((s, x) => s + x, 0)
         ringkas.push([
-          `Bon #${b.id}`, b.nama || '-', n, b.total,
+          `Bon Gantung #${b.id}`, b.nama || '-', n, b.total,
           b.selesai ? 'Selesai' : 'Belum Dibayar',
           b.created_at ? fmtDT(b.created_at) : '',
           b.dibayar_at ? fmtDT(b.dibayar_at) : '',
@@ -309,7 +309,7 @@ export default function LaporanPage() {
       for (const b of daftar) {
         const d = detail.get(b.id)
         const rows: (string | number)[][] = [
-          [`Bon #${b.id}${b.nama ? ` — ${b.nama}` : ''}`],
+          [`Bon Gantung #${b.id}${b.nama ? ` — ${b.nama}` : ''}`],
           ['Status', b.selesai ? 'Selesai' : 'Belum Dibayar'],
           ['Dibuat', b.created_at ? fmtDT(b.created_at) : ''],
           ['Dibayar', b.dibayar_at ? fmtDT(b.dibayar_at) : ''],
@@ -332,11 +332,11 @@ export default function LaporanPage() {
           rows.push(['(rincian tidak tersedia)'])
         }
         rows.push([])
-        rows.push(['TOTAL BON', '', '', d?.total ?? b.total])
+        rows.push(['TOTAL BON GANTUNG', '', '', d?.total ?? b.total])
 
-        let nama = bersihSheet(b.nama ? `${b.id} ${b.nama}` : `Bon ${b.id}`)
+        let nama = bersihSheet(b.nama ? `${b.id} ${b.nama}` : `Bon Gantung ${b.id}`)
         let i = 2
-        while (dipakai.has(nama)) { nama = bersihSheet(`${b.id} ${b.nama || 'Bon'} ${i++}`) }
+        while (dipakai.has(nama)) { nama = bersihSheet(`${b.id} ${b.nama || 'Bon Gantung'} ${i++}`) }
         dipakai.add(nama)
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), nama)
       }
@@ -454,7 +454,7 @@ export default function LaporanPage() {
               className={`px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors ${
                 tab === t ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}>
-              {t === 'ringkasan' ? 'Ringkasan' : t === 'shift' ? 'Shift' : t === 'bon' ? 'Bon' : 'Log'}
+              {t === 'ringkasan' ? 'Ringkasan' : t === 'shift' ? 'Shift' : t === 'bon' ? 'Bon Gantung' : 'Log'}
             </button>
           ))}
         </div>
@@ -777,7 +777,7 @@ export default function LaporanPage() {
                           const item = Object.values(b.produk).reduce((s, n) => s + n, 0)
                           return (
                             <tr key={b.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
-                              <td className="px-4 py-3 font-medium text-gray-800">{b.nama || `Bon #${b.id}`}</td>
+                              <td className="px-4 py-3 font-medium text-gray-800">{b.nama || `Bon Gantung #${b.id}`}</td>
                               <td className="px-4 py-3 text-right text-gray-500">{item}x</td>
                               <td className="px-4 py-3 text-right font-semibold text-gray-900">{fmt(b.total)}</td>
                               <td className="px-4 py-3 text-center">
