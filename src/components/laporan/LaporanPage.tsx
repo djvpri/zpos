@@ -10,6 +10,7 @@ import { usePengaturan } from '@/hooks/usePengaturan'
 import { StrukModal } from '@/components/kasir/StrukModal'
 import { LaporanStrukModal } from '@/components/laporan/LaporanStrukModal'
 import { BonNotaModal, BonNota, BonGrup } from '@/components/laporan/BonNotaModal'
+import { BonCetakModal } from '@/components/laporan/BonCetakModal'
 import { BonEditModal } from '@/components/laporan/BonEditModal'
 
 const fmtTime = (d: string) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
@@ -281,28 +282,6 @@ export default function LaporanPage() {
     URL.revokeObjectURL(url)
   }
 
-  // Export daftar bon utk file CSV (Excel-compatible: BOM + pemisah ;).
-  const exportBonCSV = () => {
-    const esc = (v: string | number | null | undefined) => {
-      const s = v == null ? '' : String(v)
-      return `"${s.replace(/"/g, '""')}"`
-    }
-    const head = ['ID', 'Member', 'Jumlah Item', 'Total (Rp)', 'Status', 'Dibuat', 'Dibayar']
-    const rows = bonEkspor.map(b => [
-      b.id, b.nama || '-',
-      Object.values(b.produk).reduce((s, n) => s + n, 0),
-      b.total, b.selesai ? 'Selesai' : 'Belum Dibayar',
-      b.created_at ? fmtDT(b.created_at) : '', b.dibayar_at ? fmtDT(b.dibayar_at) : '',
-    ])
-    const csv = '\uFEFF' + [head, ...rows].map(r => r.map(esc).join(';')).join('\n')
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `bon-gantung-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   // Export Excel (.xlsx): sheet "Ringkasan" + 1 sheet per bon (rincian item).
   // Rincian per GRUP kiriman bila tersedia (`grup`): tiap grup punya waktu & harga
   // sendiri saat barang masuk, jadi subtotal baris selalu menjumlah = total bon.
@@ -398,6 +377,27 @@ export default function LaporanPage() {
       alert('Gagal membuat file Excel. Coba lagi.')
     }
     setExporting(false)
+  }
+
+  // Cetak/Simpan-PDF daftar bon: ambil rincian tiap bon dulu (dipakai modal cetak),
+  // lalu modal memanggil window.print() → user pilih "Save as PDF".
+  const [bonCetak, setBonCetak] = useState<{ daftar: BonRow[]; detail: Map<number, BonNota> } | null>(null)
+  const cetakBonPDF = async () => {
+    const daftar = bonEkspor
+    if (daftar.length === 0) return
+    setExporting(true)
+    const detail = new Map<number, BonNota>()
+    for (const b of daftar) {
+      try {
+        const res = await fetch(`/api/bon/${b.id}/nota`)
+        if (!res.ok) throw new Error('gagal')
+        detail.set(b.id, await res.json())
+      } catch {
+        // lewati: bon tetap tampil di daftar, hanya rinciannya hilang
+      }
+    }
+    setExporting(false)
+    setBonCetak({ daftar, detail })
   }
 
   useEffect(() => { Promise.resolve().then(() => loadRingkasan()) }, [loadRingkasan])
@@ -764,7 +764,7 @@ export default function LaporanPage() {
       {tab === 'bon' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Daftar bon gantung ({bon.length} total). Centang bon utk pilih sebagian — tanpa centang = semua ikut ter-export. <b className="text-gray-700">Export Excel</b> = ringkasan + 1 sheet per bon (rincian item & waktu masuk) · <b className="text-gray-700">CSV</b> = daftar ringkas.</p>
+            <p className="text-sm text-gray-500">Daftar bon gantung ({bon.length} total). Centang bon utk pilih sebagian — tanpa centang = semua ikut ter-export. <b className="text-gray-700">Export Excel</b> = ringkasan + 1 sheet per bon (rincian item & waktu masuk) · <b className="text-gray-700">Export PDF</b> = cetak daftar bon (pilih <i>Save as PDF</i>).</p>
             <div className="flex gap-2">
               <button onClick={() => { setBonLoaded(false); loadBonus() }}
                 className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 transition-colors">
@@ -775,9 +775,10 @@ export default function LaporanPage() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
                 <Download size={13} /> {exporting ? 'Menyiapkan...' : `Export Excel${pilihBon.size ? ` (${bonEkspor.length})` : ''}`}
               </button>
-              <button onClick={exportBonCSV} disabled={bonEkspor.length === 0}
+              <button onClick={cetakBonPDF} disabled={bonEkspor.length === 0 || exporting}
+                title="Cetak daftar bon — pilih 'Save as PDF' di dialog cetak"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
-                <Download size={13} /> Export CSV
+                <Printer size={13} /> {exporting ? 'Menyiapkan...' : `Export PDF${pilihBon.size ? ` (${bonEkspor.length})` : ''}`}
               </button>
             </div>
           </div>
@@ -965,6 +966,16 @@ export default function LaporanPage() {
           nota={bonEdit}
           onSimpan={simpanEditBon}
           onTutup={() => setBonEdit(null)}
+        />
+      )}
+      {bonCetak && (
+        <BonCetakModal
+          daftar={bonCetak.daftar}
+          detail={bonCetak.detail}
+          namaToko={toko?.nama ?? ''}
+          alamat={alamat}
+          telepon={telepon}
+          onTutup={() => setBonCetak(null)}
         />
       )}
       {lapCetak && (
