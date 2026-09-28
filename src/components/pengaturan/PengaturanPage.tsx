@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText, Download, Laptop, Android2, Receipt, Printer } from 'react-bootstrap-icons'
+import { Percent, SaveFill, Shop, Telephone, GeoAlt, FileText, Download, Laptop, Android2, Receipt, Printer, Boxes } from 'react-bootstrap-icons'
 import { usePengaturan } from '@/hooks/usePengaturan'
 import { DESAIN_NOTA } from '@/lib/desain-nota'
 import { NotaPreview } from './NotaPreview'
@@ -33,8 +33,8 @@ interface LabelRilis {
 }
 
 export default function PengaturanPage() {
-  const { pajak_persen, alamat, telepon, catatan_struk, desainNota, loading, simpan } = usePengaturan()
-  const [form, setForm] = useState({ pajak_persen: 0, alamat: '', telepon: '', catatan_struk: '', desain_nota: 'klasik' })
+  const { pajak_persen, alamat, telepon, catatan_struk, desainNota, kurangi_stok, jual_stok_habis, loading, simpan } = usePengaturan()
+  const [form, setForm] = useState({ pajak_persen: 0, alamat: '', telepon: '', catatan_struk: '', desain_nota: 'klasik', kurangi_stok: true, jual_stok_habis: false })
   const [saving, setSaving] = useState(false)
   const [pesan, setPesan] = useState('')
   const [error, setError] = useState('')
@@ -98,10 +98,10 @@ export default function PengaturanPage() {
   }, [])
 
   useEffect(() => {
-    Promise.resolve().then(() => setForm({ pajak_persen, alamat, telepon, catatan_struk, desain_nota: desainNota }))
-  }, [pajak_persen, alamat, telepon, catatan_struk, desainNota])
+    Promise.resolve().then(() => setForm({ pajak_persen, alamat, telepon, catatan_struk, desain_nota: desainNota, kurangi_stok, jual_stok_habis }))
+  }, [pajak_persen, alamat, telepon, catatan_struk, desainNota, kurangi_stok, jual_stok_habis])
 
-  const set = (k: string, v: string | number) => setForm(f => ({ ...f, [k]: v }))
+  const set = (k: string, v: string | number | boolean) => setForm(f => ({ ...f, [k]: v }))
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -214,6 +214,44 @@ export default function PengaturanPage() {
               />
               <span className="text-sm text-gray-500">%</span>
             </div>
+          </div>
+
+          {/* Kebijakan Stok */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 space-y-4">
+            <div className="flex items-center gap-2 text-gray-800">
+              <Boxes size={16} className="text-amber-500" />
+              <span className="font-medium text-sm">Kebijakan Stok</span>
+            </div>
+
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.kurangi_stok}
+                onChange={e => set('kurangi_stok', e.target.checked)}
+                className="mt-0.5 w-5 h-5 accent-indigo-600 rounded"
+              />
+              <span>
+                <span className="text-sm text-gray-700 font-medium block">Penjualan mengurangi stok</span>
+                <span className="text-xs text-gray-400">
+                  Jika dimatikan, transaksi tidak mengubah stok — cocok untuk toko yang stoknya dikelola manual (stock opname) atau toko jasa.
+                </span>
+              </span>
+            </label>
+
+            <label className={`flex items-start gap-3 select-none ${form.kurangi_stok ? 'cursor-pointer' : 'opacity-40 pointer-events-none'}`}>
+              <input
+                type="checkbox"
+                checked={form.jual_stok_habis}
+                onChange={e => set('jual_stok_habis', e.target.checked)}
+                className="mt-0.5 w-5 h-5 accent-indigo-600 rounded"
+              />
+              <span>
+                <span className="text-sm text-gray-700 font-medium block">Boleh jual walau stok 0</span>
+                <span className="text-xs text-gray-400">
+                  Jika diaktifkan, kasir tetap bisa transaksi barang yang stoknya habis (backorder). Stok tidak menjadi minus.
+                </span>
+              </span>
+            </label>
           </div>
 
           {/* Aplikasi Z1 Label (Android) */}

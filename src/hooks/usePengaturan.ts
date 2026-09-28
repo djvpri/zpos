@@ -11,12 +11,14 @@ export interface Pengaturan {
   catatan_struk: string
   ukuran_label: string
   desain_nota: string
+  kurangi_stok: boolean
+  jual_stok_habis: boolean
 }
 
 const CACHE_KEY = 'pengaturan'
 
 export function usePengaturan() {
-  const [data, setData] = useState<Pengaturan>({ pajak_persen: 0, alamat: '', telepon: '', catatan_struk: '', ukuran_label: '50x30', desain_nota: 'klasik' })
+  const [data, setData] = useState<Pengaturan>({ pajak_persen: 0, alamat: '', telepon: '', catatan_struk: '', ukuran_label: '50x30', desain_nota: 'klasik', kurangi_stok: true, jual_stok_habis: false })
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {

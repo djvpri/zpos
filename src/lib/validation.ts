@@ -108,6 +108,10 @@ export const pengaturanSchema = z.object({
   catatan_struk: z.string().nullable().optional(),
   ukuran_label: z.string().regex(/^\d+x\d+$/).nullable().optional(),
   desain_nota: z.string().refine(v => desainNotaIds.includes(v), { message: 'Desain nota tidak dikenal' }).nullable().optional(),
+  // false = jualan tak menyentuh stok (stok dikelola manual / toko jasa).
+  kurangi_stok: z.boolean().nullable().optional(),
+  // true = kasir boleh jual barang yang stoknya sudah 0 (backorder).
+  jual_stok_habis: z.boolean().nullable().optional(),
 })
 
 // ===== Admin =====
