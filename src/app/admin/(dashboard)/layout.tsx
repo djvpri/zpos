@@ -2,12 +2,13 @@
 
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/navigation'
-import { ShieldCheck, Shop, GraphUp, ChatSquareDots, BoxArrowRight } from 'react-bootstrap-icons'
+import { ShieldCheck, Shop, GraphUp, ChatSquareDots, Bug, BoxArrowRight } from 'react-bootstrap-icons'
 
 const MENU = [
   { href: '/admin', label: 'Member', icon: Shop },
   { href: '/admin/pricelist', label: 'Harga Pulsa', icon: GraphUp },
   { href: '/admin/laporan-digital', label: 'Penjualan Pulsa', icon: ChatSquareDots },
+  { href: '/admin/log-kasir', label: 'Log Error Kasir', icon: Bug },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
