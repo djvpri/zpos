@@ -94,15 +94,19 @@ export async function POST(req: Request) {
         // Cek stok dulu kalau pengurangan stok aktif & toko tak izinkan jual habis.
         // Kalau kurangi_stok=OFF, pengecekan tak dilakukan (stok dikelola manual).
         if (kurangiStok && !bolehJualHabis && !trx.bon_tebus_id && real.length > 0) {
-          const idProduk = real.map(i => Number(i.produk_id))
-          const stokSekarang = (await t`
-            SELECT id, stok FROM produk WHERE id = ANY(${idProduk}) AND toko_id = ${toko.tokoId}
-          `) as { id: number; stok: number }[]
-          const petaStok = new Map<number, number>(stokSekarang.map(s => [Number(s.id), Number(s.stok)]))
-          for (const i of real) {
-            const sisa = petaStok.get(Number(i.produk_id)) ?? 0
-            if (sisa < Number(i.qty)) {
-              throw Object.assign(new Error(`Stok "${i.nama_produk}" tidak cukup (sisa ${sisa})`), { statusStok: 400 })
+          // Filter NaN — `id = ANY(ARRAY[NaN])` juga melempar
+          // 'invalid input syntax for type integer: "NaN"' dari postgres.
+          const idProduk = real.map(i => Number(i.produk_id)).filter(n => Number.isFinite(n) && n > 0)
+          if (idProduk.length > 0) {
+            const stokSekarang = (await t`
+              SELECT id, stok FROM produk WHERE id = ANY(${idProduk}) AND toko_id = ${toko.tokoId}
+            `) as { id: number; stok: number }[]
+            const petaStok = new Map<number, number>(stokSekarang.map(s => [Number(s.id), Number(s.stok)]))
+            for (const i of real) {
+              const sisa = petaStok.get(Number(i.produk_id)) ?? 0
+              if (sisa < Number(i.qty)) {
+                throw Object.assign(new Error(`Stok "${i.nama_produk}" tidak cukup (sisa ${sisa})`), { statusStok: 400 })
+              }
             }
           }
         }
