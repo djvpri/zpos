@@ -6,8 +6,12 @@ export const runtime = 'nodejs'
 
 // Auto-upload log error z1 kasir → DB. Dipanggil kasir (Tauri) tiap file
 // zpos-errors.log bertambah (delta baris). Auth = toko (cookie zpos_token).
-// Retensi: hapus otomatis baris kelamaan (>12 jam) sekali per panggilan —
-// murah & tanpa cron khusus (kasir upload tipis; row basi minimal).
+// Retensi: 30 hari (BUKAN 12 jam — error jarang, dan owner sering baru sempat
+// membacanya beberapa hari kemudian). Rotase tambahan: simpan maksimal 3000
+// baris terakhir per device, hapus sisanya — cegah tabel membengkak di toko
+// yang kasirnya sering error. Semua pembersahan non-blokir.
+const RETENSI_HARI = 30
+const MAX_BARIS_PER_DEVICE = 3_000
 const MAX_LINEN = 60_000 // jaga jangan biar isi tak kebesaran
 const MAX_KONTEN = 200_000 // ~200KB per upload (delta error biasanya kecil)
 
@@ -15,10 +19,20 @@ export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // cleanup baris kelamaan dari 12 jam (sekali per panggilan, non-blokir)
-  try {
-    await sql`DELETE FROM log_kasir WHERE created_at < now() - interval '12 hours'`
-  } catch { /* non-blokir */ }
+  // cleanup baris kelamaan dari 30 hari + rotase per device (non-blokir)
+    try {
+      await sql`DELETE FROM log_kasir WHERE created_at < now() - (${RETENSI_HARI} || ' days')::interval`
+      // Hapus baris lawan melebihi MAX_BARIS_PER_DEVICE terakhir per device.
+      // Murah: cari id batas lalu hapus di bawahnya.
+      await sql`
+        DELETE FROM log_kasir WHERE id IN (
+          SELECT id FROM (
+            SELECT id, ROW_NUMBER() OVER (PARTITION BY toko_id, device_id ORDER BY id DESC) AS rn
+            FROM log_kasir
+          ) x WHERE rn > ${MAX_BARIS_PER_DEVICE}
+        )
+      `
+    } catch { /* non-blokir */ }
 
   let body: { device_id?: unknown; nama_pc?: unknown; konten?: unknown }
   try {
@@ -62,7 +76,7 @@ export async function GET(req: Request) {
   const rows = await sql`
     SELECT id, device_id, nama_pc, konten, created_at
     FROM log_kasir
-    WHERE toko_id = ${toko.tokoId} AND created_at > now() - interval '12 hours'
+    WHERE toko_id = ${toko.tokoId} AND created_at > now() - (${RETENSI_HARI} || ' days')::interval
     ORDER BY id DESC LIMIT 50
   `
   return NextResponse.json({ rows })

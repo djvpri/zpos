@@ -1,7 +1,7 @@
 -- Z1Pos: Auto-upload log error z1 kasir (diagnosa remote).
 -- Tiap tenant & tiap PC yang pakai z1 kasir: saat file zpos-errors.log bertambah,
 -- kasir posting delta baris error/info ke server. Simpan per toko+device+timestamp
--- supaya bisa direview (retensi 12 jam).
+-- supaya bisa direview (retensi 30 hari + rotase 3000 baris terakhir per device).
 -- Idempotent (pola seperti migrasi lain).
 
 CREATE TABLE IF NOT EXISTS log_kasir (
