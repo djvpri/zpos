@@ -65,18 +65,44 @@ export async function POST(req: Request) {
     // waktu sinkron — supaya laporan harian tidak salah tanggal.
     const waktuJual = trx.created_at ? new Date(trx.created_at) : new Date()
 
+    // Sanitasi angka: kasir Tauri kadang kirim string kosong/null utk field numerik
+    // (trx.pajak, trx.kembali, dll) → postgres menolak `invalid input syntax for
+    // type integer: "NaN"` → seluruh transaksi 500 & kasir offline menggantung.
+    // Angka tak-valid dianggap 0. Satu titik ini melindungi INSERT transaksi +
+    // detail_transaksi + UPDATE stok.
+    const num = (v: unknown): number => {
+      const n = Number(v)
+      return Number.isFinite(n) ? n : 0
+    }
+    const trx2 = {
+      ...trx,
+      subtotal: num(trx.subtotal),
+      diskon: num(trx.diskon),
+      pajak: num(trx.pajak),
+      total: num(trx.total),
+      bayar: num(trx.bayar),
+      kembali: num(trx.kembali),
+    }
+    const items2 = items.map(i => ({
+      ...i,
+      produk_id: num(i.produk_id),
+      harga: num(i.harga),
+      qty: num(i.qty),
+      subtotal: num(i.subtotal),
+    }))
+
     // Simpan transaksi + kurangi stok produk ATOMIC (satu transaksi DB). Stok
     // cuma produk asli (produk_id > 0); item virtual harga-bebas dilewati.
     const saved = await sql.begin(async t => {
       const [tr] = await t`
         INSERT INTO transaksi (no_transaksi, subtotal, diskon, pajak, total, bayar, kembali, metode_bayar, kasir, toko_id, shift_id, created_at, sumber, member_nama)
-        VALUES (${trx.no_transaksi}, ${trx.subtotal}, ${trx.diskon}, ${trx.pajak}, ${trx.total},
-                ${trx.bayar}, ${trx.kembali}, ${trx.metode_bayar}, ${toko.userName}, ${toko.tokoId}, ${shiftId}, ${waktuJual},
-                ${trx.sumber ?? 'web'}, ${trx.member_nama?.trim() ? trx.member_nama.trim() : null})
+        VALUES (${trx2.no_transaksi}, ${trx2.subtotal}, ${trx2.diskon}, ${trx2.pajak}, ${trx2.total},
+                ${trx2.bayar}, ${trx2.kembali}, ${trx2.metode_bayar}, ${toko.userName}, ${toko.tokoId}, ${shiftId}, ${waktuJual},
+                ${trx2.sumber ?? 'web'}, ${trx2.member_nama?.trim() ? trx2.member_nama.trim() : null})
         RETURNING *
       `
-      if (items.length > 0) {
-        const rows = items.map(i => ({
+      if (items2.length > 0) {
+        const rows = items2.map(i => ({
           transaksi_id: tr.id as number,
           produk_id: i.produk_id,
           nama_produk: i.nama_produk,
@@ -87,13 +113,13 @@ export async function POST(req: Request) {
         }))
         await t`INSERT INTO detail_transaksi ${t(rows)}`
         // Kurangi stok produk riil. Per item real (id>0). GREATEST(0) cegah minus.
-        // KECUALI transaksi TEBUS bon gantung (`trx.bon_tebus_id`): stok bon sudah
+        // KECUALI transaksi TEBUS bon gantung (`trx2.bon_tebus_id`): stok bon sudah
         // di-hold (barang diambil pembeli) saat bon dibuat di POST /api/bon, jadi
         // tebus TIDAK boleh kurangi lagi (double). Akuntansi/shift tetap dicatat.
-        const real = items.filter(i => Number(i.produk_id) > 0 && !i._digital)
+        const real = items2.filter(i => Number(i.produk_id) > 0 && !i._digital)
         // Cek stok dulu kalau pengurangan stok aktif & toko tak izinkan jual habis.
         // Kalau kurangi_stok=OFF, pengecekan tak dilakukan (stok dikelola manual).
-        if (kurangiStok && !bolehJualHabis && !trx.bon_tebus_id && real.length > 0) {
+        if (kurangiStok && !bolehJualHabis && !trx2.bon_tebus_id && real.length > 0) {
           // Filter NaN — `id = ANY(ARRAY[NaN])` juga melempar
           // 'invalid input syntax for type integer: "NaN"' dari postgres.
           const idProduk = real.map(i => Number(i.produk_id)).filter(n => Number.isFinite(n) && n > 0)
@@ -110,13 +136,10 @@ export async function POST(req: Request) {
             }
           }
         }
-        if (kurangiStok && !trx.bon_tebus_id) {
+        if (kurangiStok && !trx2.bon_tebus_id) {
           for (const i of real) {
-            // Number('') / Number(undefined) = NaN → postgres menolak dengan
-            // `invalid input syntax for type integer: "NaN"` dan seluruh transaksi
-            // GAGAL 500 (kasir offline menggantung). Amankan ke 0.
-            const qty = Number.isFinite(Number(i.qty)) ? Number(i.qty) : 0
-            const pid = Number.isFinite(Number(i.produk_id)) ? Number(i.produk_id) : 0
+            const pid = Number(i.produk_id)
+            const qty = Number(i.qty)
             if (!pid || qty <= 0) continue
             await t`
               UPDATE produk SET stok = GREATEST(0, stok - ${qty}), updated_at = now()
@@ -212,7 +235,7 @@ export async function POST(req: Request) {
         digitalRows.push({
           transaksi_id: saved.id as number, produk_id: Number(it.produk_id) || null,
           buyer_sku_code: d.buyer_sku_code, customer_no: d.customer_no, ref_id: refId,
-          commands, modal: d.modal ?? null, harga_debet: hargaDebetMap.get(i) ?? null, harga_jual: Number(it.subtotal),
+          commands, modal: d.modal ?? null, harga_debet: hargaDebetMap.get(i) ?? null, harga_jual: Number(it.subtotal) || 0,
           status, sn, message: msg,
         })
         if (status === 'Pending' && trxStatus === 'Sukses') trxStatus = 'Pending'
