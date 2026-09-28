@@ -108,9 +108,15 @@ export async function POST(req: Request) {
         }
         if (kurangiStok && !trx.bon_tebus_id) {
           for (const i of real) {
+            // Number('') / Number(undefined) = NaN → postgres menolak dengan
+            // `invalid input syntax for type integer: "NaN"` dan seluruh transaksi
+            // GAGAL 500 (kasir offline menggantung). Amankan ke 0.
+            const qty = Number.isFinite(Number(i.qty)) ? Number(i.qty) : 0
+            const pid = Number.isFinite(Number(i.produk_id)) ? Number(i.produk_id) : 0
+            if (!pid || qty <= 0) continue
             await t`
-              UPDATE produk SET stok = GREATEST(0, stok - ${Number(i.qty)}), updated_at = now()
-              WHERE id = ${Number(i.produk_id)} AND toko_id = ${toko.tokoId}
+              UPDATE produk SET stok = GREATEST(0, stok - ${qty}), updated_at = now()
+              WHERE id = ${pid} AND toko_id = ${toko.tokoId}
             `
           }
         } else {
