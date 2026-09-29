@@ -32,7 +32,7 @@ export default function KasirPage() {
   const { simpan } = useTransaksi()
   const { kategori } = useKategori()
   const { toko, syncNow } = useAuth()
-  const { pajakPersen, alamat, telepon, catatan_struk, desainNota } = usePengaturan()
+  const { pajakPersen, alamat, telepon, catatan_struk, desainNota, kurangi_stok: kurangiStokAktif } = usePengaturan()
   const { anggota } = useMember()
   const { getHarga } = useHargaMember()
   const { bon, loading: bonLoading, simpan: simpanBon, perbaruiProduk, hapus: hapusBon, tandaiSelesai, reload: reloadBon } = useBon()
@@ -164,10 +164,10 @@ export default function KasirPage() {
   }
 
   const tambahKeKeranjang = useCallback((p: Produk) => {
-    if (p.stok <= 0 && p.jenis !== 'digital') return
-    setKeranjang(k => ({ ...k, [p.id]: (k[p.id] || 0) + 1 }))
-    if (p.jenis !== 'digital') kurangiStok(p.id, 1)
-  }, [kurangiStok])
+      if (kurangiStokAktif && p.stok <= 0 && p.jenis !== 'digital') return
+      setKeranjang(k => ({ ...k, [p.id]: (k[p.id] || 0) + 1 }))
+      if (kurangiStokAktif && p.jenis !== 'digital') kurangiStok(p.id, 1)
+    }, [kurangiStok, kurangiStokAktif])
 
   // Autofill nama & kategori dari Open Food Facts. Coverage terbatas (mayoritas
   // produk lokal tak terdaftar) — kalau tak ketemu, dibiarkan kasir isi manual.
@@ -248,14 +248,14 @@ export default function KasirPage() {
       const rest = { ...keranjang }
       delete rest[id]
       setKeranjang(rest)
-      if (delta < 0) tambahStok(id, 1)
+      if (kurangiStokAktif && delta < 0) tambahStok(id, 1)
     } else {
       if (delta > 0) {
         const p = produk.find(x => x.id === id)
-        if (!p || p.stok <= 0) return
-        kurangiStok(id, 1)
+        if (kurangiStokAktif && (!p || p.stok <= 0)) return
+        if (kurangiStokAktif) kurangiStok(id, 1)
       } else {
-        tambahStok(id, 1)
+        if (kurangiStokAktif) tambahStok(id, 1)
       }
       setKeranjang(k => ({ ...k, [id]: next }))
     }
