@@ -45,10 +45,14 @@ export async function POST(req: Request) {
     // offline menumpuk & harus menempel ke shift tanggal transaksi itu dibuatnya).
     // Kalau shift_id invalid/tak ada → fallback ke shift aktif user token (web).
     let shiftId: number | null = null
-    if (trx.shift_id) {
+    const shiftRaw = Number(trx.shift_id)
+    // kasir Tauri bisa kirim shift_id sebagai string kosong/"NaN" → Number() jadi
+    // NaN dan postgres menolak SELECT ini dgn `invalid input syntax for type
+    // integer: "NaN"` (500 SEBELUM INSERT sempat jalan). Validasi dulu.
+    if (trx.shift_id && Number.isFinite(shiftRaw)) {
       const [s] = await sql`
         SELECT id FROM shift
-        WHERE id = ${Number(trx.shift_id)} AND toko_id = ${toko.tokoId}
+        WHERE id = ${shiftRaw} AND toko_id = ${toko.tokoId}
         LIMIT 1
       `
       if (s) shiftId = s.id
@@ -152,10 +156,13 @@ export async function POST(req: Request) {
           // transaksi) — kalau tidak, bon tetap aktif & ditarik balik oleh kasir
           // (mergeBonSync) walau sudah dibayar. `tandai_bon` kasir hanya menyentuh
           // transaksi online langsung, bukan yg lewat antrian (push_antrian_only).
-          await t`
-            UPDATE bon SET selesai = true, dibayar_at = now()
-            WHERE id = ${Number(trx.bon_tebus_id)} AND toko_id = ${toko.tokoId} AND selesai = false
-          `
+          const bonId = Number(trx.bon_tebus_id)
+          if (Number.isFinite(bonId) && bonId > 0) {
+            await t`
+              UPDATE bon SET selesai = true, dibayar_at = now()
+              WHERE id = ${bonId} AND toko_id = ${toko.tokoId} AND selesai = false
+            `
+          }
         }
       }
       return tr
