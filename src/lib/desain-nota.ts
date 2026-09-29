@@ -25,7 +25,7 @@ export const DESAIN_NOTA: DesainNota[] = [
   {
     id: 'klasik',
     label: 'Klasik',
-    footerPowered: false,
+    footerPowered: true,
     infoSebelumItems: true,
     totalPertama: false, // urutan: Subtotal, Diskon, TOTAL, Bayar, Kembalian
     dividerStyle: 'dashed',
@@ -35,7 +35,7 @@ export const DESAIN_NOTA: DesainNota[] = [
   {
     id: 'klasik2',
     label: 'Klasik 2',
-    footerPowered: false,
+    footerPowered: true,
     infoSebelumItems: true,
     totalPertama: false, // sama klasik: Subtotal, Diskon, TOTAL, Bayar, Kembalian
     dividerStyle: 'dashed',
