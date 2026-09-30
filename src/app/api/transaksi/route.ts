@@ -87,9 +87,18 @@ export async function POST(req: Request) {
       bayar: num(trx.bayar),
       kembali: num(trx.kembali),
     }
+    // produk_id: null = item virtual "Lainnya" (tak punya baris produk) —
+    // WAJIB tetap null. num() sebelumnya ubah null→0 → FK
+    // detail_transaksi_produk_id_fkey reject (produk_id=0 tak ada) → 167
+    // transaksi kasir nyangkut. Kolom DB memang nullable.
+    const pidNum = (v: unknown): number | null => {
+      if (v === null || v === undefined || v === '') return null
+      const n = Number(v)
+      return Number.isFinite(n) && n > 0 ? n : null
+    }
     const items2 = items.map(i => ({
       ...i,
-      produk_id: num(i.produk_id),
+      produk_id: pidNum(i.produk_id),
       harga: num(i.harga),
       qty: num(i.qty),
       subtotal: num(i.subtotal),
