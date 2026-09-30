@@ -39,7 +39,9 @@ export default function AdminLogKasir() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  // setTimeout 0: setState dalam load() sinkron sebelum await pertama —
+  // react 19 rule "cascading render" menuntut agar tak setState dalam effect sinkron.
+  useEffect(() => { const t = setTimeout(load, 0); return () => clearTimeout(t) }, [load])
 
   return (
     <div className="p-4 sm:p-8 max-w-6xl mx-auto">

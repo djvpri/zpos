@@ -41,7 +41,9 @@ export default function AdminLaporanDigital() {
     }
     setLoading(false)
   }, [toko])
-  useEffect(() => { void load() }, [load])
+  // setTimeout 0: setLoading di dalam load() sinkron sebelum await pertama —
+  // react 19 rule "cascading render" menuntut agar tak setState dalam effect sinkron.
+  useEffect(() => { const t = setTimeout(load, 0); return () => clearTimeout(t) }, [load])
 
   const totalMargin = rows.reduce((a, r) => a + Number(r.margin_owner ?? 0), 0)
   const totalDebet = rows.filter(r => r.status !== 'Gagal').reduce((a, r) => a + Number(r.harga_debet ?? 0), 0)
