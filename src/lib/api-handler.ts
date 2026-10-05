@@ -22,9 +22,16 @@ export function apiHandler<T>(
   const { schema, noBody } = config || {}
 
   return async (req: Request, context: { params: Promise<Record<string, string | string[]>> }) => {
+    // x-srv-timing: lama PROSES di server (ms). Dibaca kasir (zpos-errors.log)
+    // utk bedain "server lambat proses" vs "jaringan lambat" saat sync error.
+    const start = Date.now()
+    const withTiming = (res: NextResponse): NextResponse => {
+      res.headers.set('x-srv-timing', String(Date.now() - start))
+      return res
+    }
     try {
       if (noBody) {
-        return await handler(req, null as unknown as T, context)
+        return withTiming(await handler(req, null as unknown as T, context))
       }
 
       let body: unknown
@@ -32,10 +39,10 @@ export function apiHandler<T>(
         try {
           body = await req.json()
         } catch {
-          return NextResponse.json(
+          return withTiming(NextResponse.json(
             { error: 'Format JSON tidak valid' },
             { status: 400 }
-          )
+          ))
         }
         body = schema.parse(body)
       } else {
@@ -46,25 +53,25 @@ export function apiHandler<T>(
         }
       }
 
-      return await handler(req, body as T, context)
+      return withTiming(await handler(req, body as T, context))
     } catch (e: unknown) {
       if (e instanceof ZodError) {
         const messages = e.issues.map(
           (issue) => `${issue.path.join('.')}: ${issue.message}`
         )
-        return NextResponse.json(
+        return withTiming(NextResponse.json(
           { error: 'Validasi gagal', details: messages },
           { status: 400 }
-        )
+        ))
       }
 
       const errMsg = e instanceof Error ? e.message : 'Unknown error'
       console.error('[API ERROR]', req.method, req.url, errMsg)
 
-      return NextResponse.json(
+      return withTiming(NextResponse.json(
         { error: 'Terjadi kesalahan internal server' },
         { status: 500 }
-      )
+      ))
     }
   }
 }
