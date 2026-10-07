@@ -19,6 +19,7 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url)
   const semua = url.searchParams.get('semua') === '1'
+  const since = url.searchParams.get('since') ?? ''  // ISO timestamp utk incremental sync
   const q = (url.searchParams.get('q') ?? '').trim()
   const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10) || 1)
   const limitParam = url.searchParams.get('limit')
@@ -26,7 +27,13 @@ export async function GET(req: Request) {
   const sort = url.searchParams.get('sort') || 'nama'
   const orderBy = sort === 'terbaru' ? sql`ORDER BY p.created_at DESC` : sort === 'terlama' ? sql`ORDER BY p.created_at ASC` : sql`ORDER BY p.nama`
 
-  const where = sql`p.aktif = true AND p.toko_id = ${toko.tokoId}`
+  // since: filter produk berubah sejak timestamp (utk sync incremental kasir).
+  // `semua=1&since=<ts>` = hanya produk updated_at > ts. Tanpa since = full pull (backwards compat).
+  // Produk dihapus (aktif=false) TIDAK muncul — kasir tetap simpan cache lama (ponytail: hapus cache).
+  let where = sql`p.aktif = true AND p.toko_id = ${toko.tokoId}`
+  if (since) {
+    where = sql`${where} AND p.updated_at > ${since}::timestamptz`
+  }
   const qCond = q
     ? sql` AND (p.nama ILIKE ${'%' + q + '%'} OR p.barcode ILIKE ${'%' + q + '%'} OR k.nama ILIKE ${'%' + q + '%'})`
     : sql``
