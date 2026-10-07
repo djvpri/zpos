@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log Error Kasir — Timeline Dense</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+.timeline-line{position:absolute;left:24px;top:0;bottom:0;width:1px;background:#e5e7eb}
+.timeline-dot{width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #e5e7eb;z-index:1}
+.dot-err{background:#f43f5e}
+.dot-ok{background:#10b981}
+.dot-warn{background:#f59e0b}
+.dot-info{background:#6366f1}
+.row-expand:hover{background:#f9fafb}
+.filter-active{background:#eef2ff;color:#4f46e5;border-color:#c7d2fe}
+.scrollbar-thin::-webkit-scrollbar{width:6px}
+.scrollbar-thin::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px}
+.heat-cell{width:14px;height:14px;border-radius:2px}
+.heat-0{background:#f3f4f6}
+.heat-1{background:#fde2e4}
+.heat-2{background:#fcb8c1}
+.heat-3{background:#f87171}
+.heat-4{background:#dc2626}
+.sev-badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;text-transform:uppercase;letter-spacing:0.5px}
+</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<div class="min-h-screen flex">
+<aside class="w-60 shrink-0 bg-gray-900 text-white fixed inset-y-0 left-0 z-30 flex flex-col">
+  <div class="h-14 flex items-center gap-2 px-4 border-b border-white/10">
+    <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-sm">Z1</div>
+    <span class="font-bold">Z1 Pos Admin</span>
+  </div>
+  <nav class="flex-1 p-2 space-y-1">
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10"><i class="bi bi-shop"></i> Dashboard</a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10"><i class="bi bi-people"></i> Member</a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10"><i class="bi bi-box-seam"></i> Produk</a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-indigo-600 text-white"><i class="bi bi-bug"></i> Log Error Kasir</a>
+  </nav>
+</aside>
+
+<main class="flex-1 ml-60 p-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-2">
+      <i class="bi bi-bug text-rose-500 text-xl"></i>
+      <div>
+        <h1 class="text-lg font-bold">Log Error Kasir</h1>
+        <p class="text-xs text-gray-400">Timeline aktivitas device kasir — retensi 30 hari</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-100">
+        <i class="bi bi-download"></i> Export
+      </button>
+      <button class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-100">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Heatmap strip -->
+  <div class="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold text-gray-600">Aktivitas 7 Hari</span>
+        <span class="text-[10px] text-gray-400">— kolom = jam, baris = hari</span>
+      </div>
+      <div class="flex items-center gap-1 text-[10px] text-gray-400">
+        <span>sedikit</span>
+        <div class="heat-cell heat-0"></div>
+        <div class="heat-cell heat-1"></div>
+        <div class="heat-cell heat-2"></div>
+        <div class="heat-cell heat-3"></div>
+        <div class="heat-cell heat-4"></div>
+        <span>banyak</span>
+      </div>
+    </div>
+    <div class="space-y-1">
+      <!-- header jam -->
+      <div class="flex items-center gap-1 text-[8px] text-gray-400 ml-12">
+        <span class="w-14">00</span><span class="w-14">04</span><span class="w-14">08</span><span class="w-14">12</span><span class="w-14">16</span><span class="w-14">20</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="w-10 text-[10px] text-gray-500 font-medium">05 Okt</span>
+        <div class="flex gap-0.5">
+          <div class="heat-cell heat-4"></div><div class="heat-cell heat-4"></div><div class="heat-cell heat-3"></div><div class="heat-cell heat-2"></div>
+          <div class="heat-cell heat-1"></div><div class="heat-cell heat-1"></div><div class="heat-cell heat-2"></div><div class="heat-cell heat-2"></div>
+          <div class="heat-cell heat-2"></div><div class="heat-cell heat-2"></div><div class="heat-cell heat-2"></div><div class="heat-cell heat-1"></div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="w-10 text-[10px] text-gray-500 font-medium">06 Okt</span>
+        <div class="flex gap-0.5">
+          <div class="heat-cell heat-0"></div><div class="heat-cell heat-1"></div><div class="heat-cell heat-2"></div><div class="heat-cell heat-3"></div>
+          <div class="heat-cell heat-2"></div><div class="heat-cell heat-2"></div><div class="heat-cell heat-1"></div><div class="heat-cell heat-1"></div>
+          <div class="heat-cell heat-1"></div><div class="heat-cell heat-1"></div><div class="heat-cell heat-1"></div><div class="heat-cell heat-0"></div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="w-10 text-[10px] text-gray-500 font-medium">07 Okt</span>
+        <div class="flex gap-0.5">
+          <div class="heat-cell heat-0"></div><div class="heat-cell heat-0"></div><div class="heat-cell heat-1"></div><div class="heat-cell heat-3"></div>
+          <div class="heat-cell heat-4"></div><div class="heat-cell heat-4"></div><div class="heat-cell heat-1"></div><div class="heat-cell heat-2"></div>
+          <div class="heat-cell heat-2"></div><div class="heat-cell heat-3"></div><div class="heat-cell heat-2"></div><div class="heat-cell heat-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device filter -->
+  <div class="flex items-center gap-2 mb-4">
+    <button class="px-3 py-1.5 rounded-lg text-xs font-medium border filter-active">Semua (518)</button>
+    <button class="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-500 hover:bg-gray-50">
+      <span class="inline-block w-2 h-2 rounded-full bg-rose-500 mr-1"></span>JJ Store (455)
+    </button>
+    <button class="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-500 hover:bg-gray-50">
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>TOKO RAFA (63)
+    </button>
+    <div class="flex-1"></div>
+    <select class="text-xs px-2 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600">
+      <option>7 hari</option><option>24 jam</option><option>30 hari</option>
+    </select>
+  </div>
+
+  <!-- Timeline -->
+  <div class="bg-white rounded-2xl border border-gray-100 max-h-[500px] overflow-y-auto scrollbar-thin">
+    <div class="relative px-4 py-4 space-y-3">
+      <div class="timeline-line"></div>
+
+      <div class="flex gap-4 row-expand px-2 py-1.5 rounded-lg cursor-pointer">
+        <div class="relative flex-shrink-0 w-12 flex justify-center"><div class="timeline-dot dot-err mt-1"></div></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="sev-badge bg-rose-50 text-rose-600">ERR</span>
+            <span class="text-xs font-semibold text-indigo-600">JJ Store</span>
+            <span class="text-[10px] text-gray-400">DESKTOP-V77KRTI</span>
+          </div>
+          <p class="text-xs text-gray-600 mt-0.5 mono">sync GAGAL: body: error decoding response body</p>
+          <p class="text-[10px] text-gray-400 mt-0.5">20:09:51 — 15 detik setelah sync mulai</p>
+        </div>
+      </div>
+
+      <div class="flex gap-4 row-expand px-2 py-1.5 rounded-lg cursor-pointer">
+        <div class="relative flex-shrink-0 w-12 flex justify-center"><div class="timeline-dot dot-warn mt-1"></div></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="sev-badge bg-amber-50 text-amber-600">DIAG</span>
+            <span class="text-xs font-semibold text-indigo-600">JJ Store</span>
+            <span class="text-[10px] text-gray-400">DESKTOP-V77KRTI</span>
+          </div>
+          <p class="text-xs text-gray-600 mt-0.5 mono">NET[wifi=Extender_AA4AC8 signal=98% | probe-opaque 345ms; er=Failed to fetch]</p>
+          <p class="text-[10px] text-amber-600 mt-0.5">⚠ WiFi extender intermittent — sinyal kuat tapi upstream putus</p>
+        </div>
+      </div>
+
+      <div class="flex gap-4 row-expand px-2 py-1.5 rounded-lg cursor-pointer">
+        <div class="relative flex-shrink-0 w-12 flex justify-center"><div class="timeline-dot dot-ok mt-1"></div></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="sev-badge bg-emerald-50 text-emerald-600">OK</span>
+            <span class="text-xs font-semibold text-indigo-600">TOKO RAFA</span>
+            <span class="text-[10px] text-gray-400">LAPTOP-FEJ3FNLV</span>
+          </div>
+          <p class="text-xs text-gray-600 mt-0.5 mono">sync OK kategori=4 produk=410 member=94 user=4 bon=75 push=0</p>
+          <p class="text-[10px] text-gray-400 mt-0.5">23:56:50 — semua data tersinkron</p>
+        </div>
+      </div>
+
+      <div class="flex gap-4 row-expand px-2 py-1.5 rounded-lg cursor-pointer">
+        <div class="relative flex-shrink-0 w-12 flex justify-center"><div class="timeline-dot dot-info mt-1"></div></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="sev-badge bg-indigo-50 text-indigo-600">STOK</span>
+            <span class="text-xs font-semibold text-indigo-600">TOKO RAFA</span>
+            <span class="text-[10px] text-gray-400">LAPTOP-FEJ3FNLV</span>
+          </div>
+          <p class="text-xs text-gray-600 mt-0.5 mono">trx TRX-90873520 tebus=1 :: id9874:195->hold(q1) id9881:1996->hold(q4) id9885:997->hold(q2)...</p>
+          <p class="text-[10px] text-gray-400 mt-0.5">23:34:33 — 42 item di-hold, bon #205 selesai</p>
+        </div>
+      </div>
+
+      <div class="flex gap-4 row-expand px-2 py-1.5 rounded-lg cursor-pointer">
+        <div class="relative flex-shrink-0 w-12 flex justify-center"><div class="timeline-dot dot-info mt-1"></div></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="sev-badge bg-indigo-50 text-indigo-600">SETUP</span>
+            <span class="text-xs font-semibold text-indigo-600">TOKO RAFA</span>
+            <span class="text-[10px] text-gray-400">LAPTOP-FEJ3FNLV</span>
+          </div>
+          <p class="text-xs text-gray-600 mt-0.5 mono">kasir-setup OK toko=TOKO RAFA user=3 email=yundriyati97@gmail.com</p>
+          <p class="text-[10px] text-gray-400 mt-0.5">23:51:04 — login ulang admin</p>
+        </div>
+      </div>
+
+      <div class="flex gap-4 row-expand px-2 py-1.5 rounded-lg cursor-pointer">
+        <div class="relative flex-shrink-0 w-12 flex justify-center"><div class="timeline-dot dot-ok mt-1"></div></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="sev-badge bg-emerald-50 text-emerald-600">PUSH</span>
+            <span class="text-xs font-semibold text-indigo-600">TOKO RAFA</span>
+            <span class="text-[10px] text-gray-400">LAPTOP-FEJ3FNLV</span>
+          </div>
+          <p class="text-xs text-gray-600 mt-0.5 mono">push_antrian_only OK push=1</p>
+          <p class="text-[10px] text-gray-400 mt-0.5">23:46:42 — bon #142 terkirim ke server</p>
+        </div>
+      </div>
+
+      <div class="flex gap-4 row-expand px-2 py-1.5 rounded-lg cursor-pointer">
+        <div class="relative flex-shrink-0 w-12 flex justify-center"><div class="timeline-dot dot-err mt-1"></div></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="sev-badge bg-rose-50 text-rose-600">ERR</span>
+            <span class="text-xs font-semibold text-indigo-600">JJ Store</span>
+            <span class="text-[10px] text-gray-400">DESKTOP-V77KRTI</span>
+          </div>
+          <p class="text-xs text-gray-600 mt-0.5 mono">sync GAGAL: network: error sending request for url (https://z1pos.zomet.my.id/api/auth/me)</p>
+          <p class="text-[10px] text-rose-500 mt-0.5">⚠ Koneksi putus total — server tak terjangkau</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+</body>
+</html>

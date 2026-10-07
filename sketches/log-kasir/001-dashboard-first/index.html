@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log Error Kasir — Dashboard First</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+.bar{height:6px;border-radius:3px}
+.bar-err{background:#f43f5e}
+.bar-ok{background:#10b981}
+.bar-warn{background:#f59e0b}
+.pulse-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pulse-ok{background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.2)}
+.pulse-err{background:#f43f5e;box-shadow:0 0 0 3px rgba(244,63,94,.2);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.row-hover:hover{background:#f9fafb}
+.fade-in{animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.sev-err{color:#f43f5e}
+.sev-warn{color:#f59e0b}
+.sev-info{color:#6366f1}
+.scrollbar-thin::-webkit-scrollbar{width:6px}
+.scrollbar-thin::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px}
+</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<!-- Sidebar mock -->
+<div class="min-h-screen flex">
+<aside class="w-60 shrink-0 bg-gray-900 text-white fixed inset-y-0 left-0 z-30 flex flex-col">
+  <div class="h-14 flex items-center gap-2 px-4 border-b border-white/10">
+    <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-sm">Z1</div>
+    <span class="font-bold">Z1 Pos Admin</span>
+  </div>
+  <nav class="flex-1 p-2 space-y-1">
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10"><i class="bi bi-shop"></i> Dashboard</a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10"><i class="bi bi-people"></i> Member</a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10"><i class="bi bi-box-seam"></i> Produk</a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-indigo-600 text-white"><i class="bi bi-bug"></i> Log Error Kasir</a>
+  </nav>
+</aside>
+
+<main class="flex-1 ml-60 p-6 max-w-7xl">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-2">
+      <i class="bi bi-bug text-rose-500 text-xl"></i>
+      <div>
+        <h1 class="text-lg font-bold">Log Error Kasir</h1>
+        <p class="text-xs text-gray-400">Upload otomatis dari zpos-errors.log tiap PC kasir — retensi 30 hari</p>
+      </div>
+    </div>
+    <button class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-100">
+      <i class="bi bi-arrow-clockwise"></i> Muat ulang
+    </button>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <p class="text-xs text-gray-400 mb-1">Total Log 7 Hari</p>
+      <p class="text-2xl font-bold">3.282</p>
+      <div class="flex items-center gap-1 mt-1 text-xs">
+        <span class="text-rose-500"><i class="bi bi-arrow-down"></i> 12%</span>
+        <span class="text-gray-300">vs minggu lalu</span>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <p class="text-xs text-gray-400 mb-1">Device Aktif</p>
+      <p class="text-2xl font-bold">3</p>
+      <div class="flex items-center gap-1.5 mt-1 text-xs">
+        <span class="pulse-dot pulse-ok"></span>
+        <span class="text-gray-500">2 sehat · 1 bermasalah</span>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <p class="text-xs text-gray-400 mb-1">Error Hari Ini</p>
+      <p class="text-2xl font-bold text-rose-500">33</p>
+      <p class="text-xs text-gray-400 mt-1">JJ Store · WiFi flaky</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <p class="text-xs text-gray-400 mb-1">Tenant Aktif</p>
+      <p class="text-2xl font-bold">3</p>
+      <div class="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
+        Demo · JJ Store · TOKO RAFA
+      </div>
+    </div>
+  </div>
+
+  <!-- Device health summary -->
+  <div class="grid grid-cols-3 gap-4 mb-6">
+    <!-- Device sehat -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <p class="text-sm font-semibold">TOKO RAFA</p>
+          <p class="text-xs text-gray-400 mono">38a3b2... · LAPTOP-FEJ3FNLV</p>
+        </div>
+        <span class="pulse-dot pulse-ok"></span>
+      </div>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-gray-500">24h sync</span>
+          <span><span class="text-emerald-600 font-medium">63 OK</span> · 0 GAGAL</span>
+        </div>
+        <div class="flex gap-0.5 h-1.5">
+          <div class="flex-1 bg-emerald-500 rounded-l"></div>
+          <div class="flex-1 bg-emerald-500"></div>
+          <div class="flex-1 bg-emerald-500"></div>
+          <div class="flex-1 bg-emerald-500 rounded-r"></div>
+        </div>
+        <p class="text-xs text-gray-400">Terakhir: 7 Okt 23:56 — sync OK push=0</p>
+      </div>
+    </div>
+
+    <!-- Device bermasalah -->
+    <div class="bg-white rounded-2xl border-2 border-rose-200 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <p class="text-sm font-semibold">JJ Store</p>
+          <p class="text-xs text-gray-400 mono">56ec99... · DESKTOP-V77KRTI</p>
+        </div>
+        <span class="pulse-dot pulse-err"></span>
+      </div>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-gray-500">24h sync</span>
+          <span><span class="text-rose-500 font-medium">33 GAGAL</span> · 12 OK</span>
+        </div>
+        <div class="flex gap-0.5 h-1.5">
+          <div class="flex-[5] bg-rose-500 rounded-l"></div>
+          <div class="flex-[2] bg-emerald-500"></div>
+          <div class="flex-[3] bg-rose-500"></div>
+          <div class="flex-[2] bg-emerald-500 rounded-r"></div>
+        </div>
+        <p class="text-xs text-rose-500">WiFi: Extender_AA4AC8 · sinyal 98% tapi intermittent</p>
+      </div>
+    </div>
+
+    <!-- Device idle -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <p class="text-sm font-semibold">Demo</p>
+          <p class="text-xs text-gray-400 mono">f9f7db... · KBK-067</p>
+        </div>
+        <span class="pulse-dot" style="background:#d1d5db"></span>
+      </div>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-gray-500">24h sync</span>
+          <span class="text-gray-400">0 aktivitas</span>
+        </div>
+        <div class="flex gap-0.5 h-1.5">
+          <div class="flex-1 bg-gray-200 rounded"></div>
+        </div>
+        <p class="text-xs text-gray-400">Idle — tidak ada transaksi</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter + log list -->
+  <div class="bg-white rounded-2xl border border-gray-100">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-50">
+      <div class="flex items-center gap-2">
+        <h2 class="text-sm font-semibold">Log Terbaru</h2>
+        <span class="text-xs text-gray-400">200 baris terakhir</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <select class="text-xs px-2 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600">
+          <option>Semua tenant</option>
+          <option>JJ Store</option>
+          <option>TOKO RAFA</option>
+          <option>Demo</option>
+        </select>
+        <select class="text-xs px-2 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600">
+          <option>Semua severity</option>
+          <option>Error</option>
+          <option>Warning</option>
+          <option>Info</option>
+        </select>
+      </div>
+    </div>
+    <div class="divide-y divide-gray-50 max-h-96 overflow-y-auto scrollbar-thin">
+      <!-- error row -->
+      <div class="px-5 py-3 row-hover cursor-pointer fade-in" onclick="document.getElementById('m1').classList.remove('hidden')">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded sev-err bg-rose-50">ERR</span>
+              <span class="text-sm font-medium text-indigo-600">JJ Store</span>
+              <span class="text-gray-300">·</span>
+              <span class="text-xs text-gray-500">DESKTOP-V77KRTI</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1 truncate mono">sync GAGAL: body: error decoding response body</p>
+          </div>
+          <span class="text-[10px] text-gray-400 shrink-0">07/10 20:09</span>
+        </div>
+      </div>
+      <!-- DIAG row -->
+      <div class="px-5 py-3 row-hover cursor-pointer">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded sev-warn bg-amber-50">DIAG</span>
+              <span class="text-sm font-medium text-indigo-600">JJ Store</span>
+              <span class="text-gray-300">·</span>
+              <span class="text-xs text-gray-500">DESKTOP-V77KRTI</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1 truncate mono">NET[wifi=Extender_AA4AC8 signal=98% | probe-opaque 345ms; er=Failed to fetch]</p>
+          </div>
+          <span class="text-[10px] text-gray-400 shrink-0">07/10 20:04</span>
+        </div>
+      </div>
+      <!-- OK row -->
+      <div class="px-5 py-3 row-hover cursor-pointer">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded sev-info bg-indigo-50">OK</span>
+              <span class="text-sm font-medium text-indigo-600">TOKO RAFA</span>
+              <span class="text-gray-300">·</span>
+              <span class="text-xs text-gray-500">LAPTOP-FEJ3FNLV</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1 truncate mono">sync OK kategori=4 produk=410 member=94 user=4 bon=75 push=0</p>
+          </div>
+          <span class="text-[10px] text-gray-400 shrink-0">07/10 23:56</span>
+        </div>
+      </div>
+      <!-- BON row -->
+      <div class="px-5 py-3 row-hover cursor-pointer">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded sev-info bg-indigo-50">BON</span>
+              <span class="text-sm font-medium text-indigo-600">TOKO RAFA</span>
+              <span class="text-gray-300">·</span>
+              <span class="text-xs text-gray-500">LAPTOP-FEJ3FNLV</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1 truncate mono">bon #233 diubah isinya di server</p>
+          </div>
+          <span class="text-[10px] text-gray-400 shrink-0">07/10 23:50</span>
+        </div>
+      </div>
+      <!-- STOK row -->
+      <div class="px-5 py-3 row-hover cursor-pointer">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded sev-info bg-indigo-50">STOK</span>
+              <span class="text-sm font-medium text-indigo-600">TOKO RAFA</span>
+              <span class="text-gray-300">·</span>
+              <span class="text-xs text-gray-500">LAPTOP-FEJ3FNLV</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1 truncate mono">trx TRX-90873520 tebus=1 :: id9874:195->hold(q1) id9881:1996->hold(q4)...</p>
+          </div>
+          <span class="text-[10px] text-gray-400 shrink-0">07/10 23:34</span>
+        </div>
+      </div>
+      <!-- SETUP row -->
+      <div class="px-5 py-3 row-hover cursor-pointer">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded sev-info bg-indigo-50">SETUP</span>
+              <span class="text-sm font-medium text-indigo-600">TOKO RAFA</span>
+              <span class="text-gray-300">·</span>
+              <span class="text-xs text-gray-500">LAPTOP-FEJ3FNLV</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1 truncate mono">kasir-setup OK toko=TOKO RAFA user=3 email=yundriyati97@gmail.com</p>
+          </div>
+          <span class="text-[10px] text-gray-400 shrink-0">07/10 23:51</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- Modal detail -->
+<div id="m1" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onclick="this.classList.add('hidden')">
+  <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded sev-err bg-rose-50">ERR</span>
+          <p class="text-sm font-semibold">JJ Store</p>
+        </div>
+        <p class="text-xs text-gray-400 mt-0.5">DESKTOP-V77KRTI · device 56ec99d5a8c4 · 07/10/2026 20:09</p>
+      </div>
+      <button onclick="document.getElementById('m1').classList.add('hidden')" class="text-gray-400 hover:text-gray-700"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <pre class="px-5 py-4 text-[11px] leading-relaxed text-gray-700 overflow-auto flex-1 whitespace-pre-wrap break-all mono scrollbar-thin">2026-10-07 20:09:36 | sync mulai base=https://z1pos.zomet.my.id token=...L9vY (len 267)
+2026-10-07 20:09:51 | sync GAGAL: body: error decoding response body
+
+2026-10-07 20:04:51 | DIAG | asal=autoSync | body: error decoding response body
+  | NET[wifi=Extender_AA4AC8 signal=98% | anchor=68ms | server=65ms
+  | KESIMPULAN: jaringan kasir OK]
+  | probe-opaque 345ms; er=Failed to fetch | antrian=0 | tok_len=0</pre>
+  </div>
+</div>
+
+</body>
+</html>

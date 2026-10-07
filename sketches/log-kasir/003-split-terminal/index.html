@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log Error Kasir — Split Terminal</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+.device-card{transition:all .15s}
+.device-card.active{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+.device-card:hover{border-color:#c7d2fe}
+.sev-pill{font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.log-line{padding:2px 12px;font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+.log-line:hover{background:#f3f4f6}
+.log-err{color:#f43f5e}
+.log-ok{color:#10b981}
+.log-warn{color:#f59e0b}
+.log-info{color:#6b7280}
+.log-scn{color:#8b5cf6}
+.log-stok{color:#3b82f6}
+.pulse-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pulse-ok{background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.2)}
+.pulse-err{background:#f43f5e;box-shadow:0 0 0 3px rgba(244,63,94,.2);animation:pulse 1.5s infinite}
+.pulse-idle{background:#d1d5db}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.scrollbar-thin::-webkit-scrollbar{width:6px;height:6px}
+.scrollbar-thin::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px}
+.search-box:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+.mini-bar{height:3px;border-radius:2px}
+.copy-btn{opacity:0;transition:opacity .15s}
+.log-line:hover .copy-btn{opacity:1}
+</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<div class="min-h-screen flex">
+<aside class="w-60 shrink-0 bg-gray-900 text-white fixed inset-y-0 left-0 z-30 flex flex-col">
+  <div class="h-14 flex items-center gap-2 px-4 border-b border-white/10">
+    <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-sm">Z1</div>
+    <span class="font-bold">Z1 Pos Admin</span>
+  </div>
+  <nav class="flex-1 p-2 space-y-1">
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10"><i class="bi bi-shop"></i> Dashboard</a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10"><i class="bi bi-people"></i> Member</a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10"><i class="bi bi-box-seam"></i> Produk</a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-indigo-600 text-white"><i class="bi bi-bug"></i> Log Error Kasir</a>
+  </nav>
+</aside>
+
+<main class="flex-1 ml-60 flex flex-col h-screen overflow-hidden">
+  <!-- Header -->
+  <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white">
+    <div class="flex items-center gap-2">
+      <i class="bi bi-bug text-rose-500 text-xl"></i>
+      <div>
+        <h1 class="text-lg font-bold">Log Error Kasir</h1>
+        <p class="text-xs text-gray-400">Split view — pilih device, lihat log mentah</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-100">
+        <i class="bi bi-download"></i> Export
+      </button>
+      <button class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-100">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Split body -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- Left: device list -->
+    <div class="w-80 shrink-0 border-r border-gray-100 bg-white overflow-y-auto scrollbar-thin">
+      <div class="p-4">
+        <input type="text" placeholder="Cari toko / device..." class="search-box w-full px-3 py-2 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:bg-white transition-colors">
+      </div>
+
+      <!-- Device cards -->
+      <div class="px-4 space-y-2 pb-4">
+
+        <!-- JJ Store — problematic -->
+        <div class="device-card active border-2 border-indigo-400 rounded-xl p-3 cursor-pointer" onclick="selectDevice(this)">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="pulse-dot pulse-err"></span>
+              <span class="text-sm font-semibold">JJ Store</span>
+            </div>
+            <span class="text-[10px] text-rose-500 font-medium">33 ERR</span>
+          </div>
+          <p class="text-[10px] text-gray-400 mono mb-2">DESKTOP-V77KRTI · 56ec99d5...</p>
+          <div class="flex gap-0.5 mb-2">
+            <div class="flex-[5] mini-bar bg-rose-500 rounded-l"></div>
+            <div class="flex-[2] mini-bar bg-emerald-500"></div>
+            <div class="flex-[3] mini-bar bg-rose-500"></div>
+            <div class="flex-[2] mini-bar bg-emerald-500 rounded-r"></div>
+          </div>
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="text-gray-400">WiFi Extender_AA4AC8</span>
+            <span class="text-gray-400">13:46</span>
+          </div>
+        </div>
+
+        <!-- TOKO RAFA — healthy -->
+        <div class="device-card border border-gray-200 rounded-xl p-3 cursor-pointer" onclick="selectDevice(this)">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="pulse-dot pulse-ok"></span>
+              <span class="text-sm font-semibold">TOKO RAFA</span>
+            </div>
+            <span class="text-[10px] text-emerald-600 font-medium">0 ERR</span>
+          </div>
+          <p class="text-[10px] text-gray-400 mono mb-2">LAPTOP-FEJ3FNLV · 38a3b247...</p>
+          <div class="flex gap-0.5 mb-2">
+            <div class="flex-1 mini-bar bg-emerald-500 rounded"></div>
+          </div>
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="text-gray-400">328 OK · 2 push</span>
+            <span class="text-gray-400">23:56</span>
+          </div>
+        </div>
+
+        <!-- Demo — idle -->
+        <div class="device-card border border-gray-200 rounded-xl p-3 cursor-pointer" onclick="selectDevice(this)">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="pulse-dot pulse-idle"></span>
+              <span class="text-sm font-semibold text-gray-400">Demo</span>
+            </div>
+            <span class="text-[10px] text-gray-400">—</span>
+          </div>
+          <p class="text-[10px] text-gray-400 mono mb-2">KBK-067 · f9f7db3f...</p>
+          <div class="flex gap-0.5 mb-2">
+            <div class="flex-1 mini-bar bg-gray-200 rounded"></div>
+          </div>
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="text-gray-400">Idle</span>
+            <span class="text-gray-400">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: terminal log -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-gray-900">
+      <!-- Terminal toolbar -->
+      <div class="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-gray-800">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-medium text-white">JJ Store</span>
+          <span class="text-[10px] text-gray-400">DESKTOP-V77KRTI</span>
+          <span class="sev-pill bg-rose-500/20 text-rose-400">33 error hari ini</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- severity toggles -->
+          <button class="sev-pill bg-rose-500/20 text-rose-400 hover:bg-rose-500/30" onclick="toggleFilter(this)">ERR</button>
+          <button class="sev-pill bg-amber-500/20 text-amber-400 hover:bg-amber-500/30" onclick="toggleFilter(this)">DIAG</button>
+          <button class="sev-pill bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30" onclick="toggleFilter(this)">OK</button>
+          <button class="sev-pill bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30" onclick="toggleFilter(this)">INFO</button>
+          <div class="w-px h-4 bg-gray-600 mx-1"></div>
+          <button class="text-[10px] text-gray-400 hover:text-white" title="Copy"><i class="bi bi-clipboard"></i></button>
+          <button class="text-[10px] text-gray-400 hover:text-white" title="Download"><i class="bi bi-download"></i></button>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="px-4 py-2 border-b border-gray-700 bg-gray-800">
+        <div class="relative">
+          <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-500"></i>
+          <input type="text" placeholder="Filter log... (sync GAGAL, TRX-, bon #, dst)" class="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-700 text-white rounded-lg border border-gray-600 placeholder-gray-500 focus:border-indigo-500 focus:outline-none">
+        </div>
+      </div>
+
+      <!-- Terminal output -->
+      <div class="flex-1 overflow-y-auto scrollbar-thin mono py-2">
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:56:45</span> | <span class="log-ok">sync mulai</span> base=https://z1pos.zomet.my.id token=...toM0 (len 261) <button class="copy-btn text-gray-500 hover:text-white ml-2"><i class="bi bi-clipboard"></i></button></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:56:50</span> | <span class="log-ok">sync OK</span> kategori=4 produk=410 katmember=0 member=94 user=4 bon=75 itemvirtual=24 push=0</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:56:50</span> | <span class="log-info">BON</span> bonstate init sebelum merge count=75 :: b124:PAK DE BADAR | b127:BANG MARDY...</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:55:41</span> | <span class="log-ok">sync mulai</span> base=https://z1pos.zomet.my.id token=...toM0 (len 261)</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:55:44</span> | <span class="log-ok">sync OK</span> kategori=4 produk=410 member=94 user=4 bon=75 push=0</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:50:58</span> | <span class="log-warn">kasir-setup mulai</span> base=https://z1pos.zomet.my.id email=yundriyati97@gmail.com</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:50:58</span> | <span class="log-ok">kasir-setup OK</span> toko=TOKO RAFA user=3</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:46:41</span> | <span class="log-stok">STOK</span> trx TRX-91601898 tebus=1 :: idnull:?->hold(q1)</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:46:42</span> | <span class="log-info">bon #142 selesai</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:46:42</span> | <span class="log-ok">push_antrian_only OK</span> push=1</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:46:48</span> | <span class="log-warn">bon #233 diubah isinya di server</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:34:33</span> | <span class="log-stok">STOK</span> trx TRX-90873520 tebus=1 :: id9874:195->hold(q1) id9881:1996->hold(q4) id9885:997->hold(q2) id9899:191->hold(q2)</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:34:33</span> | <span class="log-info">bon #205 selesai</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">23:34:34</span> | <span class="log-ok">push_antrian_only OK</span> push=1</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">20:09:36</span> | <span class="log-ok">sync mulai</span> base=https://z1pos.zomet.my.id token=...L9vY (len 267)</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">20:09:51</span> | <span class="log-err">sync GAGAL: body: error decoding response body</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">20:04:51</span> | <span class="log-warn">DIAG | asal=autoSync | body: error decoding response body</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">          </span> | <span class="log-warn">NET[wifi=Extender_AA4AC8 signal=98% | anchor=68ms | server=65ms | KESIMPULAN: jaringan kasir OK]</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">          </span> | <span class="log-warn">probe-opaque 345ms; er=Failed to fetch | antrian=0 | tok_len=0</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">20:05:45</span> | <span class="log-stok">STOK</span> trx TRX-78345030 tebus=0 :: id11318:19->18(q1) id8875:5->4(q1)</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">20:05:45</span> | <span class="log-ok">push_antrian_only OK</span> push=1</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">20:05:47</span> | <span class="log-info">BUKA_LACI_TRY printer=POS58</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">20:05:47</span> | <span class="log-ok">BUKA_LACI_OK</span> Laci dibuka lewat POS58.</div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">12:53:15</span> | <span class="log-err">sync GAGAL: network: error sending request for url (https://z1pos.zomet.my.id/api/auth/me)</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">09:30:34</span> | <span class="log-err">sync GAGAL: body: error decoding response body</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">09:32:58</span> | <span class="log-err">sync GAGAL: body: error decoding response body</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">09:34:12</span> | <span class="log-err">sync GAGAL: body: error decoding response body</span></div>
+        <div class="log-line text-gray-300"><span class="text-gray-500">09:35:28</span> | <span class="log-err">sync GAGAL: body: error decoding response body</span></div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="flex items-center justify-between px-4 py-1.5 border-t border-gray-700 bg-gray-800 text-[10px] text-gray-400">
+        <div class="flex items-center gap-3">
+          <span><i class="bi bi-circle-fill text-rose-500" style="font-size:6px"></i> 33 ERR</span>
+          <span><i class="bi bi-circle-fill text-amber-500" style="font-size:6px"></i> 3 DIAG</span>
+          <span><i class="bi bi-circle-fill text-emerald-500" style="font-size:6px"></i> 12 OK</span>
+          <span><i class="bi bi-circle-fill text-indigo-500" style="font-size:6px"></i> 8 INFO</span>
+        </div>
+        <span>25 baris · auto-scroll ON</span>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+function selectDevice(el){
+  document.querySelectorAll('.device-card').forEach(c=>{c.classList.remove('active');c.classList.add('border','border-gray-200');c.classList.remove('border-2','border-indigo-400')});
+  el.classList.add('active','border-2','border-indigo-400');
+  el.classList.remove('border','border-gray-200');
+}
+function toggleFilter(btn){
+  btn.classList.toggle('opacity-40');
+  btn.classList.toggle('opacity-100');
+}
+</script>
+
+</body>
+</html>
