@@ -24,22 +24,24 @@ export async function GET(req: Request) {
     FROM log_kasir
   `
 
-  // Device health: per device 24 jam
+  // Device health: per device 30 hari (semua device pernah kirim log, bukan hanya aktif 24h)
   const devices = await sql`
     SELECT
       l.device_id,
       max(l.nama_pc) AS nama_pc,
       l.toko_id,
       max(t.nama) AS toko_nama,
+      count(*)::int AS total,
       (count(*) FILTER (WHERE l.konten ~* 'sync GAGAL'))::int AS gagal,
       (count(*) FILTER (WHERE l.konten ~* 'sync OK'))::int AS ok,
       max(l.created_at) AS last_seen,
+      min(l.created_at) AS first_seen,
       substring(max(l.konten) FILTER (WHERE l.konten ~* 'wifi=') from 'wifi=([^ |]+)') AS wifi_name
     FROM log_kasir l
     JOIN toko t ON t.id = l.toko_id
-    WHERE l.created_at > now() - interval '24 hours'
+    WHERE l.created_at > now() - interval '30 days'
     GROUP BY l.device_id, l.toko_id
-    ORDER BY gagal DESC, ok DESC
+    ORDER BY max(l.created_at) DESC
   `
 
   let rows

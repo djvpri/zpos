@@ -25,9 +25,11 @@ interface Device {
   nama_pc: string | null
   toko_id: number
   toko_nama: string
+  total: number
   gagal: number
   ok: number
   last_seen: string
+  first_seen: string
   wifi_name: string | null
 }
 
@@ -97,11 +99,18 @@ export default function AdminLogKasir() {
     return true
   })
 
-  // urut device: GAGAL > 0 dulu, lalu OK, lalu idle
+  // online = aktif dalam 24 jam
+  const now = Date.now()
+  const isOnline = (d: Device) => d.last_seen && (now - new Date(d.last_seen).getTime()) < 24 * 60 * 60 * 1000
+  const onlineCount = devices.filter(isOnline).length
+  const offlineCount = devices.length - onlineCount
+
+  // urut device: online dulu (last_seen DESC), lalu offline
   const sortedDevices = [...devices].sort((a, b) => {
-    if (a.gagal > 0 && b.gagal === 0) return -1
-    if (a.gagal === 0 && b.gagal > 0) return 1
-    return b.ok - a.ok
+    const ao = isOnline(a), bo = isOnline(b)
+    if (ao && !bo) return -1
+    if (!ao && bo) return 1
+    return new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime()
   })
 
   return (
@@ -145,15 +154,11 @@ export default function AdminLogKasir() {
                 <p className="text-xs text-gray-300 mt-1">retensi 30 hari</p>
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 p-4">
-                <p className="text-xs text-gray-400 mb-1">Device Aktif (24h)</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.active_devices}</p>
+                <p className="text-xs text-gray-400 mb-1">Device Kasir</p>
+                <p className="text-2xl font-bold text-gray-900">{devices.length}</p>
                 <div className="flex items-center gap-1.5 mt-1 text-xs">
-                  {devices.filter(d => d.gagal === 0).length > 0 && (
-                    <span className="text-emerald-600">{devices.filter(d => d.gagal === 0).length} sehat</span>
-                  )}
-                  {devices.filter(d => d.gagal > 0).length > 0 && (
-                    <span className="text-rose-500">· {devices.filter(d => d.gagal > 0).length} bermasalah</span>
-                  )}
+                  {onlineCount > 0 && <span className="text-emerald-600">{onlineCount} online</span>}
+                  {offlineCount > 0 && <span className="text-gray-400">· {offlineCount} offline</span>}
                 </div>
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 p-4">
@@ -185,10 +190,11 @@ export default function AdminLogKasir() {
                 const total = d.gagal + d.ok
                 const gagalPct = total > 0 ? (d.gagal / total) * 100 : 0
                 const okPct = total > 0 ? (d.ok / total) * 100 : 0
+                const online = isOnline(d)
                 const isErr = d.gagal > 0
                 return (
                   <div
-                    key={d.device_id}
+                    key={d.device_id + '-' + d.toko_id}
                     className={`bg-white rounded-2xl border p-4 ${isErr ? 'border-2 border-rose-200' : 'border border-gray-100'}`}
                   >
                     <div className="flex items-center justify-between mb-3">
@@ -200,27 +206,28 @@ export default function AdminLogKasir() {
                       </div>
                       <span
                         className={`w-2 h-2 rounded-full shrink-0 ${
-                          isErr ? 'bg-rose-500 shadow-[0_0_0_3px_rgba(244,63,94,0.2)]' : 'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]'
+                          online
+                            ? isErr
+                              ? 'bg-rose-500 shadow-[0_0_0_3px_rgba(244,63,94,0.2)]'
+                              : 'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]'
+                            : 'bg-gray-300'
                         }`}
                       />
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500">24h sync</span>
+                        <span className="text-gray-500">30 hari</span>
                         <span>
                           {d.gagal > 0 && <span className="text-rose-500 font-medium">{d.gagal} GAGAL</span>}
                           {d.gagal > 0 && d.ok > 0 && <span className="text-gray-300"> · </span>}
                           {d.ok > 0 && <span className="text-emerald-600 font-medium">{d.ok} OK</span>}
-                          {d.gagal === 0 && d.ok === 0 && <span className="text-gray-400">tidak ada</span>}
+                          {d.gagal === 0 && d.ok === 0 && <span className="text-gray-400">{d.total} baris</span>}
                         </span>
                       </div>
                       {total > 0 ? (
                         <div className="flex gap-0.5 h-1.5">
                           {gagalPct > 0 && (
-                            <div
-                              className="bg-rose-500 rounded-l"
-                              style={{ flexGrow: d.gagal }}
-                            />
+                            <div className="bg-rose-500 rounded-l" style={{ flexGrow: d.gagal }} />
                           )}
                           {okPct > 0 && (
                             <div
@@ -234,12 +241,12 @@ export default function AdminLogKasir() {
                           <div className="flex-1 bg-gray-200 rounded" />
                         </div>
                       )}
-                      <p className={`text-xs ${isErr ? 'text-rose-500' : 'text-gray-400'}`}>
-                        {isErr && d.wifi_name
-                          ? `WiFi: ${d.wifi_name} · sinyal kuat tapi intermittent`
-                          : d.last_seen
+                      <p className={`text-xs ${isErr && online ? 'text-rose-500' : 'text-gray-400'}`}>
+                        {isErr && online && d.wifi_name
+                          ? `WiFi: ${d.wifi_name} · intermittent`
+                          : online
                             ? `Terakhir: ${fmtShort(d.last_seen)}`
-                            : 'Idle — tidak ada aktivitas'}
+                            : `Offline sejak ${fmtShort(d.last_seen)}`}
                       </p>
                     </div>
                   </div>
