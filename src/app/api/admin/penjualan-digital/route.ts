@@ -19,11 +19,12 @@ export async function GET(req: Request) {
       td.id, td.transaksi_id, td.buyer_sku_code, td.customer_no, td.ref_id,
       td.commands, td.modal, td.harga_debet, td.harga_jual, td.status, td.sn,
       td.message, td.created_at, td.produk_id,
-      t.nama AS toko_nama, t.id AS toko_id,
+      tk.nama AS toko_nama, tk.id AS toko_id,
       COALESCE(td.harga_debet, 0) - COALESCE(td.modal, 0) AS margin_owner
     FROM transaksi_digital td
-    JOIN toko t ON t.id = td.toko_id
-    ${tokoId ? sql`WHERE td.toko_id = ${tokoId}` : sql``}
+    JOIN transaksi t ON t.id = td.transaksi_id
+    JOIN toko tk ON tk.id = t.toko_id
+    ${tokoId ? sql`WHERE t.toko_id = ${tokoId}` : sql``}
     ORDER BY td.created_at DESC
     LIMIT ${limit}
   `
