@@ -69,7 +69,7 @@ const saldoKasHarian = (h: { total_tunai?: number; total_pengeluaran?: number })
   (h.total_tunai || 0) - (h.total_pengeluaran || 0)
 
 export default function LaporanPage() {
-  const [tab, setTab] = useState<'ringkasan' | 'shift' | 'bon' | 'log'>('ringkasan')
+  const [tab, setTab] = useState<'ringkasan' | 'riwayat' | 'shift' | 'bon' | 'log'>('ringkasan')
 
   // --- Ringkasan ---
   const [laporan, setLaporan] = useState<LaporanHarian[]>([])
@@ -132,6 +132,21 @@ export default function LaporanPage() {
   const [log, setLog] = useState<AktivitasRow[]>([])
   const [loadingLog, setLoadingLog] = useState(false)
   const [logLoaded, setLogLoaded] = useState(false)
+
+  // --- Riwayat transaksi (tabel paginasi + filter) ---
+  const [rwData, setRwData] = useState<Transaksi[]>([])
+  const [rwTotal, setRwTotal] = useState(0)
+  const [rwGrand, setRwGrand] = useState(0)
+  const [rwPage, setRwPage] = useState(1)
+  const [rwPages, setRwPages] = useState(1)
+  const [rwLoading, setRwLoading] = useState(false)
+  const [rwDari, setRwDari] = useState('')
+  const [rwSampai, setRwSampai] = useState('')
+  const [rwMetode, setRwMetode] = useState('')
+  const [rwStatus, setRwStatus] = useState('')
+  const [rwQ, setRwQ] = useState('')
+  const [rwExporting, setRwExporting] = useState(false)
+  const RW_LIMIT = 50
 
   // Muat data ringkasan. `opts` berisi rentang tanggal (dari/sampai) bila
   // user pilih filter; tanpa rentang = perilaku lama (hari ini + 7 hari).
@@ -266,6 +281,75 @@ export default function LaporanPage() {
     setLoadingLog(false)
     setLogLoaded(true)
   }, [logLoaded])
+
+  // --- Riwayat transaksi: paginasi server-side + filter ---
+  const loadRiwayat = useCallback(async (page: number = 1) => {
+    setRwLoading(true)
+    const qs = new URLSearchParams()
+    qs.set('page', String(page))
+    qs.set('limit', String(RW_LIMIT))
+    if (rwDari) qs.set('dari', rwDari)
+    if (rwSampai) qs.set('sampai', rwSampai)
+    if (rwMetode) qs.set('metode', rwMetode)
+    if (rwStatus) qs.set('status', rwStatus)
+    if (rwQ) qs.set('q', rwQ)
+    try {
+      const res = await fetch(`/api/transaksi?${qs}`)
+      if (!res.ok) throw new Error('gagal')
+      const d = await res.json()
+      setRwData(d.data ?? [])
+      setRwTotal(d.total ?? 0)
+      setRwGrand(d.grand_total ?? 0)
+      setRwPage(d.page ?? 1)
+      setRwPages(d.total_pages ?? 1)
+    } catch {
+      setRwData([]); setRwTotal(0); setRwGrand(0); setRwPages(1)
+    }
+    setRwLoading(false)
+  }, [rwDari, rwSampai, rwMetode, rwStatus, rwQ])
+
+  const exportRiwayatCSV = async () => {
+    setRwExporting(true)
+    try {
+      // Ambil semua data sesuai filter (limit 200 cap API).
+      const qs = new URLSearchParams()
+      qs.set('page', '1')
+      qs.set('limit', '200')
+      if (rwDari) qs.set('dari', rwDari)
+      if (rwSampai) qs.set('sampai', rwSampai)
+      if (rwMetode) qs.set('metode', rwMetode)
+      if (rwStatus) qs.set('status', rwStatus)
+      if (rwQ) qs.set('q', rwQ)
+      const res = await fetch(`/api/transaksi?${qs}`)
+      if (!res.ok) throw new Error('gagal')
+      const d = await res.json()
+      const rows = (d.data ?? []) as Transaksi[]
+      const esc = (v: string | number | null | undefined) => {
+        const s = v == null ? '' : String(v)
+        return `"${s.replace(/"/g, '""')}"`
+      }
+      const head = ['No Transaksi', 'Tanggal', 'Kasir', 'Metode', 'Member', 'Total', 'Status']
+      const body = rows.map(t => [
+        t.no_transaksi,
+        t.created_at ? fmtDT(t.created_at) : '',
+        t.kasir ?? '',
+        t.metode_bayar,
+        t.member_nama ?? '',
+        t.total,
+        t.dibatalkan ? 'Dibatalkan' : 'Aktif',
+      ])
+      const csv = '\uFEFF' + [head, ...body].map(r => r.map(esc).join(';')).join('\n')
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `riwayat-transaksi-${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('Gagal export. Pastikan koneksi online.')
+    }
+    setRwExporting(false)
+  }
 
   const exportLogCSV = () => {
     const esc = (v: string | number | null | undefined) => {
@@ -407,6 +491,7 @@ export default function LaporanPage() {
   }
 
   useEffect(() => { Promise.resolve().then(() => loadRingkasan()) }, [loadRingkasan])
+  useEffect(() => { if (tab === 'riwayat') Promise.resolve().then(() => loadRiwayat()) }, [tab, loadRiwayat])
   useEffect(() => { if (tab === 'shift') Promise.resolve().then(() => loadShift()) }, [tab, loadShift])
   useEffect(() => { if (tab === 'bon') Promise.resolve().then(() => loadBonus()) }, [tab, loadBonus])
   useEffect(() => { if (tab === 'log') Promise.resolve().then(() => loadLog()) }, [tab, loadLog])
@@ -507,12 +592,12 @@ export default function LaporanPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-800">Laporan</h2>
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
-          {(['ringkasan', 'shift', 'bon', 'log'] as const).map(t => (
+          {(['ringkasan', 'riwayat', 'shift', 'bon', 'log'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors ${
                 tab === t ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}>
-              {t === 'ringkasan' ? 'Ringkasan' : t === 'shift' ? 'Shift' : t === 'bon' ? 'Bon Gantung' : 'Log'}
+              {t === 'ringkasan' ? 'Ringkasan' : t === 'riwayat' ? 'Riwayat' : t === 'shift' ? 'Shift' : t === 'bon' ? 'Bon Gantung' : 'Log'}
             </button>
           ))}
         </div>
@@ -663,6 +748,128 @@ export default function LaporanPage() {
                 }
               </div>
           </div>
+      )}
+
+      {/* ===== TAB RIWAYAT ===== */}
+      {tab === 'riwayat' && (
+        <div className="space-y-4">
+          {/* Filter bar */}
+          <div className="bg-white border border-gray-100 rounded-xl p-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <input type="date" value={rwDari} onChange={e => setRwDari(e.target.value)}
+                className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700" placeholder="Dari" />
+              <span className="text-gray-300 text-xs">—</span>
+              <input type="date" value={rwSampai} onChange={e => setRwSampai(e.target.value)}
+                className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700" placeholder="Sampai" />
+              <select value={rwMetode} onChange={e => setRwMetode(e.target.value)}
+                className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700">
+                <option value="">Semua Metode</option>
+                <option value="Tunai">Tunai</option>
+                <option value="QRIS">QRIS</option>
+                <option value="Transfer">Transfer</option>
+              </select>
+              <select value={rwStatus} onChange={e => setRwStatus(e.target.value)}
+                className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700">
+                <option value="">Semua Status</option>
+                <option value="aktif">Aktif</option>
+                <option value="batal">Dibatalkan</option>
+              </select>
+              <input type="text" value={rwQ} onChange={e => setRwQ(e.target.value)}
+                placeholder="Cari no transaksi..."
+                className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 flex-1 min-w-[140px]" />
+              <button onClick={() => { setRwPage(1); loadRiwayat(1) }}
+                className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors">
+                Terapkan
+              </button>
+              <button onClick={exportRiwayatCSV} disabled={rwExporting || rwTotal === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 disabled:opacity-50 transition-colors">
+                <Download size={13} /> {rwExporting ? 'Mengekspor...' : 'CSV'}
+              </button>
+            </div>
+            {/* Quick stats */}
+            <div className="flex flex-wrap gap-4 text-xs">
+              <span className="text-gray-500">Total: <b className="text-gray-800">{rwTotal}</b> transaksi</span>
+              <span className="text-gray-500">Grand Total: <b className="text-indigo-700">{fmt(rwGrand)}</b></span>
+              <span className="text-gray-400">Halaman {rwPage}/{rwPages}</span>
+            </div>
+          </div>
+
+          {/* Table */}
+          {rwLoading
+            ? <div className="flex items-center justify-center h-64 text-gray-400">Memuat riwayat...</div>
+            : rwData.length === 0
+              ? <div className="flex items-center justify-center h-64 text-gray-400">Belum ada transaksi</div>
+              : <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-xs text-gray-400 border-b border-gray-100 bg-gray-50/50">
+                          <th className="text-left px-4 py-3 whitespace-nowrap">No Transaksi</th>
+                          <th className="text-left px-4 py-3 whitespace-nowrap">Tanggal</th>
+                          <th className="text-left px-4 py-3 whitespace-nowrap">Kasir</th>
+                          <th className="text-left px-4 py-3 whitespace-nowrap">Metode</th>
+                          <th className="text-left px-4 py-3 whitespace-nowrap">Member</th>
+                          <th className="text-right px-4 py-3 whitespace-nowrap">Total</th>
+                          <th className="text-center px-4 py-3 whitespace-nowrap">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rwData.map(t => (
+                          <tr key={t.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-xs text-gray-600">{t.no_transaksi}</span>
+                                {(() => {
+                                  const s = t.sumber ?? 'web'
+                                  return s === 'kasir'
+                                    ? <span className="text-[10px] bg-indigo-50 text-indigo-600 font-semibold px-1.5 py-0.5 rounded-full">Kasir</span>
+                                    : <span className="text-[10px] bg-gray-50 text-gray-500 font-semibold px-1.5 py-0.5 rounded-full">Web</span>
+                                })()}
+                                {t.dibatalkan && (
+                                  <span className="text-[10px] bg-red-50 text-red-500 font-semibold px-1.5 py-0.5 rounded-full">Batal</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{t.created_at ? fmtDT(t.created_at) : ''}</td>
+                            <td className="px-4 py-3 text-gray-700 text-xs whitespace-nowrap">{t.kasir ?? '-'}</td>
+                            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{t.metode_bayar}</td>
+                            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{t.member_nama ?? '-'}</td>
+                            <td className={`px-4 py-3 text-right font-medium text-sm whitespace-nowrap ${t.dibatalkan ? 'text-gray-300 line-through' : 'text-gray-800'}`}>{fmt(t.total)}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-center gap-1">
+                                <button onClick={() => cetakUlang(t.id)} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Cetak ulang nota">
+                                  <Printer size={14} />
+                                </button>
+                                {!t.dibatalkan && (
+                                  <button onClick={() => batalkan(t.id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Batalkan transaksi">
+                                    <Ban size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  {rwPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+                      <button onClick={() => loadRiwayat(rwPage - 1)} disabled={rwPage <= 1}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        ← Sebelumnya
+                      </button>
+                      <span className="text-xs text-gray-400">Halaman {rwPage} dari {rwPages}</span>
+                      <button onClick={() => loadRiwayat(rwPage + 1)} disabled={rwPage >= rwPages}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        Berikutnya →
+                      </button>
+                    </div>
+                  )}
+                </div>
+          }
+        </div>
       )}
 
       {/* ===== TAB SHIFT ===== */}

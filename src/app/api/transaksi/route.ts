@@ -298,9 +298,84 @@ export async function GET(req: Request) {
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
-  const limit = Number(searchParams.get('limit') ?? 20)
-  const rows = await sql`
-    SELECT * FROM transaksi WHERE toko_id = ${toko.tokoId} ORDER BY created_at DESC LIMIT ${limit}
-  `
-  return NextResponse.json(rows)
+
+  // Mode detail: /api/transaksi?id=123 — respon tunggal utk cetak ulang nota.
+  const detailId = searchParams.get('id')
+  if (detailId) {
+    const [trx] = await sql`
+      SELECT t.*, COALESCE(
+        json_agg(
+          json_build_object(
+            'id', dt.id, 'produk_id', dt.produk_id, 'nama_produk', dt.nama_produk,
+            'harga', dt.harga, 'qty', dt.qty, 'subtotal', dt.subtotal
+          )
+        ) FILTER (WHERE dt.id IS NOT NULL), '[]'
+      ) AS items
+      FROM transaksi t
+      LEFT JOIN detail_transaksi dt ON dt.transaksi_id = t.id
+      WHERE t.id = ${Number(detailId)} AND t.toko_id = ${toko.tokoId}
+      GROUP BY t.id
+    `
+    if (!trx) return NextResponse.json({ error: 'Tidak ditemukan' }, { status: 404 })
+    return NextResponse.json(trx)
+  }
+
+  // Mode riwayat: paginasi + filter. Default limit=50.
+  const page = Math.max(1, Number(searchParams.get('page') ?? 1))
+  const limit = Math.min(200, Math.max(1, Number(searchParams.get('limit') ?? 50)))
+  const offset = (page - 1) * limit
+  const dari = searchParams.get('dari')
+  const sampai = searchParams.get('sampai')
+  const metode = searchParams.get('metode')
+  const q = searchParams.get('q')?.trim()
+  const status = searchParams.get('status') // 'aktif' | 'batal' | null=semua
+
+  // Build WHERE clause dinamis.
+  const conds: string[] = [`toko_id = ${toko.tokoId}`]
+  const params: (string | number)[] = []
+  let pi = 1
+  if (dari && /^\d{4}-\d{2}-\d{2}$/.test(dari)) {
+    params.push(dari + 'T00:00:00'); conds.push(`created_at >= $${pi++}`)
+  }
+  if (sampai && /^\d{4}-\d{2}-\d{2}$/.test(sampai)) {
+    const [y, m, d] = sampai.split('-').map(Number)
+    const end = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)
+    params.push(end + 'T00:00:00'); conds.push(`created_at < $${pi++}`)
+  }
+  if (metode && ['Tunai', 'QRIS', 'Transfer'].includes(metode)) {
+    params.push(metode); conds.push(`metode_bayar = $${pi++}`)
+  }
+  if (q) {
+    params.push(`%${q}%`); conds.push(`no_transaksi ILIKE $${pi++}`)
+  }
+  if (status === 'aktif') conds.push(`dibatalkan = false`)
+  else if (status === 'batal') conds.push(`dibatalkan = true`)
+
+  const where = conds.join(' AND ')
+
+  // Query data + total count + grand total dalam satu round-trip.
+  params.push(limit, offset)
+  const limitPos = pi++
+  const offsetPos = pi++
+
+  const rows = await sql.unsafe(`
+    SELECT * FROM transaksi WHERE ${where} ORDER BY created_at DESC LIMIT $${limitPos} OFFSET $${offsetPos}
+  `, params as unknown as (string | number)[])
+
+  // Count + grand total (hanya transaksi tidak dibatalkan utk grand_total).
+  const countParams = params.slice(0, -2) // strip limit+offset
+  const [meta] = await sql.unsafe(`
+    SELECT count(*)::int AS total,
+           COALESCE(sum(total) FILTER (WHERE dibatalkan = false), 0)::bigint AS grand_total
+    FROM transaksi WHERE ${where}
+  `, countParams as unknown as (string | number)[])
+
+  return NextResponse.json({
+    data: rows,
+    total: meta?.total ?? 0,
+    grand_total: meta?.grand_total ?? 0,
+    page,
+    limit,
+    total_pages: Math.ceil((meta?.total ?? 0) / limit),
+  })
 }
