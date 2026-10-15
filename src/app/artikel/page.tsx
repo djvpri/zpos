@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import sql from '@/lib/db'
 
 export const metadata: Metadata = {
   title: 'Artikel & Tips Bisnis | Z1 Pos',
@@ -9,16 +8,24 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-type ArtikelCard = { judul: string; slug: string; deskripsi: string | null; tags: string[] | null; published_at: Date }
+const ZADV_API = process.env.ZADV_API_URL || 'http://af7witcncxxt5fvjn0yg2bdz.103.93.129.94.sslip.io'
+
+type ArtikelCard = {
+  judul: string
+  slug: string
+  deskripsi: string | null
+  tags: string[] | null
+  publishedAt: string
+}
 
 async function getArtikel(): Promise<ArtikelCard[]> {
   try {
-    return await sql<ArtikelCard[]>`
-      SELECT judul, slug, deskripsi, tags, published_at
-      FROM artikel
-      ORDER BY published_at DESC
-      LIMIT 24
-    `
+    const res = await fetch(`${ZADV_API}/api/artikel/publik?appId=4`, {
+      next: { revalidate: 300 },
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data.items ?? data.artikel ?? data ?? []) as ArtikelCard[]
   } catch {
     return []
   }
@@ -65,8 +72,8 @@ export default async function ArtikelPage() {
                 className="group bg-white rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all p-5 sm:p-6 flex flex-col"
               >
                 <div className="flex items-center gap-2 mb-3 text-xs text-gray-400">
-                  {a.published_at
-                    ? new Date(a.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                  {a.publishedAt
+                    ? new Date(a.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
                     : ''}
                   {(a.tags && a.tags.length > 0) && (
                     <div className="flex flex-wrap gap-1.5">

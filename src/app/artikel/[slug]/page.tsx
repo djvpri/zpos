@@ -1,13 +1,31 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import sql from '@/lib/db'
 
 export const revalidate = 300
 
-async function getArtikel(slug: string) {
-  const rows = await sql`SELECT judul, slug, deskripsi, tags, konten, published_at FROM artikel WHERE slug = ${slug} LIMIT 1`
-  return rows[0] ?? null
+const ZADV_API = process.env.ZADV_API_URL || 'http://af7witcncxxt5fvjn0yg2bdz.103.93.129.94.sslip.io'
+
+type Artikel = {
+  judul: string
+  slug: string
+  deskripsi: string | null
+  tags: string[] | null
+  konten: string
+  publishedAt: string
+}
+
+async function getArtikel(slug: string): Promise<Artikel | null> {
+  try {
+    const res = await fetch(`${ZADV_API}/api/artikel/publik/${slug}`, {
+      next: { revalidate: 300 },
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return (data.artikel ?? data.item ?? data) as Artikel | null
+  } catch {
+    return null
+  }
 }
 
 // Renderer markdown DAPAT dipercaya (konten dari cron sendiri). Mendukung: heading, bold,
@@ -61,7 +79,7 @@ function inline(s: string): string {
   // transformasi markdown TIDAK ikut di-escape, tapi teks/link/url aman dari injeksi.
   const esc = (t: string) => t
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\"/g, '&quot;')
+    .replace(/"/g, '&quot;')
   let t = s
   // backtick code
   t = t.replace(/`([^`]+)`/g, (_m: string, g: string) => `<code>${esc(g)}</code>`)
@@ -106,8 +124,8 @@ export default async function ArtikelDetail({ params }: Props) {
 
       <article className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 pb-20">
         <div className="text-xs text-gray-400 mb-4">
-          {a.published_at
-            ? new Date(a.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+          {a.publishedAt
+            ? new Date(a.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
             : ''}
           {(a.tags && a.tags.length > 0) && (
             <div className="mt-3 flex flex-wrap gap-1.5">
