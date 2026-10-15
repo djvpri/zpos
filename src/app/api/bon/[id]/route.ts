@@ -47,7 +47,7 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
       .filter(([pid, qty]) => Number.isInteger(pid) && pid !== 0 && Number.isInteger(qty) && qty > 0)
     const finalObj: Record<string, number> = {}
     for (const [pid, qty] of entries) finalObj[String(pid)] = qty
-    if (entries.length > 50) return NextResponse.json({ error: 'Terlalu banyak item (maks 50)' }, { status: 400 })
+    if (entries.length > 200) return NextResponse.json({ error: 'Terlalu banyak item (maks 200)' }, { status: 400 })
 
     let nextSesi: BonSesi[] = []
     const row = await sql.begin(async t => {

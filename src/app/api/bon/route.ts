@@ -45,8 +45,8 @@ export async function GET(req: Request) {
 
 // POST simpan bon baru dari keranjang. Body { nama?, produk: Record<number,number>, total }.
 // Validasi: produk harus bilangan id positif (id negatif = virtual → tak bisa digantung);
-// qty > 0. Max item dibatasi biar payload wajar (50).
-const KERANJANG_MAX = 50
+// qty > 0. Max item dibatasi biar payload wajar (200).
+const KERANJANG_MAX = 200
 
 export const POST = apiHandler(async (req: Request, body: { nama?: string | null; produk: Record<string, number>; harga?: Record<string, number> | null; sesi?: unknown; vmap?: Record<string, { nama?: string; harga?: number }> | null; total?: number }) => {
   const toko = await getTokoFromRequest(req)
