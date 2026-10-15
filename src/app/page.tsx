@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { Cart3, BarChartLine, Box, PhoneFill, People, LightningCharge, CheckLg, EggFill, CupStraw, DropletHalf, CircleFill, CupHot, EggFried } from 'react-bootstrap-icons'
 import ShortsWidget from '@/components/ShortsWidget'
-import sql from '@/lib/db'
 
 const features = [
   { icon: Cart3, title: 'Kasir Digital', desc: 'Proses transaksi cepat dengan tampilan yang intuitif. Support tunai, QRIS, dan transfer.' },
@@ -49,16 +48,16 @@ const DEMO_PROD = [
 // bukan saat prerender build — utk itu pakai force-dynamic).
 export const dynamic = 'force-dynamic'
 
-type LandingArtikel = { judul: string; slug: string; deskripsi: string | null; tags: string[] | null; published_at: Date }
+type LandingArtikel = { judul: string; slug: string; deskripsi: string | null; tags: string[] | null; publishedAt: string }
+
+const ZADV_API = process.env.ZADV_API_URL || 'http://af7witcncxxt5fvjn0yg2bdz.103.93.129.94.sslip.io'
 
 async function getArtikel(): Promise<LandingArtikel[]> {
   try {
-    return await sql<LandingArtikel[]>`
-      SELECT judul, slug, deskripsi, tags, published_at
-      FROM artikel
-      ORDER BY published_at DESC
-      LIMIT 4
-    `
+    const res = await fetch(`${ZADV_API}/api/artikel/publik?appId=4`)
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data.items ?? data.artikel ?? []).slice(0, 4) as LandingArtikel[]
   } catch {
     return []
   }
@@ -299,8 +298,8 @@ export default async function LandingPage() {
                   className="group bg-white rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all p-5 flex flex-col"
                 >
                   <div className="flex items-center gap-2 mb-2.5 text-xs text-gray-400">
-                    {a.published_at
-                      ? new Date(a.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                    {a.publishedAt
+                      ? new Date(a.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
                       : ''}
                   </div>
                   <h3 className="font-bold text-gray-900 leading-snug mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">{a.judul}</h3>
