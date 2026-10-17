@@ -3,7 +3,7 @@ import './globals.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
 const SITE_URL = 'https://z1pos.zomet.my.id'
-const OG_IMAGE = `${SITE_URL}/gallery/kasir.png`
+const OG_IMAGE = `${SITE_URL}/og.png`
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -44,7 +44,41 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id">
-      <body className="bg-gray-50 antialiased">{children}</body>
+      <body className="bg-gray-50 antialiased">
+        {/* JSON-LD: WebSite + Organization — sitelinks + knowledge panel */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'Z1 Pos',
+              url: SITE_URL,
+              description: 'Aplikasi kasir digital untuk UMKM Indonesia.',
+              inLanguage: 'id-ID',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/artikel?q={search_term_string}` },
+                'query-input': 'required name=search_term_string',
+              },
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'Zomet',
+              url: 'https://zomet.my.id',
+              description: 'Pengembang aplikasi untuk UMKM Indonesia: Z1 Pos, ZX Parenting, ZGym, ZXRoom.',
+              logo: `${SITE_URL}/icon-192.png`,
+            }),
+          }}
+        />
+        {children}
+      </body>
     </html>
   )
 }

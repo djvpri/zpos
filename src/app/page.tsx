@@ -52,7 +52,7 @@ export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 
 const SITE_URL = 'https://z1pos.zomet.my.id'
-const OG_IMAGE = `${SITE_URL}/gallery/kasir.png`
+const OG_IMAGE = `${SITE_URL}/og.png`
 
 export const metadata: Metadata = {
   title: 'Z1 Pos — Aplikasi Kasir Digital untuk UMKM Indonesia',
@@ -129,6 +129,7 @@ export default async function LandingPage() {
       </nav>
 
       {/* Hero */}
+      <main>
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-14 sm:pb-24 text-center">
         {/* JSON-LD: SoftwareApplication — rich snippet untuk Google */}
         <script
@@ -371,6 +372,7 @@ export default async function LandingPage() {
           </Link>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-gray-100 py-6 sm:py-8">
