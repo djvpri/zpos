@@ -51,7 +51,7 @@ export const dynamic = 'force-dynamic'
 
 type LandingArtikel = { judul: string; slug: string; deskripsi: string | null; tags: string[] | null; publishedAt: string; gambarPath: string | null }
 
-const ZADV_API = process.env.ZADV_API_URL || 'http://af7witcncxxt5fvjn0yg2bdz.103.93.129.94.sslip.io'
+const ZADV_API = process.env.ZADV_API_URL || 'https://zpromo.zomet.my.id'
 
 function imgUrl(p: string | null | undefined): string | null {
   if (!p) return null
