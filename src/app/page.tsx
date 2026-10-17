@@ -134,56 +134,6 @@ export default async function LandingPage() {
           Demo pakai akun <span className="font-mono">demo@zomet.my.id</span> — data direset otomatis tiap hari, dipakai bersama pengunjung lain.
         </p>
 
-        {/* Desktop app preview */}
-        <div className="hidden sm:block mt-16 bg-gray-50 rounded-3xl border border-gray-100 p-4 max-w-4xl mx-auto shadow-xl shadow-gray-100">
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
-              <div className="w-3 h-3 rounded-full bg-red-300" />
-              <div className="w-3 h-3 rounded-full bg-yellow-300" />
-              <div className="w-3 h-3 rounded-full bg-green-300" />
-              <div className="flex-1 bg-white rounded-lg text-xs text-gray-400 text-center py-1 mx-4 truncate">
-                zpos.up.railway.app/app
-              </div>
-            </div>
-            <div className="grid grid-cols-[56px_1fr_200px] h-56">
-              <div className="bg-white border-r border-gray-100 flex flex-col items-center py-4 gap-3">
-                <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">Z</span>
-                </div>
-                {[Cart3, Box, BarChartLine].map((Icon, i) => (
-                  <div key={i} className={`w-8 h-8 rounded-lg flex items-center justify-center ${i === 0 ? 'bg-indigo-50 text-indigo-600' : 'text-gray-300'}`}>
-                    <Icon size={16} />
-                  </div>
-                ))}
-              </div>
-              <div className="p-3 bg-gray-50">
-                <div className="grid grid-cols-3 gap-2">
-                  {DEMO_PROD.map(({ Icon, cls }, i) => (
-                    <div key={i} className="bg-white rounded-xl p-2 flex flex-col items-center gap-1.5">
-                      <span className="text-xl"><Icon className={cls} /></span>
-                      <div className="w-full h-1.5 bg-gray-100 rounded" />
-                      <div className="w-2/3 h-1.5 bg-indigo-100 rounded" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="border-l border-gray-100 p-3 flex flex-col gap-2">
-                <div className="h-3 bg-gray-100 rounded w-2/3" />
-                <div className="flex-1 space-y-2.5 pt-1">
-                  {[1,2,3].map(i => (
-                    <div key={i} className="flex gap-2 items-center">
-                      <div className="w-5 h-5 bg-gray-100 rounded shrink-0" />
-                      <div className="flex-1 h-2 bg-gray-100 rounded" />
-                      <div className="w-8 h-2 bg-gray-100 rounded" />
-                    </div>
-                  ))}
-                </div>
-                <div className="h-8 bg-indigo-600 rounded-xl" />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Mobile phone mockup */}
         <div className="sm:hidden mt-10 flex justify-center">
           <div className="w-52 bg-gray-900 rounded-[2rem] p-2 shadow-2xl shadow-gray-300">
