@@ -48,9 +48,15 @@ const DEMO_PROD = [
 // bukan saat prerender build — utk itu pakai force-dynamic).
 export const dynamic = 'force-dynamic'
 
-type LandingArtikel = { judul: string; slug: string; deskripsi: string | null; tags: string[] | null; publishedAt: string }
+type LandingArtikel = { judul: string; slug: string; deskripsi: string | null; tags: string[] | null; publishedAt: string; gambarPath: string | null }
 
 const ZADV_API = process.env.ZADV_API_URL || 'http://af7witcncxxt5fvjn0yg2bdz.103.93.129.94.sslip.io'
+
+function imgUrl(p: string | null | undefined): string | null {
+  if (!p) return null
+  if (/^https?:\/\//.test(p)) return p
+  return `${ZADV_API}${p}`
+}
 
 async function getArtikel(): Promise<LandingArtikel[]> {
   try {
@@ -291,12 +297,21 @@ export default async function LandingPage() {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-              {artikel.map((a) => (
+              {artikel.map((a) => {
+                const img = imgUrl(a.gambarPath)
+                return (
                 <Link
                   key={a.slug}
                   href={`/artikel/${a.slug}`}
-                  className="group bg-white rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all p-5 flex flex-col"
+                  className="group bg-white rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all flex flex-col overflow-hidden"
                 >
+                  {img && (
+                    <div className="aspect-[16/9] bg-gray-100 overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img} alt={a.judul} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    </div>
+                  )}
+                  <div className="p-5 flex flex-col flex-1">
                   <div className="flex items-center gap-2 mb-2.5 text-xs text-gray-400">
                     {a.publishedAt
                       ? new Date(a.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -310,8 +325,10 @@ export default async function LandingPage() {
                       ))}
                     </div>
                   )}
+                  </div>
                 </Link>
-              ))}
+                )
+              })}
             </div>
           </div>
         </section>
