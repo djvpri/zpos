@@ -88,6 +88,9 @@ export default async function LandingPage() {
             <Link href="/artikel" className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors px-2 py-1">
               Artikel
             </Link>
+            <Link href="#galeri" className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors px-2 py-1">
+              Tampilan
+            </Link>
             <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors px-2 py-1">
               Masuk
             </Link>
@@ -230,6 +233,34 @@ export default async function LandingPage() {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-1.5 sm:mb-2">{f.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Galeri tampilan app */}
+      <section id="galeri" className="bg-gray-50 py-12 sm:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">Tampilan Aplikasi</h2>
+            <p className="text-sm sm:text-base text-gray-500">Lihat langsung bagaimana Z1 Pos bekerja</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {[
+              { src: '/gallery/kasir.png', title: 'Kasir Digital', desc: 'Proses transaksi cepat dengan keranjang belanja dan multi metode pembayaran.' },
+              { src: '/gallery/produk.png', title: 'Manajemen Produk', desc: 'Kelola daftar produk, harga, stok, dan cetak barcode dengan mudah.' },
+              { src: '/gallery/laporan.png', title: 'Kelola Toko', desc: 'Cari produk berdasarkan nama atau barcode, pilih item, dan cetak label.' },
+            ].map((item, i) => (
+              <div key={i} className="group bg-white rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all overflow-hidden flex flex-col">
+                <div className="aspect-[16/10] bg-gray-100 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.src} alt={item.title} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" />
+                </div>
+                <div className="p-5 flex flex-col flex-1">
+                  <h3 className="font-bold text-gray-900 mb-1.5 group-hover:text-indigo-600 transition-colors">{item.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+                </div>
               </div>
             ))}
           </div>
