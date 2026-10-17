@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 export const dynamic = 'force-dynamic'
 
 const ZADV_API = process.env.ZADV_API_URL || 'https://zpromo.zomet.my.id'
+const SITE_URL = 'https://z1pos.zomet.my.id'
 
 type Artikel = {
   judul: string
@@ -105,7 +106,33 @@ type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const a = await getArtikel(slug)
-  return { title: `${a?.judul ?? 'Artikel'} | Z1 Pos`, description: a?.deskripsi ?? undefined }
+  const title = a?.judul ?? 'Artikel'
+  const description = a?.deskripsi ?? 'Tips bisnis dan kasir digital untuk UMKM dari Z1 Pos.'
+  const img = a?.gambarPath ? imgUrl(a.gambarPath) : null
+  const ogImages = img ? [{ url: img, width: 1200, height: 630, alt: title }] : undefined
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/artikel/${slug}` },
+    openGraph: {
+      type: 'article',
+      locale: 'id_ID',
+      url: `${SITE_URL}/artikel/${slug}`,
+      siteName: 'Z1 Pos',
+      title,
+      description,
+      publishedTime: a?.publishedAt,
+      authors: ['Zomet'],
+      images: ogImages,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: img ? [img] : undefined,
+    },
+  }
 }
 
 export default async function ArtikelDetail({ params }: Props) {
@@ -130,6 +157,26 @@ export default async function ArtikelDetail({ params }: Props) {
       </nav>
 
       <article className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 pb-20">
+        {/* JSON-LD: Article — rich snippet untuk Google */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Article',
+              headline: a.judul,
+              description: a.deskripsi ?? undefined,
+              datePublished: a.publishedAt,
+              dateModified: a.publishedAt,
+              image: imgUrl(a.gambarPath) ?? `${SITE_URL}/gallery/kasir.png`,
+              url: `${SITE_URL}/artikel/${slug}`,
+              author: { '@type': 'Organization', name: 'Zomet', url: 'https://zomet.my.id' },
+              publisher: { '@type': 'Organization', name: 'Zomet', url: 'https://zomet.my.id' },
+              mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/artikel/${slug}` },
+              keywords: a.tags?.join(', '),
+            }),
+          }}
+        />
         {a.gambarPath && imgUrl(a.gambarPath) && (
           <div className="mb-8 rounded-xl overflow-hidden border border-gray-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}

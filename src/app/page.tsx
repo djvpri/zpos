@@ -49,6 +49,32 @@ const DEMO_PROD = [
 // bukan saat prerender build — utk itu pakai force-dynamic).
 export const dynamic = 'force-dynamic'
 
+import type { Metadata } from 'next'
+
+const SITE_URL = 'https://z1pos.zomet.my.id'
+const OG_IMAGE = `${SITE_URL}/gallery/kasir.png`
+
+export const metadata: Metadata = {
+  title: 'Z1 Pos — Aplikasi Kasir Digital untuk UMKM Indonesia',
+  description: 'Aplikasi kasir digital untuk warung, kafe, toko kelontong, dan UMKM. Proses transaksi cepat, manajemen produk, laporan penjualan. Coba gratis 30 hari.',
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    locale: 'id_ID',
+    url: SITE_URL,
+    siteName: 'Z1 Pos',
+    title: 'Z1 Pos — Aplikasi Kasir Digital untuk UMKM Indonesia',
+    description: 'Aplikasi kasir digital untuk warung, kafe, toko kelontong, dan UMKM. Coba gratis 30 hari.',
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: 'Z1 Pos — Aplikasi Kasir Digital' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Z1 Pos — Aplikasi Kasir Digital untuk UMKM Indonesia',
+    description: 'Aplikasi kasir digital untuk warung, kafe, toko kelontong, dan UMKM. Coba gratis 30 hari.',
+    images: [OG_IMAGE],
+  },
+}
+
 type LandingArtikel = { judul: string; slug: string; deskripsi: string | null; tags: string[] | null; publishedAt: string; gambarPath: string | null }
 
 const ZADV_API = process.env.ZADV_API_URL || 'https://zpromo.zomet.my.id'
@@ -104,6 +130,36 @@ export default async function LandingPage() {
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-14 sm:pb-24 text-center">
+        {/* JSON-LD: SoftwareApplication — rich snippet untuk Google */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'SoftwareApplication',
+              name: 'Z1 Pos',
+              applicationCategory: 'BusinessApplication',
+              operatingSystem: 'Web, Android',
+              description: 'Aplikasi kasir digital untuk warung, kafe, toko kelontong, dan UMKM Indonesia. Proses transaksi cepat, manajemen produk, dan laporan penjualan.',
+              url: SITE_URL,
+              image: OG_IMAGE,
+              offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'IDR',
+                description: 'Gratis 30 hari, lalu Rp 100.000/bulan untuk Pro.',
+              },
+              publisher: { '@type': 'Organization', name: 'Zomet', url: 'https://zomet.my.id' },
+              featureList: [
+                'Kasir Digital — tunai, QRIS, transfer',
+                'Manajemen Produk dengan stok otomatis',
+                'Laporan Penjualan harian dan produk terlaris',
+                'Multi Toko dengan data terisolasi',
+                'Mobile friendly — akses dari HP atau tablet',
+              ],
+            }),
+          }}
+        />
         <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-5 sm:mb-6">
           <LightningCharge size={12} />
           Aplikasi POS untuk UMKM Indonesia

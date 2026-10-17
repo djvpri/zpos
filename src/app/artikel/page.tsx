@@ -1,9 +1,20 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
+const SITE_URL = 'https://z1pos.zomet.my.id'
+
 export const metadata: Metadata = {
-  title: 'Artikel & Tips Bisnis | Z1 Pos',
-  description: 'Tips mengelola toko, kasir digital, dan UMKM dari Z1 Pos.',
+  title: 'Artikel & Tips Bisnis',
+  description: 'Tips mengelola toko, kasir digital, manajemen produk, dan strategi UMKM dari Z1 Pos. Artikel baru tiap hari.',
+  alternates: { canonical: '/artikel' },
+  openGraph: {
+    type: 'website',
+    locale: 'id_ID',
+    url: `${SITE_URL}/artikel`,
+    siteName: 'Z1 Pos',
+    title: 'Artikel & Tips Bisnis · Z1 Pos',
+    description: 'Tips mengelola toko, kasir digital, manajemen produk, dan strategi UMKM dari Z1 Pos.',
+  },
 }
 
 export const dynamic = 'force-dynamic'
