@@ -134,6 +134,31 @@ Kasir desktop `zpos_windows` sync via `/api/bon`, `/api/transaksi`.
 Pola error sync → cek `log_kasir` table (`konten` text field, regex `GAGAL|error`).
 Skilled detail: skill `zpos-server-nextjs` references/cek-log-kasir.md.
 
+## AI-Agent Workflow (3 tier lengkap)
+
+```
+1. Cek error:    ./scripts/log-errors.sh --since 24h
+2. Match pattern: lookup errors.json → 'fix' field = resep
+3. Auto-fix:    ./scripts/fix-keranjang-max.sh --dry-run 500 → --apply
+4. Pre-commit: ./scripts/verify.sh
+5. Push:        git push origin feat/... → merge → Coolify auto-deploy
+6. Verify deploy: curl /api/version (buildId berubah = sukses)
+```
+
+### File map tooling
+- `AGENTS.md` — guide ini, baca pertama
+- `errors.json` — kamus Postgres code + z1pos patterns
+- `scripts/log-errors.sh` — cek error 1 perintah
+- `scripts/fix-keranjang-max.sh` — auto-fix KERANJANG_MAX
+- `scripts/verify.sh` — pre-commit (build+lint+test+repro)
+- `scripts/rotate-logs.sh` — log rotation (cron bulanan)
+- `src/lib/log-error.ts` — LogError() helper + fingerprint
+- `src/lib/api-handler.ts` — sanitizeNullBytes() + LogError integration
+- `src/app/api/version/route.ts` — deploy verification tanpa SSH
+- `src/app/api/deploy-notify/route.ts` — webhook Coolify post-deploy
+- `src/app/api/admin/diagnosa/route.ts` — error summary 24 jam
+- `tests/repro/` — bug fix reproduction tests
+
 ## Konvensi
 - **Bahasa**: code comments & user-facing error dalam Bahasa Indonesia
 - **Commit message**: `<type>(<scope>): <desc>` — `fix(log):`, `feat(api):`, `refactor:`
@@ -146,13 +171,34 @@ Skilled detail: skill `zpos-server-nextjs` references/cek-log-kasir.md.
 # Cek health
 curl https://z1pos.zomet.my.id/api/health
 
-# Cek deploy mendarat (via SSH)
-ssh djvpri@103.93.129.94 "sudo docker ps --format '{{.Names}}\t{{.CreatedAt}}' | grep ocuwsrtcc"
+# Cek deploy mendarat (TANPA SSH — pakai /api/version)
+curl https://z1pos.zomet.my.id/api/version
+# Bandingkan buildId + lastDeploy timestamp. Berubah = deploy sukses.
 
-# Cek error log 24 jam
+# Cek error log 24 jam (1 perintah, output JSON)
 ./scripts/log-errors.sh
+./scripts/log-errors.sh --since 6h --pattern UTF8
 
-# SSH ke container postgres
+# Lookup pattern error di kamus
+cat errors.json | jq '.postgres_codes["22021"]'
+# Bila match: step selesai — auto-fix sesuai resep 'fix' field
+
+# Auto-fix KERANJANG_MAX
+./scripts/fix-keranjang-max.sh --dry-run 500   # review diff
+./scripts/fix-keranjang-max.sh --apply 500     # apply
+
+# Pre-commit check (build + lint + test + repro)
+./scripts/verify.sh
+./scripts/verify.sh --no-lint                   # skip lint, run sisanya
+
+# Repro bug fix
+node --experimental-strip-types tests/repro/utf8-null-byte.mjs
+
+# Log rotation (cron bulanan)
+./scripts/rotate-logs.sh --dry-run 30           # preview
+./scripts/rotate-logs.sh 30                     # delete >30 hari
+
+# SSH ke container postgres (utk query manual)
 ssh djvpri@103.93.129.94 "sudo docker exec -it 1fhosrzrapewqtv4wkqiw1rs psql -U postgres -d postgres"
 
 # Cek log_kasir table
