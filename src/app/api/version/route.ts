@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { readFile } from 'fs/promises'
+import { hostname } from 'os'
 import path from 'path'
 
 // GET /api/version — verify deploy Coolify mendarat tanpa SSH.
@@ -7,7 +8,7 @@ import path from 'path'
 //
 // buildId = Next.js generated per build (file .next/BUILD_ID)
 // serverStart = process.uptime() → waktu container start
-// hostname = os.hostname() container ID
+// hostname = container hostname
 //
 // Agent workflow: hit /api/version setelah push+merge → bandingkan buildId
 // dgn sebelumnya. Berubah = deploy sukses.
@@ -23,7 +24,7 @@ export async function GET() {
     buildId,
     serverStart: new Date(Date.now() - process.uptime() * 1000).toISOString(),
     uptimeSec: Math.round(process.uptime()),
-    hostname: require('os').hostname().slice(0, 20),
+    hostname: hostname().slice(0, 20),
     nodeVersion: process.version,
     timestamp: new Date().toISOString(),
   })
