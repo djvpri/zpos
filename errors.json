@@ -1,0 +1,72 @@
+{
+  "$comment": "Kamus error Postgres + z1pos-specific patterns utk AI agent. Baca saat jumpa code di error_log atau log_kasir. Update saat fix pattern baru ditemukan.",
+  "postgres_codes": {
+    "22021": {
+      "name": "invalid_byte_sequence_for_encoding",
+      "message_pattern": "invalid byte sequence for encoding \"UTF8\": 0x00",
+      "where_pattern": "unnamed portal parameter $N",
+      "cause": "User input dari kasir desktop (Tauri) bawa null byte (\\x00). Biasanya dari clipboard Windows yang di-paste ke input field. Bukan data corruption — string biasa yang berakhir null.",
+      "fix": "sanitizeNullBytes() rekursif di apiHandler strip \\0 dari string values sebelum schema.parse. Sudah live di src/lib/api-handler.ts.",
+      "verify": "tests/repro/utf8-null-byte.mjs — POST /api/pengaturan dengan body berisi null byte harus 200 (sebelumnya 500).",
+      "commit": "5c71996f33"
+    },
+    "08P01": {
+      "name": "prepared_statement_parameter_mismatch",
+      "message_pattern": "bind message supplies 0 parameters, but prepared statement \"...\" requires 1",
+      "cause": "postgres.js prepared-statement cache mismatch antar request. sql.unsafe() cache statement by SQL string, lalu request berbeda param count reuse dan fail bind.",
+      "fix": "Tambah .simple() ke semua sql.unsafe() auto-migrate (CREATE/ALTER TABLE). Simple Query Protocol = no parse/bind, no cache.",
+      "verify": "Cek docker logs post-deploy — pattern tidak muncul lagi.",
+      "files": [
+        "src/app/api/item-virtual/route.ts",
+        "src/app/api/pengaturan/route.ts",
+        "src/app/api/bon/route.ts",
+        "src/app/api/bon/[id]/route.ts"
+      ],
+      "commit": "5c71996f33"
+    },
+    "42701": {
+      "name": "duplicate_column",
+      "message_pattern": "column \"X\" of relation \"Y\" already exists, skipping",
+      "severity": "NOTICE",
+      "cause": "Auto-migrate ALTER TABLE ... ADD COLUMN IF NOT EXISTS — kolom sudah ada. Bukan error.",
+      "fix": "Tidak perlu. Abaikan. Jika berisik, pindah migration ke startup script satu kali.",
+      "verify": "N/A — NOTICE normal."
+    },
+    "23505": {
+      "name": "unique_violation",
+      "message_pattern": "duplicate key value violates unique constraint",
+      "cause": "INSERT/UPDATE menyebabkan duplikat pada unique index/constraint. Misal: CREATE UNIQUE INDEX idx_item_virtual_unik ON item_virtual(toko_id, lower(nama)) → nama produk virtual duplikat (case-insensitive).",
+      "fix": "Catch di handler, return 409 Conflict dengan pesan user-friendly. Atau pre-check existence sebelum INSERT.",
+      "verify": "tests/repro/duplikat-item-virtual.mjs (TODO jika dibuat)."
+    }
+  },
+  "z1pos_patterns": {
+    "KERANJANG_MAX_200": {
+      "pattern": "HTTP 400 — Terlalu banyak item (maks 200)",
+      "cause": "Bon grosir dengan >200 item. Hardcoded KERANJANG_MAX=200 di src/app/api/bon/route.ts + src/app/api/bon/[id]/route.ts.",
+      "fix": "Naikkan KERANJANG_MAX di kedua file. Uji performa — Postgres JSONB dengan 200 keys masih cepat, 1000+ mulai lambat.",
+      "auto_fix_script": "scripts/fix-keranjang-max.sh --dry-run → --apply"
+    },
+    "SYNC_GAGAL_PROBE_OPAQUE": {
+      "pattern": "error decoding response body",
+      "where": "autoSync desktop Tauri",
+      "cause": "reqwest pooled-connection stale / response terinterupsi. Jaringan hidup (probe-opaque <1s).",
+      "fix": "Retry sekali dengan client baru (pola unduh_update di zpos_windows/src-tauri/src/lib.rs ~777). sync.rs SyncClient dibuat sekali tanpa retry.",
+      "scope": "DESKTOP — perlu patch di repo zpos_windows, bukan server."
+    },
+    "EDIT_PENDING_RETRY": {
+      "pattern": "edit bon #N GAGAL",
+      "label_ui": "mengedit, menyinkronkan (biru)",
+      "cause": "editPending=true di b.items kasir desktop. PATCH gagal, retry auto di siklus sync berikutnya (retryEditBon ~2820 di zpos_windows/src/index.html).",
+      "fix": "Fix root cause server (lihat KERANJANG_MAX_200). Setelah server accept, retryEditBon auto-clear editPending di sync berikutnya.",
+      "scope": "DESKTOP symptom, SERVER fix"
+    }
+  },
+  "agent_workflow": {
+    "step_1": "Cek error_log: ./scripts/log-errors.sh --since 24h",
+    "step_2": "Match fingerprint/code ke kamus ini",
+    "step_3": "Jika ada auto_fix_script → run --dry-run → review diff → --apply",
+    "step_4": "Jika ada repro test → run utk verify",
+    "step_5": "Build + test + push (Coolify auto-deploy)"
+  }
+}
