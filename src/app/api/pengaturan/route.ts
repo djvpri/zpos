@@ -10,9 +10,9 @@ export async function GET(req: Request) {
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Auto-migrasi idempotent — kolom baru biar ada tanpa tuner manual.
-  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS desain_nota text NOT NULL DEFAULT 'klasik'")
-  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS kurangi_stok boolean NOT NULL DEFAULT true")
-  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS jual_stok_habis boolean NOT NULL DEFAULT false")
+  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS desain_nota text NOT NULL DEFAULT 'klasik'").simple()
+  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS kurangi_stok boolean NOT NULL DEFAULT true").simple()
+  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS jual_stok_habis boolean NOT NULL DEFAULT false").simple()
 
   const [row] = await sql`
     SELECT pajak_persen, alamat, telepon, catatan_struk, ukuran_label, desain_nota, kurangi_stok, jual_stok_habis
@@ -36,9 +36,10 @@ export const PUT = apiHandler(async (req: Request, body: { pajak_persen?: number
   if (toko.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   // Auto-migrasi idempotent — sama seperti di GET.
-  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS desain_nota text NOT NULL DEFAULT 'klasik'")
-  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS kurangi_stok boolean NOT NULL DEFAULT true")
-  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS jual_stok_habis boolean NOT NULL DEFAULT false")
+  // .simple() utk hindari prepared statement cache mismatch (08P01).
+  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS desain_nota text NOT NULL DEFAULT 'klasik'").simple()
+  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS kurangi_stok boolean NOT NULL DEFAULT true").simple()
+  await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS jual_stok_habis boolean NOT NULL DEFAULT false").simple()
 
   const { pajak_persen, alamat, telepon, catatan_struk, ukuran_label, desain_nota, kurangi_stok, jual_stok_habis } = body
   const persen = Math.round(Number(pajak_persen ?? 0))
