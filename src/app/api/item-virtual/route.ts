@@ -16,6 +16,9 @@ import { validasiItemVirtual } from '@/lib/item-virtual'
 // bisa menambah preset sebelum GET pertama kali dijalankan.
 
 export async function pastikanTabel() {
+  // .simple() = eksekusi tanpa prepared statement cache. Sebelumnya
+  // sql.unsafe() di-cartel oleh cached prepared statement antar request,
+  // memicu "bind message supplies 0 parameters" (Postgres 08P01).
   await sql.unsafe(`
     CREATE TABLE IF NOT EXISTS item_virtual (
       id serial PRIMARY KEY,
@@ -26,9 +29,9 @@ export async function pastikanTabel() {
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     )
-  `)
-  await sql.unsafe('CREATE UNIQUE INDEX IF NOT EXISTS idx_item_virtual_unik ON item_virtual(toko_id, lower(nama))')
-  await sql.unsafe('CREATE INDEX IF NOT EXISTS idx_item_virtual_toko ON item_virtual(toko_id, nama) WHERE aktif = true')
+  `).simple()
+  await sql.unsafe('CREATE UNIQUE INDEX IF NOT EXISTS idx_item_virtual_unik ON item_virtual(toko_id, lower(nama))').simple()
+  await sql.unsafe('CREATE INDEX IF NOT EXISTS idx_item_virtual_toko ON item_virtual(toko_id, nama) WHERE aktif = true').simple()
 }
 
 export async function GET(req: Request) {

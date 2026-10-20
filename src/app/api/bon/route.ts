@@ -15,10 +15,10 @@ export async function GET(req: Request) {
   // terkunci, barang sudah diambil pembeli). Auto-migrate idempotent — sama pola
   // `member_nama` di /api/transaksi. Tanpa kolom ini, tarik bon jatuh ke harga
   // katalog terkini (perilaku lama) — jadi aman utk bon lama (harga_json null).
-  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS harga_json text')
+  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS harga_json text').simple()
   // vmap_json = {idVirtual: {nama,harga}} — nama baris item "Lainnya" di nota web.
   // Null utk bon lama (klien lama) → nota jatuh ke label "Produk #id" seperti dulu.
-  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS vmap_json text')
+  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS vmap_json text').simple()
 
   const semua = new URL(req.url).searchParams.get('semua') === '1'
   const rows = await sql`

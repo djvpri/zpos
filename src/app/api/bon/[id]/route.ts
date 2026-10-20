@@ -19,9 +19,9 @@ export const PATCH = apiHandler(async (req: Request, body: { selesai?: boolean; 
   const id = Number((await context.params).id)
 
   // Auto-migrate kolom harga terkunci (idempotent) — PATCH bisa jalan sebelum GET.
-  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS harga_json text')
+  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS harga_json text').simple()
   // vmap_json = nama/harga item virtual (id negatif) — lihat POST /api/bon.
-  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS vmap_json text')
+  await sql.unsafe('ALTER TABLE bon ADD COLUMN IF NOT EXISTS vmap_json text').simple()
 
   // --- (a) tandai selesai / aktifkan kembali ---
   if (typeof body.selesai === 'boolean') {
