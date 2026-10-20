@@ -1,222 +1,170 @@
-# Z1 Pos — Development Guide for AI Agents
+# Z1Pos Server (djvpri/zpos) — Agent Guide
 
-> Sumber kebenaran untuk agent yang bekerja di codebase ini. Baca sebelum edit.
+Next.js 14 + Postgres backend untuk Z1Pos ekosistem POS. Deploy via Coolify.
 
-## Apa Ini
+## Stack
+- **Next.js 14** (App Router, server components, route handlers)
+- **Postgres 18** (Coolify managed, `1fhosrzrapewqtv4wkqiw1rs`)
+- **postgres.js v3.4.9** (avoid v4 — prepared statement cache bug pada `sql.unsafe()`)
+- **zod** (validation), **jose** (JWT), **bcryptjs** (hash), **xlsx** (export), **sharp** (image)
 
-Z1 Pos = POS (point-of-sale) multi-tenant untuk toko grosir/ritel. Tiap toko = tenant terisolasi via `toko_id`. Backend Next.js 16 (App Router) + PostgreSQL. Frontend kasir = Tauri desktop app (Windows) yang embed HTML+JS (`zpos_windows/src/index.html`) dan sync ke server ini.
-
-Stack: Next.js 16, React 19, PostgreSQL 18, `postgres` (not Prisma), Zod 4, Tailwind 4, Jose JWT.
-
-## Deploy & Akses Cepat
-
-```
-Repo:     github.com/djvpri/zpos  (public)
-VPS:      103.93.129.94  (SSH user: djvpri)
-Coolify:  http://103.93.129.94:8000
-App UUID: ocuwsrtcc0pqua8xcleyqxd4
-Domain:   z1pos.zomet.my.id (via Coolify FQDN)
-DB UUID:  1fhosrzrapewqtv4wkqiw1rs (PostgreSQL 18, Coolify managed)
-```
-
-### Env vars (container)
-
-| Var | Purpose |
-|-----|---------|
-| `DATABASE_URL` | `postgresql://postgres:***@postgresql-database-1fhosrzrapewqtv4wkqiw1rs:5432/postgres` |
-| `JWT_SECRET` | HMAC key untuk sign token (jose HS256) |
-| `ADMIN_EMAIL` | Super-admin email (login `/api/admin/login`) |
-| `ADMIN_PASSWORD` | Super-admin password |
-| `ZONE_BASE_URL` | ZOne SSO hub URL |
-| `DIGIFLAZZ_USERNAME` | Digiflazz API user (penjualan digital) |
-
-### Verifikasi cepat dari terminal
-
+## Build & Test
 ```bash
-# Health check
-curl -s https://z1pos.zomet.my.id/api/health
-
-# SSH ke VPS + query DB
-ssh djvpri@103.93.129.94 "sudo docker exec 1fhosrzrapewqtv4wkqiw1rs psql -U postgres -d postgres -c 'SELECT id,nama,plan,aktif FROM toko ORDER BY id'"
-
-# Lihat container logs
-ssh djvpri@103.93.129.94 "sudo docker logs \$(sudo docker ps -q -f name=ocuwsrtcc0pqua8xcleyqxd4) --since 24h 2>&1 | grep -i error | tail -20"
-
-# Admin login → dapat cookie zpos_admin
-curl -s -X POST https://z1pos.zomet.my.id/api/admin/login -H 'Content-Type: application/json' -d '{"email":"...","password":"..."}' -c /tmp/cookies.txt
-
-# Diagnosa toko (admin auth)
-curl -s 'https://z1pos.zomet.my.id/api/admin/diagnosa?toko_id=8' -H 'Cookie: zpos_admin=<token>'
+npm run build        # next build — semua route compiled
+npm run lint         # eslint
+npm test             # node --test (66 tests, 2s)
+npm run test:headed  # playwright e2e
 ```
 
-## Arsitektur
+## Deploy
+- **Coolify auto-deploy ON** — git push `main` → Coolify build → container restart
+- Domain: `https://z1pos.zomet.my.id`
+- Container ID pattern: `ocuwsrtcc0pqua8xcleyqxd4-<timestamp>`
+- Health: `GET /api/health` → `{status:"ok",db:"connected",dbLatencyMs}`
+- Build time: ~90 detik. Downtime: ±30 detik saat container swap.
 
+## Struktur
 ```
-zpos/
-├── src/app/api/         # API routes (App Router)
-│   ├── health/          # GET — liveness + DB ping
-│   ├── auth/            # login, register, QR, SSO, me, users, forgot/reset
-│   ├── admin/           # super-admin endpoints (log-kasir, members, digiflazz, diagnosa)
-│   ├── bon/             # bon gantung: POST (create), PATCH (edit/settle), DELETE
-│   ├── transaksi/       # transaksi kasir (POST = checkout)
-│   ├── produk/          # CRUD produk, barcode, import, duplikat
-│   ├── laporan/         # laporan penjualan
-│   ├── kasir/           # log sync kasir desktop
-│   ├── shift/           # shift kasir (buka/tutup)
-│   ├── ai/              # analisis bisnis via Gemini
+src/
+├── app/api/           Route handlers (REST-ish)
+│   ├── admin/         Admin-only endpoints (diagnosa, devices, log-kasir)
+│   ├── bon/           Bon grosir (KERANJANG_MAX=200 per item)
+│   ├── transaksi/     Transaksi kasir
+│   ├── pengaturan/    Pengaturan toko (auto-migrate desain_nota dll)
+│   ├── item-virtual/  Item custom (Lainnya) — pastikanTabel()
+│   ├── health/        Health check
+│   ├── digiflazz/     Digiflazz webhook
 │   └── ...
-├── src/lib/             # business logic
-│   ├── db.ts            # postgres client (DATABASE_URL, ssl conditional)
-│   ├── auth.ts          # JWT sign/verify, getTokoFromRequest, admin auth
-│   ├── api-handler.ts   # wrapper: JSON parse, Zod validate, x-srv-timing, error catch
-│   ├── bon-sesi.ts      # sesi bon gantung (grup per-kiriman)
-│   ├── ratelimit.ts     # login attempt limiter (5/15min)
-│   ├── aktivitas.ts     # audit log (fire-and-forget)
-│   ├── validation.ts    # Zod schemas (login, register, produk, dst.)
+├── lib/
+│   ├── db.ts          postgres client + pastikanErrorLog() auto-migrate
+│   ├── api-handler.ts Wrapper route handler (sanitize null bytes + LogError)
+│   ├── log-error.ts   LogError() — tulis ke error_log table + stdout JSON
+│   ├── auth.ts        getTokoFromRequest, getAdminFromRequest
+│   ├── validation.ts  Zod schemas
 │   └── ...
-├── src/middleware.ts    # auth gate: /app (zpos_token), /admin (zpos_admin)
-├── src/app/app/         # dashboard toko (admin & kasir UI)
-├── src/app/admin/       # dashboard super-admin
-├── migrations/          # SQL migration files (manual, not auto-run)
-├── tests/               # node:test + playwright
-└── zpos_windows/        # Tauri desktop app (kasir offline)
-    └── src/index.html   # monolith HTML+JS kasir (~2900 lines)
+└── app/
+    ├── admin/         Admin dashboard (React)
+    ├── toko/[subdomain]/  Halaman publik toko
+    ├── app/           App share
+    └── ...
+scripts/
+├── log-errors.sh      Wrapper SSH+psql utk cek error_log (AI-friendly)
+└── migrate-*.mts      Migrasi data satu-shot
 ```
 
-## Auth Model
+## Patterns
 
-**2 lapis token (sama secret, beda cookie):**
-
-| Token | Cookie | Scope | Login via |
-|-------|--------|-------|-----------|
-| `zpos_token` | `zpos_token` | per-toko (`tokoId`) | `POST /api/auth/login` `{email, password}` |
-| `zpos_admin` | `zpos_admin` | super-admin (all toko) | `POST /api/admin/login` `{email, password}` (env creds) |
-
-Token expiry: 30 hari (toko), 7 hari (admin). Algorithm: HS256 (jose).
-
-`getTokoFromRequest(req)` — extract + verify token, **re-check role dari DB** (cegah stale role).
-
-Middleware whitelist:
-- `/api/health` — public
-- `/api/auth/*` — public (login/register/QR/SSO)
-- `/api/admin/login` — public
-- `/api/admin/diagnosa` — admin token required
-- `/login`, `/register`, `/sso` — public pages
-- `/app/*` — requires `zpos_token`
-- `/admin/*` — requires `zpos_admin`
-
-## DB Schema (27 tables)
-
-Multi-tenant: hampir semua tabel punya `toko_id` FK ke `toko`. **Isolasi via app-level filter** (middleware + `getTokoFromRequest`), bukan DB RLS.
-
-### Tabel utama
-
-| Tabel | Purpose | Key columns |
-|-------|---------|-------------|
-| `toko` | tenant master | `id, nama, plan, aktif, subdomain, desain_nota, kurangi_stok, jual_stok_habis, langganan_sampai` |
-| `user` | pegawai toko | `id, toko_id, nama, email, password_hash, role, aktif` |
-| `produk` | katalog barang | `id, toko_id, nama, harga, stok, barcode, kategori_id, foto` |
-| `transaksi` | transaksi kasir | `id, toko_id, user_id, total, bon_tebus_id, shift_id, created_at` |
-| `detail_transaksi` | item per transaksi | `id, transaksi_id, produk_id, qty, harga, subtotal` |
-| `bon` | bon gantung (hold) | `id, toko_id, nama, produk_json, sesi_json, harga_json, vmap_json, total, selesai, dibayar_at, created_at` |
-| `log_kasir` | sync log dari desktop | `id, toko_id, device_id, nama_pc, konten, created_at` |
-| `log_aktivitas` | audit trail | `id, toko_id, user_id, aksi, deskripsi, created_at` |
-| `member` | pelanggan | `id, toko_id, nama, telepon, kategori_member_id` |
-| `kategori` | kategori produk | `id, toko_id, nama` |
-| `shift` | shift kasir | `id, toko_id, user_id, dibuka, ditutup, modal_awal` |
-| `item_virtual` | item custom (id negatif) | `id, toko_id, nama, harga` |
-| `stock_opname` | so header | `id, toko_id, status, created_at` |
-| `harga_member` | harga khusus member | `id, toko_id, produk_id, kategori_member_id, harga` |
-
-### Bon gantung storage
-
-`produk_json` = `Record<produk_id, qty>` flat snapshot final.
-`sesi_json` = array snapshot per-grup: `[{t: ISO, p: {id:qty}, h?: {id:harga}}]`.
-`harga_json` = harga terkunci per produk saat digantung.
-`vmap_json` = nama/harga item virtual (id negatif).
-
-## API Patterns
-
-### apiHandler wrapper (`src/lib/api-handler.ts`)
-
-Semua API route pakai `apiHandler`:
-- Parse JSON body otomatis
-- Optional Zod schema validation
-- `x-srv-timing` header (ms) di semua response
-- Catch ZodError → 400 `{error: "Validasi gagal", details: [...]}`
-- Catch unknown → 500 `{error: "Terjadi kesalahan internal server"}` + `console.error('[API ERROR]', ...)`
-
-### Error response format
-
-```json
-{ "error": "Pesan error user-facing" }
+### Route handler pattern
+```typescript
+import { apiHandler } from '@/lib/api-handler'
+export const PUT = apiHandler(async (req, body, context) => {
+  // body sudah sanitize null bytes + zod-validated
+  const toko = await getTokoFromRequest(req)
+  if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // ... business logic
+}, { schema: mySchema })
 ```
 
-Status codes:
-- 400 — validasi gagal / input invalid
-- 401 — unauthorized (token hilang/expired)
-- 403 — forbidden (role salah)
-- 404 — resource tidak ditemukan
-- 429 — rate limited (login attempt)
-- 500 — server error
-
-## Bug Patterns & Pitfalls
-
-### 1. Bon gantung "mengedit, menyinkronkan" stuck
-
-**Gejala:** Kasir desktop tampil label biru "mengedit, menyinkronkan" di bon list.
-**Penyebab:** `retryEditBon()` di `zpos_windows/src/index.html` mengirim PATCH `/api/bon/[id]` tapi server reject (400).
-**Cek:**
-```sql
-SELECT konten FROM log_kasir WHERE toko_id = 8 AND konten LIKE '%edit bon%GAGAL%' ORDER BY created_at DESC LIMIT 5;
+### Auto-migrate (idempotent)
+Pattern: jalankan `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` di awal handler.
+WAJIB pakai `.simple()` — tanpa itu postgres.js prepare cache mismatch (08P01).
+```typescript
+await sql.unsafe("ALTER TABLE toko ADD COLUMN IF NOT EXISTS desain_nota text").simple()
 ```
-**Fix umum:**
-- Limit item: `KERANJANG_MAX` di `src/app/api/bon/route.ts:49` (POST) + `src/app/api/bon/[id]/route.ts:50` (PATCH)
-- Produk tidak milik toko: cek `produk.toko_id` vs `toko_id` di token
-- Bon sudah selesai: PATCH reject jika `selesai=true`
 
-### 2. Sync kasir desktop gagal
+### sql.unsafe() vs tagged template
+- `sql\`SELECT ... WHERE id = ${x}\`` — tagged, prepared statement, parametrized (SAFE)
+- `sql.unsafe('CREATE TABLE ...')` — untuk DDL tanpa param, WAJIB `.simple()` utk hindari cache bug
 
-**Gejala:** `log_kasir.konten` berisi "sync GAGAL".
-**Cek:**
+## Error Logging (AI-Agent Friendly)
+
+### error_log table
+Auto-migrate di `src/lib/db.ts` `pastikanErrorLog()`. Field:
+- `fingerprint` — hash(code+route+status) utk GROUP BY pattern detection
+- `code` — Postgres code (22021, 08P01, 23505) atau null
+- `route` — normalisasi `/api/bon/[id]` (bukan `/api/bon/123`)
+- `method`, `status`, `message`, `param`, `request_id`, `device_id`, `stack`
+
+### LogError()
+```typescript
+import { LogError } from '@/lib/log-error'
+await LogError({
+  method: 'POST', url: req.url, status: 500,
+  message: '...',
+  err: e,                    // extract code + stack
+  param: 'pg:22021',         // optional hint
+  deviceId: 'PC-KASIR-1',    // optional
+})
+```
+
+### Cek error via API (admin)
+```
+GET /api/admin/diagnosa?toko_id=N
+→ { ..., error_summary: [{ fingerprint, code, route, hits, last_ts, sample_message, sample_param }] }
+```
+
+### Cek error via script
 ```bash
-ssh djvpri@103.93.129.94 "sudo docker exec 1fhosrzrapewqtv4wkqiw1rs psql -U postgres -d postgres -c \"SELECT id, device_id, LEFT(konten, 200) FROM log_kasir WHERE toko_id = 8 ORDER BY created_at DESC LIMIT 5\""
+./scripts/log-errors.sh                    # 24 jam, JSON
+./scripts/log-errors.sh --since 6h --pattern UTF8
+./scripts/log-errors.sh --device PC-KASIR-1 --table
 ```
-**Penyebab umum:** DB unreachable, token expired, network timeout, item count > limit.
 
-### 3. PostgreSQL encoding error (code 22021)
+## Pitfalls (wajib tahu)
 
-**Gejala:** `severity: 'ERROR', code: '22021', routine: 'report_invalid_encoding_int'`.
-**Penyebab:** String encoding mismatch — biasanya dari `produk.nama` yang mengandung karakter non-UTF8 dari import Excel.
-**Fix:** Sanitize input sebelum insert, atau set client encoding `SET client_encoding = 'UTF8'`.
+### 1. KERANJANG_MAX = 200
+Bon grosir maks 200 item. Hardcoded di `src/app/api/bon/route.ts` + `src/app/api/bon/[id]/route.ts`.
+Naikkan jika perlu, tapi uji performa — Postgres JSONB dengan 200 keys masih cepat, 1000+ mulai lambat.
 
-### 4. Item virtual (id negatif)
+### 2. Null bytes dari clipboard Windows
+Kasir desktop (Tauri) kadang kirim field berisi `\x00` (clipboard Windows).
+Postgres reject dengan `invalid byte sequence UTF8: 0x00` (22021).
+Fix: `sanitizeNullBytes()` di `apiHandler` strip `\0` dari string values sebelum `schema.parse`.
 
-Item virtual = item custom tanpa row produk (mis. "Lainnya"). ID = hash negatif dari nama+harga. Namanya disimpan di `vmap_json` di bon. **Tidak boleh** di-filter sebagai "id tidak valid" — valid selama ada di `vmap`.
+### 3. Prepared statement cache mismatch
+`sql.unsafe()` tanpa `.simple()` bisa cache collision antar request → `bind message supplies 0 parameters` (08P01).
+Solusi: semua `sql.unsafe()` untuk DDL pakai `.simple()`.
 
-### 5. Multi-tenant isolation
+### 4. NOTICE bukan error
+`column "X" already exists, skipping` adalah NOTICE normal dari `ADD COLUMN IF NOT EXISTS`.
+Bukan error. Jangan treat sebagai bug.
 
-**WAJIB** filter `WHERE toko_id = ${toko.tokoId}` di setiap query. Tidak ada DB-level RLS. Token decode → `tokoId` di payload → semua query harus pakai.
+### 5. Sync kasir desktop (Tauri)
+Kasir desktop `zpos_windows` sync via `/api/bon`, `/api/transaksi`.
+Pola error sync → cek `log_kasir` table (`konten` text field, regex `GAGAL|error`).
+Skilled detail: skill `zpos-server-nextjs` references/cek-log-kasir.md.
 
-## Testing
+## Konvensi
+- **Bahasa**: code comments & user-facing error dalam Bahasa Indonesia
+- **Commit message**: `<type>(<scope>): <desc>` — `fix(log):`, `feat(api):`, `refactor:`
+- **Branch**: `feat/...`, `fix/...`, `chore/...` — squash-merge ke main
+- **No tests for trivial changes** — tapi reproduksi bug wajib (lihat `tests/repro/`)
+- **Idempotent migrations** — semua `ALTER TABLE` pakai `IF NOT EXISTS`
 
+## Quick Commands
 ```bash
-npm test          # node:test — tests/*.test.mjs
-npm run build     # next build (semua route harus compile)
-npm run lint      # eslint
+# Cek health
+curl https://z1pos.zomet.my.id/api/health
+
+# Cek deploy mendarat (via SSH)
+ssh djvpri@103.93.129.94 "sudo docker ps --format '{{.Names}}\t{{.CreatedAt}}' | grep ocuwsrtcc"
+
+# Cek error log 24 jam
+./scripts/log-errors.sh
+
+# SSH ke container postgres
+ssh djvpri@103.93.129.94 "sudo docker exec -it 1fhosrzrapewqtv4wkqiw1rs psql -U postgres -d postgres"
+
+# Cek log_kasir table
+ssh djvpri@103.93.129.94 "sudo docker exec 1fhosrzrapewqtv4wkqiw1rs psql -U postgres -d postgres -c \"SELECT id, nama_pc, LEFT(konten,300) FROM log_kasir ORDER BY id DESC LIMIT 10\""
 ```
 
-Bon tests: `tests/bon-*.test.mjs` — 32+ tests covering sesi, edit, cetak, preset virtual.
+## Env (Coolify)
+- `DATABASE_URL` — postgres connection string (internal Docker network)
+- `DATABASE_SSL` — `true` untuk Railway, false untuk Coolify VPS internal
+- `JWT_SECRET` — signing key
+- `DIGIFLASS_*` — Digiflazz credentials (utk produk digital)
 
-## Kasir Desktop (zpos_windows)
-
-Terpisah dari repo zpos. Monolith `src/index.html` (~2900 lines) + Tauri Rust backend.
-- Sync interval: 45 detik (jika ada bon) atau `PULL_MS` (jika kosong)
-- `retryEditBon()` — retry sync edit bon yang gagal (flag `editPending=true`)
-- `replayBonServer()` — kirim bon lokal yang belum punya server ID
-- Log error: `logErr('BON', ...)` → POST ke `/api/kasir/log`
-
-## Tauri commands
-
-Kasir desktop panggil server via `tinv('edit_bon', {baseUrl, bonId, produk, ...})` → Rust HTTP client.
-Token JWT dipegang Rust (meta `token_jwt`), bukan di localStorage JS.
+## Sister Repos
+- `djvpri/zpos_windows` — Tauri desktop kasir (offline-first, sync ke server ini)
+- `djvpri/zpos_admin` — Admin panel (Next.js, terpisah dari server ini)

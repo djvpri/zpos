@@ -93,6 +93,29 @@ export async function GET(req: Request) {
     ? Math.ceil((new Date(toko.langganan_sampai).getTime() - Date.now()) / 86400000)
     : null
 
+  // ── Error log 24 jam dari error_log table (AI-agent-friendly) ──
+  // Group by fingerprint → top error patterns dgn count + sample.
+  let errorSummary: unknown[] = []
+  try {
+    const rows = await sql`
+      SELECT fingerprint, code, route, method, status,
+             count(*)::int AS hits,
+             max(ts) AS last_ts,
+             min(message) AS sample_message,
+             min(param) AS sample_param
+      FROM error_log
+      WHERE ts > now() - interval '24 hours'
+        AND (device_id IS NULL OR device_id = '')
+      GROUP BY fingerprint, code, route, method, status
+      ORDER BY hits DESC
+      LIMIT 10
+    `
+    errorSummary = rows as unknown[]
+  } catch {
+    // error_log belum ada (sebelum migrate jalan) — skip gracefully
+    errorSummary = []
+  }
+
   return NextResponse.json({
     toko,
     langganan: { aktif: langgananAktif, hari_tersisa: langgananHari },
@@ -101,5 +124,6 @@ export async function GET(req: Request) {
     sync_errors: syncErrors,
     devices,
     transaksi_terbaru: trxRecent,
+    error_summary: errorSummary,
   })
 }

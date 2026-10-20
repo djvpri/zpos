@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { ZodError, ZodSchema } from 'zod'
+import { LogError } from '@/lib/log-error'
 
 // Strip null bytes (\x00) dari string values — clipboard Windows / input
 // kasir kadang bawa null byte yang ditolak Postgres dengan
@@ -27,7 +28,6 @@ interface ApiHandlerConfig {
   noBody?: boolean
 }
 
- 
 export function apiHandler<T>(
   handler: Handler<T>,
   config?: ApiHandlerConfig
@@ -48,25 +48,25 @@ export function apiHandler<T>(
       }
 
       let body: unknown
-            if (schema) {
-              try {
-                body = await req.json()
-              } catch {
-                return withTiming(NextResponse.json(
-                  { error: 'Format JSON tidak valid' },
-                  { status: 400 }
-                ))
-              }
-              body = sanitizeNullBytes(body)
-              body = schema.parse(body)
-            } else {
-              try {
-                body = await req.json()
-              } catch {
-                body = {}
-              }
-              body = sanitizeNullBytes(body)
-            }
+      if (schema) {
+        try {
+          body = await req.json()
+        } catch {
+          return withTiming(NextResponse.json(
+            { error: 'Format JSON tidak valid' },
+            { status: 400 }
+          ))
+        }
+        body = sanitizeNullBytes(body)
+        body = schema.parse(body)
+      } else {
+        try {
+          body = await req.json()
+        } catch {
+          body = {}
+        }
+        body = sanitizeNullBytes(body)
+      }
 
       return withTiming(await handler(req, body as T, context))
     } catch (e: unknown) {
@@ -81,7 +81,15 @@ export function apiHandler<T>(
       }
 
       const errMsg = e instanceof Error ? e.message : 'Unknown error'
-      console.error('[API ERROR]', req.method, req.url, errMsg)
+      const pgCode = (e as { code?: string } | undefined)?.code || ''
+      LogError({
+        method: req.method,
+        url: req.url,
+        status: 500,
+        message: errMsg,
+        err: e,
+        param: pgCode ? `pg:${pgCode}` : '',
+      }).catch(() => {})
 
       return withTiming(NextResponse.json(
         { error: 'Terjadi kesalahan internal server' },
