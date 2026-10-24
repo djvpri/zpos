@@ -78,7 +78,12 @@ export default function AdminLogKasir() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/log-kasir?limit=200')
+      // Filter tenant WAJIB server-side: tabel + device lain bisa punya ribuan
+      // baris lebih baru, jadi 200 baris global terbaru tak memuat tenant yang
+      // sedang dipilih (gejala: pilih tenant → daftar kosong).
+      const qs = new URLSearchParams({ limit: '200' })
+      if (filterToko) qs.set('toko_id', filterToko)
+      const res = await fetch('/api/admin/log-kasir?' + qs.toString())
       if (!res.ok) throw new Error('Gagal memuat log')
       const d = await res.json()
       setRows(Array.isArray(d.rows) ? d.rows : [])
@@ -89,7 +94,7 @@ export default function AdminLogKasir() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [filterToko])
 
   useEffect(() => { const t = setTimeout(load, 0); return () => clearTimeout(t) }, [load])
 

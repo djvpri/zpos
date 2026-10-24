@@ -15,6 +15,13 @@ const MAX_BARIS_PER_DEVICE = 3_000
 const MAX_LINEN = 60_000 // jaga jangan biar isi tak kebesaran
 const MAX_KONTEN = 200_000 // ~200KB per upload (delta error biasanya kecil)
 
+// Baris RUTIN (heartbeat kasir tiap menit) — bukan error, tapi kalau ikut
+// tersimpan ia membanjiri tabel dan menenggelamkan log device/tenant lain
+// (gejala: window 200 baris UI isi satu tenant saja, tenant lain "tak nampak").
+// Baris lain (sync OK, sync GAGAL, DIAG, error) tetap disimpan.
+const RUTIN = /sync mulai base=|push_antrian_only OK push=0$|BON \| bonstate .*count=0/
+
+
 export async function POST(req: Request) {
   const toko = await getTokoFromRequest(req)
   if (!toko) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -50,6 +57,13 @@ export async function POST(req: Request) {
   const nL = konten.split('\n').length
   if (nL > MAX_LINEN) kontenClip = konten.split('\n').slice(-MAX_LINEN).join('\n')
   if (kontenClip.length > MAX_KONTEN) kontenClip = kontenClip.slice(-MAX_KONTEN)
+
+  // Buang baris rutin (heartbeat) — simpan sisanya. Delta kasir = blok banyak
+  // baris, jadi filter per baris, bukan tolak seluruh blok.
+  const baris = kontenClip.split('\n').filter(l => l.trim() && !RUTIN.test(l))
+  if (baris.length === 0) return NextResponse.json({ ok: true, rutin: true })
+  kontenClip = baris.join('\n').slice(0, MAX_KONTEN)
+
 
   // dedup ringan: jangan simpan persis baris yang sudah ada utk device+toko sama
   const [dupe] = await sql`
